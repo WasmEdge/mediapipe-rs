@@ -34,7 +34,12 @@ imageproc = { version = "^0", default-features = false, optional = true }
 regex = { version = "^1", optional = true }
 lazy_static = { version = "^1", optional = true }
 symphonia-core = { version = "^0", optional = true }
-ffmpeg-next = { version = "^6", features = ["static"], optional = true }
+
+[dependencies.ffmpeg-next]
+features = ["static"]
+optional = true
+git = "https://github.com/yanghaku/rust-ffmpeg.git"
+branch = "wasm32-wasi"
 
 
 [features]
@@ -51,7 +56,3 @@ ffmpeg = ["ffmpeg-next"]
 [dev-dependencies]
 image = { version = "^0", default-features = false, features = ["jpeg"] }
 symphonia = { version = "^0", default-features = false, features = ["wav", "pcm"] }
-
-
-[patch."crates-io"]
-ffmpeg-next = { git = "https://github.com/yanghaku/rust-ffmpeg.git", branch = "wasm32-wasi" }

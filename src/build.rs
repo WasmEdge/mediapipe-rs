@@ -24,35 +24,40 @@ mod ffmpeg_dep_libs {
         dir.exists() && !dir.is_dir()
     }
 
-    fn check_wasi_lib_path(mut dir: PathBuf, lib_name: &str) -> Option<PathBuf> {
-        if !dir.is_dir() {
+    fn check_wasi_lib_path(search_dir: PathBuf, lib_name: &str) -> Option<PathBuf> {
+        if !search_dir.is_dir() {
             return None;
         }
-        // ${}/libxxx.a
-        if check_lib_exists(dir.clone(), lib_name) {
-            return Some(dir);
+        // ${dir}/libxxx.a
+        if check_lib_exists(search_dir.clone(), lib_name) {
+            return Some(search_dir);
         }
 
-        dir.push("lib");
-        // ${}/lib/libxxx.a
-        if check_lib_exists(dir.clone(), lib_name) {
-            return Some(dir);
-        }
+        const VERSION_LIST: &[&str] = &["", "15.0.7", "16"];
+        for version in VERSION_LIST {
+            let mut dir = search_dir.clone();
+            dir.push(version);
 
-        dir.push("wasm32-wasi");
-        // ${}/lib/wasm32-wasi/libxxx.a
-        if check_lib_exists(dir.clone(), lib_name) {
-            return Some(dir);
-        }
-        dir.pop();
+            dir.push("lib");
+            // ${dir}/${version}/lib/libxxx.a
+            if check_lib_exists(dir.clone(), lib_name) {
+                return Some(dir);
+            }
 
-        dir.push("wasi");
-        // ${}/lib/wasi/libxxx.a
-        return if check_lib_exists(dir.clone(), lib_name) {
-            Some(dir)
-        } else {
-            None
-        };
+            dir.push("wasm32-wasi");
+            // ${dir}/${version}/lib/wasm32-wasi/libxxx.a
+            if check_lib_exists(dir.clone(), lib_name) {
+                return Some(dir);
+            }
+            dir.pop();
+
+            dir.push("wasi");
+            // ${dir}/${version}/lib/wasi/libxxx.a
+            if check_lib_exists(dir.clone(), lib_name) {
+                return Some(dir);
+            }
+        }
+        return None;
     }
 
     fn find_wasi_library_in_wasi_sdk(

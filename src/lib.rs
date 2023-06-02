@@ -319,3 +319,7 @@ use wasi_nn_safe::{
 
 #[cfg(doc)]
 use tasks::{audio::*, text::*, vision::*};
+
+/// Re-export the ffmpeg-next crate
+#[cfg(feature = "ffmpeg")]
+pub use ffmpeg_next;
