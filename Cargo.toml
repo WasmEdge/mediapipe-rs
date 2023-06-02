@@ -1,0 +1,57 @@
+[package]
+name = "mediapipe-rs"
+version = "0.1.0-dev"
+edition = "2021"
+authors = ["bo.yang@smail.nju.edu.cn"]
+categories = ["Webassembly"]
+keywords = ["Webassembly", "wasm", "neural-network", "inference"]
+license-file = "LICENSE"
+readme = "README.md"
+build = "src/build.rs"
+documentation = "https://docs.rs/mediapipe-rs"
+repository = "https://github.com/WasmEdge/mediapipe-rs"
+description = "A Rust library for mediapipe tasks"
+publish = true
+
+[package.metadata.docs.rs]
+all-features = true
+# only build for wasm32-wasi now
+default-target = "wasm32-wasi"
+targets = ["wasm32-wasi"]
+
+include = [
+    "LICENSE",
+    "README.md",
+    "Cargo.toml",
+    "/src",
+]
+
+[dependencies]
+wasi-nn-safe = "^0"
+flatbuffers = "^23"
+image = { version = "^0", default-features = false, optional = true }
+imageproc = { version = "^0", default-features = false, optional = true }
+regex = { version = "^1", optional = true }
+lazy_static = { version = "^1", optional = true }
+symphonia-core = { version = "^0", optional = true }
+ffmpeg-next = { version = "^6", features = ["static"], optional = true }
+
+
+[features]
+# default is all task types
+default = ["audio", "vision", "text"]
+
+audio = ["symphonia-core"]
+vision = ["image", "imageproc"]
+text = ["regex", "lazy_static"]
+
+ffmpeg = ["ffmpeg-next"]
+
+
+[dev-dependencies]
+image = { version = "^0", default-features = false, features = ["jpeg"] }
+symphonia = { version = "^0", default-features = false, features = ["wav", "pcm"] }
+
+
+[patch."crates-io"]
+ffmpeg-next = { git = "https://github.com/yanghaku/rust-ffmpeg.git", branch = "wasm32-wasi" }
