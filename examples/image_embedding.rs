@@ -15,7 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .model_asset_path(model_path) // set model path
         .l2_normalize(true)
         .quantize(true)
-        .finalize()?; // create a image classifier
+        .finalize()?; // create a task instance
     let mut session = task.new_session()?; // create a new session to perform task
 
     // do inference and generate results

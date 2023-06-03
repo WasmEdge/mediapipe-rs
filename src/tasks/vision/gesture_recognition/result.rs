@@ -71,22 +71,22 @@ impl Display for GestureRecognizerResults {
 
 impl Display for GestureRecognizerResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "  Gestures: ")?;
         if let Some(t) = self.gestures.timestamp_ms {
             writeln!(f, "  Timestamp: {} ms", t)?;
         }
+        writeln!(f, "  Handedness: ")?;
+        write!(f, "{}", self.hand_landmark.handedness)?;
+
         if self.gestures.classifications.is_empty() {
-            writeln!(f, "  No Classification")?;
+            writeln!(f, "  No Gesture Classifications")?;
         } else {
-            for (i, c) in self.gestures.classifications.iter().enumerate() {
-                writeln!(f, "  Classification #{}:", i)?;
-                for (j, c) in c.categories.iter().enumerate() {
-                    writeln!(f, "    Category #{}:", j)?;
-                    write!(f, "{}", c)?;
-                }
+            writeln!(f, "  Gesture Classification: ")?;
+            let classification = self.gestures.classifications.get(0).unwrap();
+            for (i, c) in classification.categories.iter().enumerate() {
+                writeln!(f, "    Category #{}:", i)?;
+                write!(f, "{}", c)?;
             }
         }
-        write!(f, "{}", self.hand_landmark)?;
         Ok(())
     }
 }
