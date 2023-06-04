@@ -1,6 +1,6 @@
 use super::HandLandmark;
-use crate::postprocess::Category;
-use crate::postprocess::{Landmarks, NormalizedLandmarks};
+use crate::postprocess::utils::{draw_landmarks_with_options, DefaultPixel, DrawLandmarksOptions};
+use crate::postprocess::{Category, Landmarks, NormalizedLandmarks};
 use std::fmt::{Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
@@ -13,6 +13,34 @@ pub struct HandLandmarkResult {
     pub hand_landmarks: NormalizedLandmarks,
     /// Detected hand landmarks in world coordinates.
     pub hand_world_landmarks: Landmarks,
+}
+
+impl HandLandmarkResult {
+    /// Draw this detection result to image with default options
+    #[inline(always)]
+    pub fn draw<I>(&self, img: &mut I)
+    where
+        I: image::GenericImage,
+        I::Pixel: 'static + DefaultPixel,
+        <I::Pixel as image::Pixel>::Subpixel:
+            conv::ValueInto<f32> + imageproc::definitions::Clamp<f32>,
+    {
+        let mut options = DrawLandmarksOptions::default();
+        options.connections = HandLandmark::CONNECTIONS;
+        draw_landmarks_with_options(img, &self.hand_landmarks, &options);
+    }
+
+    /// Draw this detection result to image with options
+    #[inline(always)]
+    pub fn draw_with_options<I>(&self, img: &mut I, options: &DrawLandmarksOptions<I::Pixel>)
+    where
+        I: image::GenericImage,
+        I::Pixel: 'static,
+        <I::Pixel as image::Pixel>::Subpixel:
+            conv::ValueInto<f32> + imageproc::definitions::Clamp<f32>,
+    {
+        draw_landmarks_with_options(img, &self.hand_landmarks, options);
+    }
 }
 
 /// The hand landmarks detection result from HandLandmark
