@@ -45,7 +45,7 @@ install_ffmpeg() {
   if which ffmpeg; then
     echo "FFMpeg is installed."
   else
-    sudo apt install ffmpeg -y
+    apt install ffmpeg -y
   fi
 }
 
