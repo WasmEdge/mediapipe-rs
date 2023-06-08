@@ -10,7 +10,10 @@ mod ffmpeg {
     const OBJECT_DETECTION_MODEL: &'static str =
         "assets/models/object_detection/efficientdet_lite0_fp32.tflite";
 
-    const VIDEO_1: &'static str = "assets/testdata/video/banana_clock_tabby.mp4";
+    const VIDEO_1: &'static str = "assets/testdata/video/bird_burger_tabby.mp4";
+
+    const FRAME_CLASSIFY_CATEGORIES: &[&'static str] = &["junco", "cheeseburger", "tabby"];
+    const FRAME_DETECTION_CATEGORIES: &[&'static str] = &["bird", "sandwich", "cat"];
 
     #[test]
     fn test_image_classification() {
@@ -25,18 +28,12 @@ mod ffmpeg {
             .classify_for_video(input)
             .unwrap();
         assert_eq!(classification_results.len(), 3);
-        assert_eq!(
-            classification_results[0].classifications[0].categories[0].category_name,
-            Some("banana".into())
-        );
-        assert_eq!(
-            classification_results[1].classifications[0].categories[0].category_name,
-            Some("analog clock".into())
-        );
-        assert_eq!(
-            classification_results[2].classifications[0].categories[0].category_name,
-            Some("tabby".into())
-        );
+        for i in 0..3 {
+            assert_eq!(
+                classification_results[i].classifications[0].categories[0].category_name,
+                Some(FRAME_CLASSIFY_CATEGORIES[i].into())
+            );
+        }
     }
 
     #[test]
@@ -52,18 +49,12 @@ mod ffmpeg {
             .detect_for_video(input)
             .unwrap();
         assert_eq!(detection_results.len(), 3);
-        assert_eq!(
-            detection_results[0].detections[0].categories[0].category_name,
-            Some("banana".into())
-        );
-        assert_eq!(
-            detection_results[1].detections[0].categories[0].category_name,
-            Some("clock".into())
-        );
-        assert_eq!(
-            detection_results[2].detections[0].categories[0].category_name,
-            Some("cat".into())
-        );
+        for i in 0..3 {
+            assert_eq!(
+                detection_results[i].detections[0].categories[0].category_name,
+                Some(FRAME_DETECTION_CATEGORIES[i].into())
+            );
+        }
         for result in detection_results {
             eprintln!("{}", result);
         }

@@ -36,9 +36,49 @@ download_img_data() {
 
   curl -sL https://storage.googleapis.com/mediapipe-assets/portrait.jpg -o face.jpg
   curl -sL https://developers.google.com/static/mediapipe/images/solutions/image-classifier.jpg -o bird.jpg
+  curl -sL https://storage.googleapis.com/mediapipe-tasks/image_classifier/cat.jpg -o tabby.jpg
 
   popd || exit
 }
 
-#download_audio_data
+install_ffmpeg() {
+  if which ffmpeg; then
+    echo "FFMpeg is installed."
+  else
+    sudo apt install ffmpeg -y
+  fi
+}
+
+generate_test_video() {
+  p="${data_path}/video"
+  mkdir -p "${p}"
+  pushd "${p}" || exit
+
+  IMG_PATH="../img"
+  output_file="./bird_burger_tabby.mp4"
+
+  img_arr=("bird.jpg" "burger.jpg" "tabby.jpg")
+  img_arr_len=${#img_arr[@]}
+
+  scale=640x640
+  # generate command
+  args=""
+  filter_complex=""
+  concat=""
+  for index in "${!img_arr[@]}"; do
+    args="${args} -framerate 100 -loop 1 -t 0.01 -i ${IMG_PATH}/${img_arr[index]}"
+    filter_complex="${filter_complex}[${index}:v]scale=${scale},setsar=1[v${index}];"
+    concat="${concat}[v${index}]"
+  done
+  filter_complex="${filter_complex} ${concat}concat=n=${img_arr_len}:v=1:a=0"
+
+  ffmpeg -y ${args} -filter_complex "${filter_complex}" "${output_file}"
+
+  popd || exit
+}
+
+download_audio_data
 download_img_data
+
+install_ffmpeg
+generate_test_video
