@@ -8,3 +8,5 @@
 /assets/ffmpeg-lib
 /assets/wasi-sysroot
 /assets/clang-rt
+/assets/testdata
+

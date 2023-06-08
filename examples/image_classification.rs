@@ -13,7 +13,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let classification_result = ImageClassifierBuilder::new()
         .model_asset_path(model_path) // set model path
-        .max_results(3) // set max result
+        .max_results(1) // set max result
         .finalize()? // create a image classifier
         .classify(&image::open(img_path)?)?; // do inference and generate results
 

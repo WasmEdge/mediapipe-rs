@@ -232,7 +232,7 @@
 //! The session includes inference sessions (such as TfLite interpreter), input and output buffers, etc.
 //! Explicitly using the session can reuse these resources to speed up.
 //!
-//! ### Example: Text Classificaton
+//! ### Example: Text Classification
 //!
 //! Origin:
 //! ```rust

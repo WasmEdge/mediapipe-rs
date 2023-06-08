@@ -26,6 +26,9 @@ jobs:
       - name: download models for test
         run: ./scripts/download-models.sh
 
+      - name: download input data for test
+        run: ./scripts/download-testdata.sh
+
       - name: init ffmpeg dependencies
         run: ./scripts/ffmpeg-deps-init.sh
 

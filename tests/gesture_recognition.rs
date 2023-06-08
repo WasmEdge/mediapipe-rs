@@ -2,14 +2,10 @@ use mediapipe_rs::tasks::vision::GestureRecognizerBuilder;
 
 const MODEL_ASSET: &'static str = "assets/models/gesture_recognition/gesture_recognizer.task";
 
-const THUMBS_UP_IMG: &'static str =
-    "assets/testdata/img/gesture_recognition_google_samples/thumbs_up.jpg";
-const THUMBS_DOWN_IMG: &'static str =
-    "assets/testdata/img/gesture_recognition_google_samples/thumbs_down.jpg";
-const VICTORY_IMG: &'static str =
-    "assets/testdata/img/gesture_recognition_google_samples/victory.jpg";
-const POINTING_UP_IMG: &'static str =
-    "assets/testdata/img/gesture_recognition_google_samples/pointing_up.jpg";
+const THUMBS_UP_IMG: &'static str = "assets/testdata/img/thumbs_up.jpg";
+const THUMBS_DOWN_IMG: &'static str = "assets/testdata/img/thumbs_down.jpg";
+const VICTORY_IMG: &'static str = "assets/testdata/img/victory.jpg";
+const POINTING_UP_IMG: &'static str = "assets/testdata/img/pointing_up.jpg";
 
 #[test]
 fn test_gesture_recognition() {

@@ -114,32 +114,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-Example input: <img height="30%" src="./assets/testdata/img/bird.jpg" width="30%"/>
+Example input: (The image is downloaded from https://storage.googleapis.com/mediapipe-assets/burger.jpg)
+
+<img height="30%" src="https://storage.googleapis.com/mediapipe-assets/burger.jpg" width="30%" alt="burger.jpg" />
 
 Example output in console:
 
 ```console
-$ cargo run --release --example image_classification -- ./assets/models/image_classification/lite-model_aiy_vision_classifier_birds_V1_3.tflite ./ass
-ets/testdata/img/bird.jpg 
-    Finished release [optimized] target(s) in 0.00s
-     Running `/mediapipe-rs/./scripts/wasmedge-runner.sh target/wasm32-wasi/release/examples/image_classification.wasm ./assets/models/image_classification/lite-model_aiy_vision_classifier_birds_V1_3.tflite ./assets/testdata/img/bird.jpg`
+$ cargo run --release --example image_classification -- ./assets/models/image_classification/efficientnet_lite0_fp32.tflite ./assets/testdata/img/burger.jpg
+    Finished release [optimized] target(s) in 0.01s
+     Running `/mediapipe-rs/./scripts/wasmedge-runner.sh target/wasm32-wasi/release/examples/image_classification.wasm ./assets/models/image_classification/efficientnet_lite0_fp32.tflite ./assets/testdata/img/burger.jpg`
 ClassificationResult:
   Classification #0:
     Category #0:
-      Category name: "/m/01bwb9"
-      Display name:  "Passer domesticus"
-      Score:         0.91015625
-      Index:         671
-    Category #1:
-      Category name: "/m/0bwm6m"
-      Display name:  "Passer italiae"
-      Score:         0.00390625
-      Index:         495
-    Category #2:
-      Category name: "/m/020f2v"
-      Display name:  "Haemorhous cassinii"
-      Score:         0
-      Index:         0
+      Category name: "cheeseburger"
+      Display name:  None
+      Score:         0.70625573
+      Index:         933
 ```
 
 ### Object Detection
@@ -172,8 +163,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-Example input:
-<img height="30%" src="./assets/testdata/img/cat_and_dog.jpg" width="30%"/>
+Example input: (The image is downloaded
+from https://storage.googleapis.com/mediapipe-tasks/object_detector/cat_and_dog.jpg)
+
+<img height="30%" src="https://storage.googleapis.com/mediapipe-tasks/object_detector/cat_and_dog.jpg" width="30%"/>
 
 Example output in console:
 
@@ -273,8 +266,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-Example input:
-<img height="30%" src="./assets/testdata/img/gesture_recognition_google_samples/victory.jpg" width="30%"/>
+Example input: (The image is download
+from https://storage.googleapis.com/mediapipe-tasks/gesture_recognizer/victory.jpg)
+
+<img height="30%" src="https://storage.googleapis.com/mediapipe-tasks/gesture_recognizer/victory.jpg" width="30%"/>
 
 Example output in console:
 
@@ -355,7 +350,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 The session includes inference sessions (such as TfLite interpreter), input and output buffers, etc.
 Explicitly using the session can reuse these resources to speed up.
 
-### Example: Text Classificaton
+### Example: Text Classification
 
 Origin :
 

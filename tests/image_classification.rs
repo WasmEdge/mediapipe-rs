@@ -4,7 +4,7 @@ const MODEL_1: &'static str = "assets/models/image_classification/efficientnet_l
 const MODEL_2: &'static str = "assets/models/image_classification/efficientnet_lite0_uint8.tflite";
 const MODEL_3: &'static str = "assets/models/image_classification/efficientnet_lite2_fp32.tflite";
 const MODEL_4: &'static str = "assets/models/image_classification/efficientnet_lite2_uint8.tflite";
-const IMG: &'static str = "assets/testdata/img/banana.jpg";
+const IMG: &'static str = "assets/testdata/img/burger.jpg";
 const CAT_AND_DOG_IMG: &'static str = "assets/testdata/img/cat_and_dog.jpg";
 
 #[test]
@@ -39,7 +39,7 @@ fn image_classification_task_run(model_asset_path: &str) {
         .classify(&image::open(IMG).unwrap())
         .unwrap();
     eprintln!("{}", res);
-    // banana: 954
+    // cheeseburger: 933
     let top = res
         .classifications
         .get(0)
@@ -47,8 +47,8 @@ fn image_classification_task_run(model_asset_path: &str) {
         .categories
         .get(0)
         .unwrap();
-    assert_eq!(top.index, 954);
-    assert_eq!(top.category_name.as_ref().unwrap().as_str(), "banana");
+    assert_eq!(top.index, 933);
+    assert_eq!(top.category_name.as_ref().unwrap().as_str(), "cheeseburger");
 }
 
 #[test]

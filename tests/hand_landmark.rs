@@ -1,7 +1,7 @@
 use mediapipe_rs::tasks::vision::HandLandmarkerBuilder;
 
 const MODEL_PATH: &'static str = "assets/models/hand_landmark_detection/hand_landmarker.task";
-const HANDS_1: &'static str = "assets/testdata/img/google_sample_woman_hands.jpg";
+const HANDS_1: &'static str = "assets/testdata/img/woman_hands.jpg";
 
 #[test]
 fn test_hand_detection() {

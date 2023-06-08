@@ -5,8 +5,8 @@ const MODEL_1: &'static str =
 const MODEL_2: &'static str =
     "assets/models/image_embedding/mobilenet_v3_small_075_224_embedder.tflite";
 
-const IMG_1: &'static str = "assets/testdata/img/embedding_google_samples/burger.jpg";
-const IMG_2: &'static str = "assets/testdata/img/embedding_google_samples/burger_crop.jpg";
+const IMG_1: &'static str = "assets/testdata/img/burger.jpg";
+const IMG_2: &'static str = "assets/testdata/img/burger_crop.jpg";
 
 #[test]
 fn test_image_embedding_model_1() {
