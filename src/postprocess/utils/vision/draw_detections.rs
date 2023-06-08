@@ -119,7 +119,7 @@ pub fn draw_detection_with_options<I>(
                 drawing::draw_filled_rect_mut(
                     img,
                     imageproc::rect::Rect::at(left as i32, y as i32)
-                        .of_size(font_region_size.0 as u32, font_region_size.1 as u32),
+                        .of_size(font_region_size.0 as u32 + 1, font_region_size.1 as u32 + 1),
                     rect_color,
                 );
                 drawing::draw_text_mut(

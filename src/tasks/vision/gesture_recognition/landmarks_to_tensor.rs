@@ -1,3 +1,6 @@
+// These reference files are licensed under Apache 2.0, and originally developed by Google for Mediapipe:
+// https://github.com/google/mediapipe/raw/master/mediapipe/tasks/cc/vision/gesture_recognizer/calculators/landmarks_to_matrix_calculator.cc
+
 use super::*;
 
 pub fn landmarks_to_tensor(

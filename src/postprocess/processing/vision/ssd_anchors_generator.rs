@@ -1,3 +1,6 @@
+// These reference files are licensed under Apache 2.0, and originally developed by Google for Mediapipe:
+// https://github.com/google/mediapipe/raw/master/mediapipe/calculators/tflite/ssd_anchors_calculator.cc
+
 #[derive(Debug, Clone)]
 pub(crate) struct Anchor {
     pub x_center: f32,

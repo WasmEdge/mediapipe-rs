@@ -1,3 +1,6 @@
+// These reference files are licensed under Apache 2.0, and originally developed by Google for Mediapipe:
+// https://github.com/google/mediapipe/raw/master/mediapipe/calculators/tflite/tflite_tensors_to_detections_calculator.cc
+
 use super::*;
 use crate::postprocess::{
     CategoriesFilter, Category, Detection, DetectionResult, NormalizedKeypoint, Rect,

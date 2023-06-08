@@ -1,3 +1,6 @@
+// These reference files are licensed under Apache 2.0, and originally developed by Google for Mediapipe:
+// https://github.com/google/mediapipe/raw/master/mediapipe/calculators/util/non_max_suppression_calculator.cc
+
 use crate::postprocess::{Detection, DetectionResult, Rect};
 
 #[derive(Debug, Copy, Clone)]

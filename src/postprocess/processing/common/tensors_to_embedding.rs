@@ -1,3 +1,6 @@
+// These reference files are licensed under Apache 2.0, and originally developed by Google for Mediapipe:
+// https://github.com/google/mediapipe/raw/master/mediapipe/tasks/cc/components/calculators/tensors_to_embeddings_calculator.cc
+
 use super::*;
 use crate::postprocess::{Embedding, EmbeddingResult};
 

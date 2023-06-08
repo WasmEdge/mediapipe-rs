@@ -1,4 +1,4 @@
-// references:
+// These references files are licensed under Apache 2.0, and originally developed by Google:
 // * https://github.com/tensorflow/text/blob/master/tensorflow_text/core/kernels/wordpiece_tokenizer.cc
 // * https://github.com/tensorflow/text/blob/master/tensorflow_text/core/kernels/regex_split.cc
 // * https://github.com/google/mediapipe/blob/master/mediapipe/tasks/cc/text/tokenizers/bert_tokenizer.cc

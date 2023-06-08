@@ -295,6 +295,13 @@
 //!         .unwrap();
 //! }
 //! ```
+//!
+//! ## Notice
+//! This work is made possible by **Google's work on [Mediapipe](https://github.com/google/mediapipe)**.
+//!
+//! ## License
+//! This project is licensed under the Apache 2.0 license.
+//!
 
 #[cfg(not(any(feature = "vision", feature = "audio", feature = "text")))]
 compile_error!("Must select at least one task type: `vision`, `audio`, `text`");

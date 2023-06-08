@@ -422,6 +422,10 @@ fn create_tpu(model_blob: Vec<u8>) {
 }
 ```
 
+## Notice
+
+This work is made possible by **Google's work on [Mediapipe]**.
+
 ## Related Links
 
 - [LFX Workspace: A Rust library crate for mediapipe models for WasmEdge NN](https://github.com/WasmEdge/WasmEdge/issues/2355)
