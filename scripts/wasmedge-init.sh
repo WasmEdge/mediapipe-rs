@@ -6,7 +6,12 @@ set -ex
 
 source "$(dirname -- "$0")/env.sh"
 
-export WASMEDGE_VERSION=0.12.0-alpha.2
+# Because the WasmEdge 0.12.0 and 0.12.1 will cause segment fault when running,
+# so we use the build-from-source method instead of downloading the release file.
+# The PR WasmEdge/WasmEdge#2360 has fixed it.
+# When the next version of WasmEdge has been released, we can delete the build-from-source method
+# and use these download functions.
+export WASMEDGE_VERSION=0.13.0-alpha.1
 
 build_wasmedge_with_nn_tflite() {
   # install requirements
@@ -83,4 +88,5 @@ build_wasmedge_with_nn_tflite
 #wasmedge_with_nn_init
 #wasmedge_tflite_deps_init
 # wasmedge_lib_env_init
+# Use the mediapipe custom ops is only a draft PR, so I comment it and comment the test ```test_image_segmentation_model_2```.
 #mediapipe_custom_ops_init

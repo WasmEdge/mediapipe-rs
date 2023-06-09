@@ -393,6 +393,27 @@ fn inference(
 }
 ```
 
+## Use the FFMPEG feature to process video and audio.
+
+When building the library with ```ffmpeg``` feature using cargo, users must set the following environment variables:
+
+* ```FFMPEG_DIR```: the pre-built FFmpeg library path. You can download it from
+  https://github.com/yanghaku/ffmpeg-wasm32-wasi/releases.
+* ```WASI_SDK``` or (```WASI_SYSROOT``` and ```CLANG_RT```), You can download it from
+  https://github.com/WebAssembly/wasi-sdk/releases
+* ```BINDGEN_EXTRA_CLANG_ARGS```: set **sysroot** and **target** and **function visibility** for libclang.
+  (The sysroot must be **absolute path**).
+
+Example:
+
+```shell
+export FFMPEG_DIR=/path/to/ffmpeg/library
+export WASI_SDK=/opt/wasi-sdk
+export BINDGEN_EXTRA_CLANG_ARGS="--sysroot=/opt/wasi-sdk/share/wasi-sysroot --target=wasm32-wasi -fvisibility=default"
+
+# Then run cargo
+```
+
 ## GPU and TPU support
 
 The default device is CPU, and user can use APIs to choose device to use:
