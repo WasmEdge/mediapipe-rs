@@ -12,8 +12,7 @@ fn test_gesture_recognition() {
     let gesture_recognizer = GestureRecognizerBuilder::new()
         .num_hands(1)
         .max_results(1)
-        .model_asset_path(MODEL_ASSET)
-        .finalize()
+        .build_from_file(MODEL_ASSET)
         .unwrap();
     let mut gesture_recognizer_session = gesture_recognizer.new_session().unwrap();
 

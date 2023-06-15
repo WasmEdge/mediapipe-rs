@@ -1,8 +1,6 @@
 use super::TextClassifier;
-use crate::model::ModelResourceTrait;
 use crate::tasks::common::{BaseTaskOptions, ClassificationOptions};
-use crate::Error;
-use wasi_nn_safe::TensorType;
+use crate::{Error, TensorType};
 
 /// Configure the build options of a new **Text Classification** task instance.
 ///
@@ -32,21 +30,18 @@ impl TextClassifierBuilder {
         }
     }
 
-    base_task_options_impl!();
+    base_task_options_impl!(TextClassifier);
 
     classification_options_impl!();
 
-    /// Use the build options to create a new task instance.
+    /// Use the current build options and use the buffer as model data to create a new task instance.
     #[inline]
-    pub fn finalize(mut self) -> Result<TextClassifier, Error> {
+    pub fn build_from_buffer(self, buffer: impl AsRef<[u8]>) -> Result<TextClassifier, Error> {
         classification_options_check!(self, classification_options);
-        let buf = base_task_options_check_and_get_buf!(self);
 
-        // change the lifetime to 'static, because the buf will move to graph and will not be released.
-        let model_resource_ref = crate::model::parse_model(buf.as_ref())?;
-        let model_resource = unsafe {
-            std::mem::transmute::<_, Box<dyn ModelResourceTrait + 'static>>(model_resource_ref)
-        };
+        let buf = buffer.as_ref();
+        // parse model and get model resources.
+        let model_resource = crate::model::parse_model(buf)?;
 
         // check model
         model_base_check_impl!(model_resource, 1);
@@ -71,9 +66,9 @@ impl TextClassifierBuilder {
 
         let graph = crate::GraphBuilder::new(
             model_resource.model_backend(),
-            self.base_task_options.execution_target,
+            self.base_task_options.device,
         )
-        .build_from_shared_slices([buf])?;
+        .build_from_bytes([buf])?;
 
         return Ok(TextClassifier {
             build_options: self,

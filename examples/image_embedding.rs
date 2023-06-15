@@ -12,10 +12,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (model_path, img_1, img_2) = parse_args()?;
 
     let task = ImageEmbedderBuilder::new()
-        .model_asset_path(model_path) // set model path
         .l2_normalize(true)
         .quantize(true)
-        .finalize()?; // create a task instance
+        .build_from_file(model_path)?; // create a task instance
     let mut session = task.new_session()?; // create a new session to perform task
 
     // do inference and generate results

@@ -92,7 +92,7 @@ pub struct TextClassifierSession<'a> {
     execution_ctx: GraphExecutionContext<'a>,
     tensors_to_classification: TensorsToClassification<'a>,
 
-    input_to_tensor_info: &'a TextToTensorInfo<'a>,
+    input_to_tensor_info: &'a TextToTensorInfo,
     input_tensor_shapes: Vec<&'a [usize]>,
     input_tensor_bufs: Vec<Vec<u8>>,
 }

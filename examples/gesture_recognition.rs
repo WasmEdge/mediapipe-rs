@@ -12,10 +12,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (model_path, img_path) = parse_args()?;
 
     let gesture_recognition_results = GestureRecognizerBuilder::new()
-        .model_asset_path(model_path) // set model path
         .num_hands(1) // set only recognition one hand
         .max_results(1) // set max result
-        .finalize()? // create a task instance
+        .build_from_file(model_path)? // create a task instance
         .recognize(&image::open(img_path)?)?; // do inference and generate results
 
     for g in gesture_recognition_results {

@@ -12,9 +12,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (model_path, img_path) = parse_args()?;
 
     let classification_result = ImageClassifierBuilder::new()
-        .model_asset_path(model_path) // set model path
         .max_results(1) // set max result
-        .finalize()? // create a image classifier
+        .build_from_file(model_path)? // create a image classifier
         .classify(&image::open(img_path)?)?; // do inference and generate results
 
     // show formatted result message

@@ -46,9 +46,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let audio = read_video_using_ffmpeg(audio_path);
 
     let classification_results = AudioClassifierBuilder::new()
-        .model_asset_path(model_path) // set model path
         .max_results(3) // set max result
-        .finalize()? // create a image classifier
+        .build_from_file(model_path)? // use model file to create task instance
         .classify(audio)?; // do inference and generate results
 
     // show formatted result message

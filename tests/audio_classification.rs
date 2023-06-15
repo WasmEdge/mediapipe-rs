@@ -43,10 +43,9 @@ fn test_ffmpeg() {
 
 fn audio_classification_task_run(model_asset_path: &str, input: impl AudioData) {
     let classification_list = AudioClassifierBuilder::new()
-        .model_asset_path(model_asset_path)
         .cpu()
         .max_results(1)
-        .finalize()
+        .build_from_file(model_asset_path)
         .unwrap()
         .classify(input)
         .unwrap();

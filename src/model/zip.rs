@@ -584,6 +584,15 @@ impl<'buf> ZipFiles<'buf> {
     pub fn get_file_offset(&self, name: &str) -> Option<std::ops::Range<usize>> {
         self.files.get(name).cloned()
     }
+
+    /// Copy all file contents to HashMap<filename, file contents>
+    #[inline]
+    pub fn copy_contents(&self) -> HashMap<String, Vec<u8>> {
+        self.files
+            .iter()
+            .map(|(name, range)| (name.to_string(), self.buf[range.clone()].to_vec()))
+            .collect()
+    }
 }
 
 #[cfg(test)]

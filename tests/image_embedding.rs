@@ -20,10 +20,9 @@ fn test_image_embedding_model_2() {
 
 fn image_embedding_tasks_run(model_asset: &str) {
     let image_embedder = ImageEmbedderBuilder::new()
-        .model_asset_path(model_asset)
         .l2_normalize(true)
         .quantize(true)
-        .finalize()
+        .build_from_file(model_asset)
         .unwrap();
     let mut session = image_embedder.new_session().unwrap();
 

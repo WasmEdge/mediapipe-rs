@@ -18,10 +18,10 @@ pub trait TextToTensors {
 
 /// Necessary information for the text to tensors.
 #[derive(Debug)]
-pub enum TextToTensorInfo<'buf> {
+pub enum TextToTensorInfo {
     /// A BERT-based model.
     BertModel {
-        token_index_map: HashMap<Cow<'buf, str>, i32>,
+        token_index_map: HashMap<String, i32>,
 
         /// maximum input sequence length for the bert and regex model.
         max_seq_len: u32,
@@ -34,7 +34,7 @@ pub enum TextToTensorInfo<'buf> {
         /// delim regex pattern
         delim_regex: Regex,
 
-        token_index_map: HashMap<Cow<'buf, str>, i32>,
+        token_index_map: HashMap<String, i32>,
 
         /// maximum input sequence length for the bert and regex model.
         max_seq_len: u32,
@@ -62,7 +62,7 @@ macro_rules! check_map {
     };
 }
 
-impl<'buf> TextToTensorInfo<'buf> {
+impl TextToTensorInfo {
     pub const REGEX_START_TOKEN: &'static str = "<START>";
     pub const REGEX_PAD_TOKEN: &'static str = "<PAD>";
     pub const REGEX_UNKNOWN_TOKEN: &'static str = "<UNKNOWN>";
@@ -72,7 +72,7 @@ impl<'buf> TextToTensorInfo<'buf> {
     pub fn new_regex_model(
         max_seq_len: u32,
         delim_regex_pattern: &str,
-        token_index_map: HashMap<Cow<'buf, str>, i32>,
+        token_index_map: HashMap<String, i32>,
     ) -> Result<Self, Error> {
         // rust regex has no \'
         let delim_regex_pattern = delim_regex_pattern.replace(r"\'", r"'");
@@ -96,7 +96,7 @@ impl<'buf> TextToTensorInfo<'buf> {
 
     pub fn new_bert_model(
         max_seq_len: u32,
-        token_index_map: HashMap<Cow<'buf, str>, i32>,
+        token_index_map: HashMap<String, i32>,
     ) -> Result<Self, Error> {
         if max_seq_len < 2 {
             return Err(Error::ModelInconsistentError(

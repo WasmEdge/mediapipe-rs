@@ -33,7 +33,7 @@ pub(crate) trait ModelResourceTrait {
 
     fn output_tensor_shape(&self, index: usize) -> Option<&[usize]>;
 
-    fn output_tensor_name_to_index(&self, name: &'static str) -> Option<usize>;
+    fn output_tensor_name_to_index(&self, name: &str) -> Option<usize>;
 
     fn output_tensor_quantization_parameters(&self, index: usize)
         -> Option<QuantizationParameters>;
@@ -53,9 +53,7 @@ pub(crate) trait ModelResourceTrait {
 }
 
 #[inline]
-pub(crate) fn parse_model<'buf>(
-    buf: &'buf [u8],
-) -> Result<Box<dyn ModelResourceTrait + 'buf>, Error> {
+pub(crate) fn parse_model(buf: &[u8]) -> Result<Box<dyn ModelResourceTrait + 'static>, Error> {
     if buf.len() < 8 {
         return Err(Error::ModelParseError(format!(
             "Model buffer is tool short!"
@@ -137,8 +135,7 @@ macro_rules! search_file_in_zip {
             }
         }
         if let Some(r) = search_result {
-            let len = r.end - r.start;
-            $buf.subslice(r.start, len).unwrap()
+            &$buf[r]
         } else {
             return Err(crate::Error::ModelInconsistentError(format!(
                 "Cannot find model asset file for `{}` task, candidate list is `{:?}`",

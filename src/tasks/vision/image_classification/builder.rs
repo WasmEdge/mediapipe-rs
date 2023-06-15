@@ -1,5 +1,4 @@
 use super::ImageClassifier;
-use crate::model::ModelResourceTrait;
 use crate::tasks::common::{BaseTaskOptions, ClassificationOptions};
 
 /// Configure the build options of a new **Image Classification** task instance.
@@ -30,21 +29,21 @@ impl ImageClassifierBuilder {
         }
     }
 
-    base_task_options_impl!();
+    base_task_options_impl!(ImageClassifier);
 
     classification_options_impl!();
 
-    /// Use the build options to create a new task instance.
+    /// Use the current build options and use the buffer as model data to create a new task instance.
     #[inline]
-    pub fn finalize(mut self) -> Result<ImageClassifier, crate::Error> {
+    pub fn build_from_buffer(
+        self,
+        buffer: impl AsRef<[u8]>,
+    ) -> Result<ImageClassifier, crate::Error> {
         classification_options_check!(self, classification_options);
-        let buf = base_task_options_check_and_get_buf!(self);
 
-        // change the lifetime to 'static, because the buf will move to graph and will not be released.
-        let model_resource_ref = crate::model::parse_model(buf.as_ref())?;
-        let model_resource = unsafe {
-            std::mem::transmute::<_, Box<dyn ModelResourceTrait + 'static>>(model_resource_ref)
-        };
+        let buf = buffer.as_ref();
+        // parse model and get model resources.
+        let model_resource = crate::model::parse_model(buf)?;
 
         // check model
         model_base_check_impl!(model_resource, 1, 1);
@@ -54,9 +53,9 @@ impl ImageClassifierBuilder {
 
         let graph = crate::GraphBuilder::new(
             model_resource.model_backend(),
-            self.base_task_options.execution_target,
+            self.base_task_options.device,
         )
-        .build_from_shared_slices([buf])?;
+        .build_from_bytes([buf])?;
 
         return Ok(ImageClassifier {
             build_options: self,
@@ -73,16 +72,10 @@ mod test {
 
     #[test]
     fn test_builder_check() {
-        assert!(ImageClassifierBuilder::new().finalize().is_err());
+        assert!(ImageClassifierBuilder::new().build_from_buffer([]).is_err());
         assert!(ImageClassifierBuilder::new()
-            .model_asset_buffer("".into())
-            .model_asset_path("")
-            .finalize()
-            .is_err());
-        assert!(ImageClassifierBuilder::new()
-            .model_asset_path("")
             .max_results(0)
-            .finalize()
+            .build_from_file("")
             .is_err());
     }
 }

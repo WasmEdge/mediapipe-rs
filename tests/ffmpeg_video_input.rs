@@ -21,9 +21,8 @@ mod ffmpeg {
         let input = FFMpegVideoData::new(ffmpeg_next::format::input(&VIDEO_1).unwrap()).unwrap();
 
         let classification_results = ImageClassifierBuilder::new()
-            .model_asset_path(IMAGE_CLASSIFICATION_MODEL)
             .max_results(1)
-            .finalize()
+            .build_from_file(IMAGE_CLASSIFICATION_MODEL)
             .unwrap()
             .classify_for_video(input)
             .unwrap();
@@ -42,9 +41,8 @@ mod ffmpeg {
         let input = FFMpegVideoData::new(ffmpeg_next::format::input(&VIDEO_1).unwrap()).unwrap();
 
         let detection_results = ObjectDetectorBuilder::new()
-            .model_asset_path(OBJECT_DETECTION_MODEL)
             .max_results(1)
-            .finalize()
+            .build_from_file(OBJECT_DETECTION_MODEL)
             .unwrap()
             .detect_for_video(input)
             .unwrap();
@@ -67,9 +65,8 @@ mod ffmpeg {
         let input_2 = FFMpegVideoData::new(ffmpeg_next::format::input(&VIDEO_1).unwrap()).unwrap();
 
         let classifier = ImageClassifierBuilder::new()
-            .model_asset_path(IMAGE_CLASSIFICATION_MODEL)
             .max_results(1)
-            .finalize()
+            .build_from_file(IMAGE_CLASSIFICATION_MODEL)
             .unwrap();
         let mut session = classifier.new_session().unwrap();
 

@@ -114,7 +114,7 @@ impl<'model> FaceDetectorSession<'model> {
             0,
             self.detector.input_tensor_type,
             self.input_tensor_shape,
-            self.input_buffer.as_ref(),
+            self.input_buffer.as_slice(),
         )?;
         self.execution_ctx.compute()?;
 

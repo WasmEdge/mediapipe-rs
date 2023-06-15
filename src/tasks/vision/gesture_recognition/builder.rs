@@ -1,5 +1,5 @@
 use super::*;
-use crate::model::{ModelResourceTrait, ZipFiles};
+use crate::model::ZipFiles;
 use crate::tasks::common::{BaseTaskOptions, ClassificationOptions, HandLandmarkOptions};
 
 /// Configure the build options of a new **Gesture Recognition** task instance.
@@ -14,16 +14,13 @@ pub struct GestureRecognizerBuilder {
 
 macro_rules! build_graph_and_extra_model_resource {
     ( $file_buf:ident, $self:ident ) => {{
-        // change the lifetime to 'static, because the buf will move to graph and will not be released.
-        let model_resource_ref = crate::model::parse_model($file_buf.as_ref())?;
-        let model_resource = unsafe {
-            std::mem::transmute::<_, Box<dyn ModelResourceTrait + 'static>>(model_resource_ref)
-        };
+        // parse model and get model resources.
+        let model_resource = crate::model::parse_model($file_buf.as_ref())?;
         let graph = crate::GraphBuilder::new(
             model_resource.model_backend(),
-            $self.base_task_options.execution_target,
+            $self.base_task_options.device,
         )
-        .build_from_shared_slices([$file_buf])?;
+        .build_from_bytes([$file_buf])?;
         (model_resource, graph)
     }};
 }
@@ -36,7 +33,7 @@ impl Default for GestureRecognizerBuilder {
 }
 
 impl GestureRecognizerBuilder {
-    base_task_options_impl!();
+    base_task_options_impl!(GestureRecognizer);
 
     classification_options_impl!();
 
@@ -125,15 +122,15 @@ impl GestureRecognizerBuilder {
         }
     }
 
-    /// Use the build options to create a new task instance.
+    /// Use the current build options and use the buffer as model data to create a new task instance.
     #[inline]
-    pub fn finalize(mut self) -> Result<GestureRecognizer, Error> {
+    pub fn build_from_buffer(self, buffer: impl AsRef<[u8]>) -> Result<GestureRecognizer, Error> {
         classification_options_check!(self, classification_options);
         classification_options_check!(self, custom_classification_options);
         hand_landmark_options_check!(self);
-        let buf = base_task_options_check_and_get_buf!(self);
+        let buf = buffer.as_ref();
 
-        let zip_file = ZipFiles::new(buf.as_ref())?;
+        let zip_file = ZipFiles::new(buf)?;
         let hand_gesture_bundle_file = search_file_in_zip!(
             zip_file,
             buf,
@@ -150,13 +147,11 @@ impl GestureRecognizerBuilder {
         );
         let hand_landmarker = HandLandmarkerBuilder {
             base_task_options: BaseTaskOptions {
-                model_asset_buffer: Some(landmark_task_file),
-                model_asset_path: None,
-                execution_target: self.base_task_options.execution_target,
+                device: self.base_task_options.device,
             },
-            hand_landmark_options: Default::default(),
+            hand_landmark_options: self.hand_landmark_options.clone(),
         }
-        .finalize()?;
+        .build_from_buffer(landmark_task_file)?;
 
         let zip_file = ZipFiles::new(hand_gesture_bundle_file.as_ref())?;
         // search files, build graph and check model
@@ -229,8 +224,7 @@ impl GestureRecognizerBuilder {
                 }
             }
             if let Some(r) = search_result {
-                let len = r.end - r.start;
-                let custom_file = hand_gesture_bundle_file.subslice(r.start, len).unwrap();
+                let custom_file = &hand_gesture_bundle_file[r];
                 let (r, g) = build_graph_and_extra_model_resource!(custom_file, self);
                 model_base_check_impl!(r, 1, 1);
                 check_tensor_type!(r, 0, input_tensor_type, TensorType::F32);

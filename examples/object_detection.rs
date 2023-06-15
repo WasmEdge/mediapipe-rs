@@ -18,9 +18,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut input_img = image::open(img_path)?;
     let detection_result = ObjectDetectorBuilder::new()
-        .model_asset_path(model_path) // set model path
         .max_results(2) // set max result
-        .finalize()? // create a object detector
+        .build_from_file(model_path)? // create a object detector
         .detect(&input_img)?; // do inference and generate results
 
     // show formatted result message

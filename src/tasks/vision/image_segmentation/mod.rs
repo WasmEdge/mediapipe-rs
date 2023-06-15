@@ -123,7 +123,7 @@ impl<'model> ImageSegmenterSession<'model> {
             0,
             self.input_tensor_type,
             self.input_tensor_shape,
-            self.input_tensor_buf.as_ref(),
+            self.input_tensor_buf.as_slice(),
         )?;
 
         self.execution_ctx.compute()?;

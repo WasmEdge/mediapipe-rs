@@ -15,16 +15,15 @@
 //!
 //! * ```XxxBuilder``` is used to create a task instance ```Xxx```, which has many options to set.
 //!
-//!   example: use ```ImageClassifierBuilder``` to build a ```ImageClassifier``` task.
+//!   example: use ```ImageClassifierBuilder``` to build a ```ImageClassifier``` task instance.
 //!   ```
 //!   use mediapipe_rs::tasks::vision::ImageClassifierBuilder;
 //!
 //!   let classifier = ImageClassifierBuilder::new()
-//!         .model_asset_path(model_path) // set model path
 //!         .max_results(3) // set max result
 //!         .category_deny_list(vec!["denied label".into()]) // set deny list
 //!         .gpu() // set running device
-//!         .finalize()?; // create a image classifier
+//!         .build_from_file(model_path)?; // create a image classifier
 //!   ```
 //! * ```Xxx``` is a task instance, which contains task information and model information.
 //!
@@ -73,9 +72,8 @@
 //!     let (model_path, img_path) = parse_args()?;
 //!
 //!     let classification_result = ImageClassifierBuilder::new()
-//!         .model_asset_path(model_path) // set model path
 //!         .max_results(4) // set max result
-//!         .finalize()? // create a image classifier
+//!         .build_from_file(model_path)? // create a image classifier
 //!         .classify(&image::open(img_path)?)?; // do inference and generate results
 //!
 //!     //! show formatted result message
@@ -96,9 +94,8 @@
 //!
 //!     let mut input_img = image::open(img_path)?;
 //!     let detection_result = ObjectDetectorBuilder::new()
-//!         .model_asset_path(model_path) // set model path
 //!         .max_results(2) // set max result
-//!         .finalize()? // create a object detector
+//!         .build_from_file(model_path)? // create a object detector
 //!         .detect(&input_img)?; // do inference and generate results
 //!
 //!     // show formatted result message
@@ -123,9 +120,8 @@
 //!     let model_path = parse_args()?;
 //!
 //!     let text_classifier = TextClassifierBuilder::new()
-//!         .model_asset_path(model_path) // set model path
 //!         .max_results(1) // set max result
-//!         .finalize()?; // create a text classifier
+//!         .build_from_file(model_path)?; // create a text classifier
 //!
 //!     let positive_str = "I love coding so much!";
 //!     let negative_str = "I don't like raining.";
@@ -151,10 +147,9 @@
 //!     let (model_path, img_path) = parse_args()?;
 //!
 //!     let gesture_recognition_results = GestureRecognizerBuilder::new()
-//!         .model_asset_path(model_path) // set model path
 //!         .num_hands(1) // set only recognition one hand
 //!         .max_results(1) // set max result
-//!         .finalize()? // create a task instance
+//!         .build_from_file(model_path)? // create a task instance
 //!         .recognize(&image::open(img_path)?)?; // do inference and generate results
 //!
 //! for g in gesture_recognition_results {
@@ -213,9 +208,8 @@
 //!     let audio = read_video_using_ffmpeg(audio_path);
 //!
 //!     let classification_results = AudioClassifierBuilder::new()
-//!         .model_asset_path(model_path) // set model path
 //!         .max_results(3) // set max result
-//!         .finalize()? // create a image classifier
+//!         .build_from_file(model_path)? // create a task instance
 //!         .classify(audio)?; // do inference and generate results
 //!
 //!     // show formatted result message
@@ -301,17 +295,15 @@
 //!
 //! fn create_gpu(model_blob: Vec<u8>) {
 //!     let detector_gpu = ObjectDetectorBuilder::new()
-//!         .model_asset_buffer(model_blob)
 //!         .gpu()
-//!         .finalize()
+//!         .build_from_buffer(model_blob)
 //!         .unwrap();
 //! }
 //!
 //! fn create_tpu(model_blob: Vec<u8>) {
 //!     let detector_tpu = ObjectDetectorBuilder::new()
-//!         .model_asset_buffer(model_blob)
 //!         .tpu()
-//!         .finalize()
+//!         .build_from_buffer(model_blob)
 //!         .unwrap();
 //! }
 //! ```
@@ -339,10 +331,9 @@ pub mod preprocess;
 pub mod tasks;
 
 pub use error::Error;
-pub use wasi_nn_safe::GraphExecutionTarget as Device;
-use wasi_nn_safe::{
-    Graph, GraphBuilder, GraphEncoding, GraphExecutionContext, SharedSlice, TensorType,
-};
+// todo: change to official wasi-nn.
+pub use wasi_nn_safe::ExecutionTarget as Device;
+use wasi_nn_safe::{Graph, GraphBuilder, GraphEncoding, GraphExecutionContext, TensorType};
 
 #[cfg(doc)]
 use tasks::{audio::*, text::*, vision::*};

@@ -49,11 +49,10 @@ Every task has three types: ```XxxBuilder```, ```Xxx```, ```XxxSession```. (``Xx
   example: use ```ImageClassifierBuilder``` to build a ```ImageClassifier``` task.
   ```
   let classifier = ImageClassifierBuilder::new()
-        .model_asset_path(model_path) // set model path
         .max_results(3) // set max result
         .category_deny_list(vec!["denied label".into()]) // set deny list
         .gpu() // set running device
-        .finalize()?; // create a image classifier
+        .build_from_file(model_path)?; // create a image classifier
   ```
 * ```Xxx``` is a task instance, which contains task information and model information.
 
@@ -102,9 +101,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (model_path, img_path) = parse_args()?;
 
     let classification_result = ImageClassifierBuilder::new()
-        .model_asset_path(model_path) // set model path
         .max_results(3) // set max result
-        .finalize()? // create a image classifier
+        .build_from_file(model_path)? // create a image classifier
         .classify(&image::open(img_path)?)?; // do inference and generate results
 
     // show formatted result message
@@ -144,9 +142,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut input_img = image::open(img_path)?;
     let detection_result = ObjectDetectorBuilder::new()
-        .model_asset_path(model_path) // set model path
         .max_results(2) // set max result
-        .finalize()? // create a object detector
+        .build_from_file(model_path)? // create a object detector
         .detect(&input_img)?; // do inference and generate results
 
     // show formatted result message
@@ -166,7 +163,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 Example input: (The image is downloaded
 from https://storage.googleapis.com/mediapipe-tasks/object_detector/cat_and_dog.jpg)
 
-<img height="30%" src="https://storage.googleapis.com/mediapipe-tasks/object_detector/cat_and_dog.jpg" width="30%"/>
+<img alt="cat_and_dog.jpg" height="30%" src="https://storage.googleapis.com/mediapipe-tasks/object_detector/cat_and_dog.jpg" width="30%"/>
 
 Example output in console:
 
@@ -201,9 +198,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let model_path = parse_args()?;
 
     let text_classifier = TextClassifierBuilder::new()
-        .model_asset_path(model_path) // set model path
         .max_results(1) // set max result
-        .finalize()?; // create a text classifier
+        .build_from_file(model_path)?; // create a text classifier
 
     let positive_str = "I love coding so much!";
     let negative_str = "I don't like raining.";
@@ -252,10 +248,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (model_path, img_path) = parse_args()?;
 
     let gesture_recognition_results = GestureRecognizerBuilder::new()
-        .model_asset_path(model_path) // set model path
         .num_hands(1) // set only recognition one hand
         .max_results(1) // set max result
-        .finalize()? // create a task instance
+        .build_from_file(model_path)? // create a task instance
         .recognize(&image::open(img_path)?)?; // do inference and generate results
 
     for g in gesture_recognition_results {
@@ -269,7 +264,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 Example input: (The image is download
 from https://storage.googleapis.com/mediapipe-tasks/gesture_recognizer/victory.jpg)
 
-<img height="30%" src="https://storage.googleapis.com/mediapipe-tasks/gesture_recognizer/victory.jpg" width="30%"/>
+<img alt="victory.jpg" height="30%" src="https://storage.googleapis.com/mediapipe-tasks/gesture_recognizer/victory.jpg" width="30%"/>
 
 Example output in console:
 
@@ -331,9 +326,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let audio = read_video_using_ffmpeg(audio_path);
 
     let classification_results = AudioClassifierBuilder::new()
-        .model_asset_path(model_path) // set model path
         .max_results(3) // set max result
-        .finalize()? // create a image classifier
+        .build_from_file(model_path)? // create a task instance
         .classify(audio)?; // do inference and generate results
 
     // show formatted result message
@@ -423,17 +417,15 @@ use mediapipe_rs::tasks::vision::ObjectDetectorBuilder;
 
 fn create_gpu(model_blob: Vec<u8>) {
     let detector_gpu = ObjectDetectorBuilder::new()
-        .model_asset_buffer(model_blob)
         .gpu()
-        .finalize()
+        .build_from_buffer(model_blob)
         .unwrap();
 }
 
 fn create_tpu(model_blob: Vec<u8>) {
     let detector_tpu = ObjectDetectorBuilder::new()
-        .model_asset_buffer(model_blob)
         .tpu()
-        .finalize()
+        .build_from_buffer(model_blob)
         .unwrap();
 }
 ```

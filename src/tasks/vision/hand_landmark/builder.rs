@@ -1,6 +1,6 @@
 use super::{HandDetectorBuilder, HandLandmarker, TensorType};
 
-use crate::model::{ModelResourceTrait, ZipFiles};
+use crate::model::ZipFiles;
 use crate::tasks::common::{BaseTaskOptions, HandLandmarkOptions};
 
 /// Configure the build options of a new **Hand Landmark** task instance.
@@ -31,7 +31,7 @@ impl HandLandmarkerBuilder {
         }
     }
 
-    base_task_options_impl!();
+    base_task_options_impl!(HandLandmarker);
 
     hand_landmark_options_impl!();
 
@@ -39,13 +39,16 @@ impl HandLandmarkerBuilder {
     pub const HAND_LANDMARKS_CANDIDATE_NAMES: &'static [&'static str] =
         &["hand_landmarks_detector.tflite"];
 
-    /// Use the build options to create a new task instance.
+    /// Use the current build options and use the buffer as model data to create a new task instance.
     #[inline]
-    pub fn finalize(mut self) -> Result<HandLandmarker, crate::Error> {
+    pub fn build_from_buffer(
+        self,
+        buffer: impl AsRef<[u8]>,
+    ) -> Result<HandLandmarker, crate::Error> {
         hand_landmark_options_check!(self);
-        let buf = base_task_options_check_and_get_buf!(self);
+        let buf = buffer.as_ref();
 
-        let zip_file = ZipFiles::new(buf.as_ref())?;
+        let zip_file = ZipFiles::new(buf)?;
         let landmark_file = search_file_in_zip!(
             zip_file,
             buf,
@@ -60,17 +63,13 @@ impl HandLandmarkerBuilder {
         );
 
         let subtask = HandDetectorBuilder::new()
-            .model_asset_slice(hand_detection_file)
-            .execution_target(self.base_task_options.execution_target)
+            .device(self.base_task_options.device)
             .num_hands(self.hand_landmark_options.num_hands)
             .min_detection_confidence(self.hand_landmark_options.min_hand_detection_confidence)
-            .finalize()?;
+            .build_from_buffer(hand_detection_file)?;
 
-        // change the lifetime to 'static, because the buf will move to graph and will not be released.
-        let model_resource_ref = crate::model::parse_model(landmark_file.as_ref())?;
-        let model_resource = unsafe {
-            std::mem::transmute::<_, Box<dyn ModelResourceTrait + 'static>>(model_resource_ref)
-        };
+        // parse model and get model resources.
+        let model_resource = crate::model::parse_model(landmark_file.as_ref())?;
 
         // check model
         model_base_check_impl!(model_resource, 1, 4);
@@ -99,9 +98,9 @@ impl HandLandmarkerBuilder {
 
         let graph = crate::GraphBuilder::new(
             model_resource.model_backend(),
-            self.base_task_options.execution_target,
+            self.base_task_options.device,
         )
-        .build_from_shared_slices([landmark_file])?;
+        .build_from_bytes([landmark_file])?;
 
         Ok(HandLandmarker {
             build_options: self,

@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub(crate) struct HandLandmarkOptions {
     /// The maximum number of hands can be detected by the HandLandmarker.
     pub num_hands: i32,

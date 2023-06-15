@@ -29,10 +29,9 @@ fn test_image_classification_model_4() {
 
 fn image_classification_task_run(model_asset_path: &str) {
     let image_classifier = ImageClassifierBuilder::new()
-        .model_asset_path(model_asset_path)
         .cpu()
         .max_results(2)
-        .finalize()
+        .build_from_file(model_asset_path)
         .unwrap();
 
     let res = image_classifier
@@ -58,9 +57,8 @@ fn test_bird_from_tf_hub() {
     const IMAGE: &'static str = "assets/testdata/img/bird.jpg";
 
     let res = ImageClassifierBuilder::new()
-        .model_asset_path(MODEL)
         .max_results(2)
-        .finalize()
+        .build_from_file(MODEL)
         .unwrap()
         .classify(&image::open(IMAGE).unwrap())
         .unwrap();
@@ -87,8 +85,7 @@ fn test_bird_from_tf_hub() {
 fn test_classify_with_options() {
     let classifier = ImageClassifierBuilder::new()
         .max_results(1)
-        .model_asset_path(MODEL_1)
-        .finalize()
+        .build_from_file(MODEL_1)
         .unwrap();
     let mut session = classifier.new_session().unwrap();
     let img = image::open(CAT_AND_DOG_IMG).unwrap();

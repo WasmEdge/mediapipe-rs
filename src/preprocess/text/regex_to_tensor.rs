@@ -3,7 +3,7 @@ use super::*;
 pub(super) fn regex_to_tensors<E: AsMut<[u8]>>(
     s: &str,
     delim_regex: &Regex,
-    token_index_map: &HashMap<Cow<str>, i32>,
+    token_index_map: &HashMap<String, i32>,
     output_buffer: &mut E,
     max_seq_len: u32,
     unknown_id: i32,

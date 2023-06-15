@@ -12,8 +12,7 @@ fn test_face_detection_model_1() {
 fn face_detection_task_run(model_path: &str) {
     let img = image::open(FACE_IMG_1).unwrap();
     let face_detection_result = FaceDetectorBuilder::new()
-        .model_asset_path(model_path)
-        .finalize()
+        .build_from_file(model_path)
         .unwrap()
         .detect(&img)
         .unwrap();

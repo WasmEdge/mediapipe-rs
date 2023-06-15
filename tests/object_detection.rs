@@ -40,10 +40,9 @@ fn test_object_detection_model_6() {
 
 fn object_detection_task_run(model_asset_path: &str) {
     let object_detector = ObjectDetectorBuilder::new()
-        .model_asset_path(model_asset_path)
         .cpu()
         .max_results(5)
-        .finalize()
+        .build_from_file(model_asset_path)
         .unwrap();
 
     let img = image::open(IMG).unwrap();
@@ -55,11 +54,10 @@ fn object_detection_task_run(model_asset_path: &str) {
 #[test]
 fn test_allow_deny_list() {
     let res = ObjectDetectorBuilder::new()
-        .model_asset_path(MODEL_1)
         .cpu()
         .max_results(1)
         .category_deny_list(vec!["dog".into()])
-        .finalize()
+        .build_from_file(MODEL_1)
         .unwrap()
         .detect(&image::open(IMG).unwrap())
         .unwrap();
@@ -73,11 +71,10 @@ fn test_allow_deny_list() {
     );
 
     let res = ObjectDetectorBuilder::new()
-        .model_asset_path(MODEL_1)
         .cpu()
         .max_results(1)
         .category_allow_list(vec!["dog".into()])
-        .finalize()
+        .build_from_file(MODEL_1)
         .unwrap()
         .detect(&image::open(IMG).unwrap())
         .unwrap();

@@ -12,9 +12,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let model_path = parse_args()?;
 
     let text_classifier = TextClassifierBuilder::new()
-        .model_asset_path(model_path) // set model path
         .max_results(1) // set max result
-        .finalize()?; // create a text classifier
+        .build_from_file(model_path)?; // create a text classifier
 
     let positive_str = "I love coding so much!";
     let negative_str = "I don't like raining.";

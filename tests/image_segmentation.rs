@@ -19,10 +19,9 @@ fn test_image_segmentation_model_2() {
 fn test_image_segmentation_tasks(model_asset: &str) {
     let img = image::open(IMG_1).unwrap();
     let segmentation_res = ImageSegmenterBuilder::new()
-        .model_asset_path(model_asset)
         .output_confidence_masks(false)
         .output_category_mask(true)
-        .finalize()
+        .build_from_file(model_asset)
         .unwrap()
         .segment(&img)
         .unwrap();

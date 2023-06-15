@@ -17,8 +17,7 @@ fn test_model_2() {
 
 fn text_classification_task_run(model_asset_path: &str, positive_name: &str, negative_name: &str) {
     let classification_result = TextClassifierBuilder::new()
-        .model_asset_path(model_asset_path)
-        .finalize()
+        .build_from_file(model_asset_path)
         .unwrap()
         .classify(&TEXT_1)
         .unwrap();
@@ -34,9 +33,8 @@ fn text_classification_task_run(model_asset_path: &str, positive_name: &str, neg
 #[test]
 fn test_bert() {
     let classifier = TextClassifierBuilder::new()
-        .model_asset_path(MODEL_2)
         .max_results(1)
-        .finalize()
+        .build_from_file(MODEL_2)
         .unwrap();
     let mut classify_session = classifier.new_session().unwrap();
 

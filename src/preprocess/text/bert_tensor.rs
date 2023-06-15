@@ -12,7 +12,7 @@ lazy_static::lazy_static! {
 
 pub(super) fn to_bert_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
     s: &str,
-    token_index_map: &HashMap<Cow<str>, i32>,
+    token_index_map: &HashMap<String, i32>,
     output_buffers: &mut T,
     max_seq_len: u32,
     classifier_token_id: i32,
@@ -118,7 +118,7 @@ fn do_word_piece_tokenize(
     input_ids: &mut [i32],
     index: &mut usize,
     token: &str,
-    token_index_map: &HashMap<Cow<str>, i32>,
+    token_index_map: &HashMap<String, i32>,
 ) {
     if *index >= input_ids.len() {
         return;
@@ -162,7 +162,7 @@ fn do_word_piece_tokenize(
 fn longest_match_starting_at(
     token: &str,
     token_start: usize,
-    token_index_map: &HashMap<Cow<str>, i32>,
+    token_index_map: &HashMap<String, i32>,
     string_buffer: &mut String,
 ) -> Option<(usize, i32)> {
     // token: &str is a valid utf-8 string and indexed by utf-8 chars

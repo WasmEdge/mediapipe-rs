@@ -6,9 +6,8 @@ const HANDS_1: &'static str = "assets/testdata/img/woman_hands.jpg";
 #[test]
 fn test_hand_detection() {
     let hand_landmarker = HandLandmarkerBuilder::new()
-        .model_asset_path(MODEL_PATH)
         .num_hands(5)
-        .finalize()
+        .build_from_file(MODEL_PATH)
         .unwrap();
     let hand_detector = hand_landmarker.subtask_hand_detector();
     let img = image::open(HANDS_1).unwrap();
@@ -21,10 +20,9 @@ fn test_hand_detection() {
 fn test_hand_landmark() {
     let img = image::open(HANDS_1).unwrap();
     let hand_landmark_results = HandLandmarkerBuilder::new()
-        .model_asset_path(MODEL_PATH)
         .cpu()
         .num_hands(10)
-        .finalize()
+        .build_from_file(MODEL_PATH)
         .unwrap()
         .detect(&img)
         .unwrap();
