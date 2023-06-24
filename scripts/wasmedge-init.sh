@@ -6,14 +6,11 @@ set -ex
 
 source "$(dirname -- "$0")/env.sh"
 
-# Because the WasmEdge 0.12.0 and 0.12.1 will cause segment fault when running,
-# so we use the build-from-source method instead of downloading the release file.
-# The PR WasmEdge/WasmEdge#2360 has fixed it.
-# When the next version of WasmEdge has been released, we can delete the build-from-source method
-# and use these download functions.
-export WASMEDGE_VERSION=0.13.0-alpha.1
+# Must use the version after 0.13.0-alpha.1 or build from master branch.
+WASMEDGE_VERSION=0.13.0-alpha.1
+TFLITE_DEPS_VERSION=TF-2.12.0-CC
 
-build_wasmedge_with_nn_tflite() {
+build_wasmedge_from_source_with_wasi_nn_tflite() {
   # install requirements
   apt update && apt install git software-properties-common libboost-all-dev llvm-14-dev liblld-14-dev cmake ninja-build gcc g++ -y
 
@@ -35,7 +32,7 @@ build_wasmedge_with_nn_tflite() {
   popd
 }
 
-wasmedge_with_nn_init() {
+download_wasmedge_with_wasi_nn_tflite() {
   curl -sLO https://github.com/WasmEdge/WasmEdge/releases/download/${WASMEDGE_VERSION}/WasmEdge-${WASMEDGE_VERSION}-manylinux2014_x86_64.tar.gz
   curl -sLO https://github.com/WasmEdge/WasmEdge/releases/download/${WASMEDGE_VERSION}/WasmEdge-plugin-wasi_nn-tensorflowlite-${WASMEDGE_VERSION}-manylinux2014_x86_64.tar.gz
 
@@ -57,19 +54,17 @@ wasmedge_with_nn_init() {
   rm -r WasmEdge-${WASMEDGE_VERSION}-manylinux2014_x86_64.tar.gz WasmEdge-${WASMEDGE_VERSION}-Linux/ WasmEdge-plugin-wasi_nn-tensorflowlite-${WASMEDGE_VERSION}-manylinux2014_x86_64.tar.gz
 }
 
-wasmedge_tflite_deps_init() {
-  curl -sLO https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/${WASMEDGE_VERSION}/WasmEdge-tensorflow-deps-TFLite-${WASMEDGE_VERSION}-manylinux2014_x86_64.tar.gz
+download_wasmedge_tflite_deps() {
+  tar_filename="WasmEdge-tensorflow-deps-TFLite-${TFLITE_DEPS_VERSION}-manylinux2014_x86_64.tar.gz"
+  curl -sLO "https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/${TFLITE_DEPS_VERSION}/${tar_filename}"
 
-  tar -zxf WasmEdge-tensorflow-deps-TFLite-${WASMEDGE_VERSION}-manylinux2014_x86_64.tar.gz
+  tar -zxf "${tar_filename}"
 
-  mv libtensorflowlite_c.so "${WASMEDGE_LIB_PATH}"/
+  mkdir -p "${WASMEDGE_LIB_PATH}"
+  mv libtensorflowlite_c.so "${WASMEDGE_LIB_PATH}/"
+  mv libtensorflowlite_flex.so "${WASMEDGE_LIB_PATH}/"
 
-  rm WasmEdge-tensorflow-deps-TFLite-${WASMEDGE_VERSION}-manylinux2014_x86_64.tar.gz
-}
-
-wasmedge_lib_env_init() {
-  echo "${WASMEDGE_LIB_PATH}" >/etc/ld.so.conf.d/wasmedge.conf
-  ldconfig
+  rm "${tar_filename}"
 }
 
 mediapipe_custom_ops_init() {
@@ -84,9 +79,8 @@ mediapipe_custom_ops_init() {
   mv "${WASMEDGE_WASINN_CUSTOM_OPS_LIBNAME}" "${WASMEDGE_PLUGIN_WASI_NN_TFLITE_CUSTOM_OPS_PATH}"
 }
 
-build_wasmedge_with_nn_tflite
-#wasmedge_with_nn_init
-#wasmedge_tflite_deps_init
-# wasmedge_lib_env_init
+#build_wasmedge_from_source_with_wasi_nn_tflite
+download_wasmedge_with_wasi_nn_tflite
+download_wasmedge_tflite_deps
 # Use the mediapipe custom ops is only a draft PR, so I comment it and comment the test ```test_image_segmentation_model_2```.
 #mediapipe_custom_ops_init
