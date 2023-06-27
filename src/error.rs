@@ -1,4 +1,4 @@
-use wasi_nn_safe::{thiserror, Error as WasiNNError};
+use wasi_nn::Error as WasiNNError;
 
 /// MediaPipe-rs API error enum.
 #[derive(thiserror::Error, Debug)]

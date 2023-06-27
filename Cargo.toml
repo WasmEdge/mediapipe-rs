@@ -27,7 +27,8 @@ include = [
 ]
 
 [dependencies]
-wasi-nn-safe = "0.1"
+wasi-nn = "0.4.0"
+thiserror = "1"
 flatbuffers = "^23"
 image = { version = "^0", default-features = false, optional = true }
 imageproc = { version = "^0", default-features = false, optional = true }

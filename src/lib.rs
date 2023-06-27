@@ -331,9 +331,8 @@ pub mod preprocess;
 pub mod tasks;
 
 pub use error::Error;
-// todo: change to official wasi-nn.
-pub use wasi_nn_safe::ExecutionTarget as Device;
-use wasi_nn_safe::{Graph, GraphBuilder, GraphEncoding, GraphExecutionContext, TensorType};
+pub use wasi_nn::ExecutionTarget as Device;
+use wasi_nn::{Graph, GraphBuilder, GraphEncoding, GraphExecutionContext, TensorType};
 
 #[cfg(doc)]
 use tasks::{audio::*, text::*, vision::*};
