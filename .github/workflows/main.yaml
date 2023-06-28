@@ -1,0 +1,36 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+      options: --user root
+    steps:
+      - name: checkout
+        uses: actions/checkout@main
+
+      - name: install curl and rust
+        run: ./scripts/rust-init.sh
+
+      - name: init wasmedge environment
+        run: ./scripts/wasmedge-init.sh
+
+      - name: download models for test
+        run: ./scripts/download-models.sh
+
+      - name: download input data for test
+        run: ./scripts/download-testdata.sh
+
+      - name: init ffmpeg dependencies
+        run: ./scripts/ffmpeg-deps-init.sh
+
+      - name: test with ffmpeg and default features
+        run: ./scripts/cargo-test.sh
