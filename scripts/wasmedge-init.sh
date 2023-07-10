@@ -6,8 +6,8 @@ set -ex
 
 source "$(dirname -- "$0")/env.sh"
 
-# Must use the version after 0.13.0-alpha.1 or build from master branch.
-WASMEDGE_VERSION=0.13.0-alpha.1
+# Must use the version after 0.13.1 or build from master branch.
+WASMEDGE_VERSION=0.13.1
 TFLITE_DEPS_VERSION=TF-2.12.0-CC
 
 build_wasmedge_from_source_with_wasi_nn_tflite() {
