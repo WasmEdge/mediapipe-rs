@@ -37,7 +37,7 @@
 * [ ] Pose Landmark Detection
 * [x] Audio Classification
 * [x] Text Classification
-* [ ] Text Embedding
+* [x] Text Embedding
 * [ ] Language Detection
 
 ## Task APIs

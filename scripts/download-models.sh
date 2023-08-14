@@ -158,6 +158,23 @@ text_classification_init() {
   popd
 }
 
+text_embedding_init() {
+    text_embedding_dir="${model_path}/text_embedding"
+    mkdir -p "${text_embedding_dir}"
+    pushd "${text_embedding_dir}"
+
+    model_urls=(
+      "https://storage.googleapis.com/mediapipe-models/text_embedder/bert_embedder/float32/1/bert_embedder.tflite"
+      "https://storage.googleapis.com/mediapipe-models/text_embedder/universal_sentence_encoder/float32/latest/universal_sentence_encoder.tflite"
+    )
+
+    for url in "${model_urls[@]}"; do
+      curl -sLO "${url}"
+    done
+
+    popd
+}
+
 object_detection_init
 image_classification_init
 gesture_recognition_init
@@ -167,3 +184,4 @@ image_embedding_init
 face_detection_init
 audio_classification_init
 text_classification_init
+text_embedding_init
