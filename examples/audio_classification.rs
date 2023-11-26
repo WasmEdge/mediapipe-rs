@@ -32,7 +32,7 @@ fn read_audio_using_symphonia(audio_path: String) -> SymphoniaAudioData {
 }
 
 #[cfg(feature = "ffmpeg")]
-fn read_video_using_ffmpeg(audio_path: String) -> FFMpegAudioData {
+fn read_audio_using_ffmpeg(audio_path: String) -> FFMpegAudioData {
     ffmpeg_next::init().unwrap();
     FFMpegAudioData::new(ffmpeg_next::format::input(&audio_path.as_str()).unwrap()).unwrap()
 }
@@ -43,7 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(not(feature = "ffmpeg"))]
     let audio = read_audio_using_symphonia(audio_path);
     #[cfg(feature = "ffmpeg")]
-    let audio = read_video_using_ffmpeg(audio_path);
+    let audio = read_audio_using_ffmpeg(audio_path);
 
     let classification_results = AudioClassifierBuilder::new()
         .max_results(3) // set max result
