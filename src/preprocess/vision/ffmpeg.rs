@@ -160,7 +160,7 @@ impl<'a> ImageToTensor for FFMpegFrame<'a> {
                 let img = image::ImageBuffer::<image::Rgb<u8>, &[u8]>::from_raw(
                     to_tensor_info.width(),
                     to_tensor_info.height(),
-                    data,
+                    &data,
                 )
                 .unwrap();
                 image::rgb8_image_buffer_to_tensor(&img, to_tensor_info, output_buffer)?;

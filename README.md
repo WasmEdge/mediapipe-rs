@@ -269,7 +269,7 @@ from https://storage.googleapis.com/mediapipe-tasks/gesture_recognizer/victory.j
 Example output in console:
 
 ```console
-$ cargo run --release --example gesture_recognition -- ./assets/models/gesture_recognition/gesture_recognizer.task ./assets/testdata/img/gesture_recognition_google_samples/victory.jpg
+$ cargo run --release --example gesture_recognition -- ./assets/models/gesture_recognition/gesture_recognizer.task ./assets/testdata/img/victory.jpg
     Finished release [optimized] target(s) in 0.02s
      Running `/mediapipe-rs/./scripts/wasmedge-runner.sh target/wasm32-wasi/release/examples/gesture_recognition.wasm ./assets/models/gesture_recognition/gesture_recognizer.task ./assets/testdata/img/gesture_recognition_google_samples/victory.jpg`
       Category name: "Victory"
@@ -389,21 +389,10 @@ fn inference(
 
 ## Use the FFMPEG feature to process video and audio.
 
-When building the library with ```ffmpeg``` feature using cargo, users must set the following environment variables:
+When building the library with ```ffmpeg``` feature using cargo, users must build WasmEdge by enabling FFmpeg Plugin:
 
-* ```FFMPEG_DIR```: the pre-built FFmpeg library path. You can download it from
-  https://github.com/yanghaku/ffmpeg-wasm32-wasi/releases.
-* ```WASI_SDK``` or (```WASI_SYSROOT``` and ```CLANG_RT```), You can download it from
-  https://github.com/WebAssembly/wasi-sdk/releases
-* ```BINDGEN_EXTRA_CLANG_ARGS```: set **sysroot** and **target** and **function visibility** for libclang.
-  (The sysroot must be **absolute path**).
-
-Example:
-
-```shell
-export FFMPEG_DIR=/path/to/ffmpeg/library
-export WASI_SDK=/opt/wasi-sdk
-export BINDGEN_EXTRA_CLANG_ARGS="--sysroot=/opt/wasi-sdk/share/wasi-sysroot --target=wasm32-wasi -fvisibility=default"
+```console
+$ cmake -DCMAKE_BUILD_TYPE=Release -GNinja -DWASMEDGE_PLUGIN_WASI_NN_BACKEND="TensorflowLite" -DWASMEDGE_PLUGIN_FFMPEG=ON ..
 
 # Then run cargo
 ```
