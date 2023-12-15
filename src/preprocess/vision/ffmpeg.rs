@@ -39,7 +39,7 @@ impl FFMpegVideoData {
             "buffer=video_size={}x{}:pix_fmt={}:time_base={}/{}:pixel_aspect={}/{}",
             source.decoder.width(),
             source.decoder.height(),
-            ffmpeg_next::util::format::Pixel::from(source.decoder.format() as AVPixelFormat).descriptor().unwrap().name(),
+            ffmpeg_next::util::format::Pixel::from(source.decoder.format() as AVPixelFormat).mask(),
             time_base_num,
             source.decoder.time_base().denominator(),
             source.decoder.aspect_ratio().numerator(),
@@ -116,7 +116,7 @@ impl<'a> ImageToTensor for FFMpegFrame<'a> {
                     "[s_in];[s_in]scale={}:{}[f];[f]format=pix_fmts={}[out];[out]buffersink",
                     to_tensor_info.width(),
                     to_tensor_info.height(),
-                    out_format.descriptor().unwrap().name()
+                    out_format.mask()
                 )
                 .chars(),
             );
