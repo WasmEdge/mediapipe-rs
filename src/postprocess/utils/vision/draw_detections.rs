@@ -1,8 +1,10 @@
-use super::DefaultPixel;
-use crate::postprocess::DetectionResult;
+use ab_glyph::{FontArc, PxScale};
 use image::{GenericImage, Pixel};
 use imageproc::{definitions::Clamp, drawing};
-use rusttype::{Font, Scale};
+
+use crate::postprocess::DetectionResult;
+
+use super::DefaultPixel;
 
 /// draw detection results options
 #[derive(Debug)]
@@ -14,12 +16,12 @@ pub struct DrawDetectionsOptions<'font, P: Pixel> {
     pub keypoint_radius_percent: f32,
 
     pub draw_label: bool,
-    pub font: &'font Font<'font>,
+    pub font: &'font FontArc,
     pub font_color: P,
     pub font_scale: f32,
 }
 
-impl<P: Pixel + DefaultPixel> Default for DrawDetectionsOptions<'static, P> {
+impl<P: Pixel + DefaultPixel> Default for DrawDetectionsOptions<P> {
     #[inline(always)]
     fn default() -> Self {
         Self {
@@ -40,10 +42,10 @@ impl<P: Pixel + DefaultPixel> Default for DrawDetectionsOptions<'static, P> {
 /// draw detection results to image with default options
 #[inline(always)]
 pub fn draw_detection<I>(img: &mut I, detection_result: &DetectionResult)
-where
-    I: GenericImage,
-    I::Pixel: 'static + DefaultPixel,
-    <I::Pixel as Pixel>::Subpixel: conv::ValueInto<f32> + Clamp<f32>,
+    where
+        I: GenericImage,
+        I::Pixel: 'static + DefaultPixel,
+    <I::Pixel as Pixel>::Subpixel: Into<f32> + Clamp<f32>,
 {
     draw_detection_with_options::<I>(img, detection_result, &Default::default())
 }
@@ -55,7 +57,7 @@ pub fn draw_detection_with_options<I>(
     options: &DrawDetectionsOptions<I::Pixel>,
 ) where
     I: GenericImage,
-    <I::Pixel as Pixel>::Subpixel: conv::ValueInto<f32> + Clamp<f32>,
+    <I::Pixel as Pixel>::Subpixel: Into<f32> + Clamp<f32>,
     I::Pixel: 'static,
 {
     let img_w = img.width() as f32;
@@ -67,7 +69,7 @@ pub fn draw_detection_with_options<I>(
     } else {
         options.keypoint_colors[0]
     };
-    let font_scale = Scale {
+    let font_scale = PxScale {
         x: img_min * options.font_scale,
         y: img_min * options.font_scale,
     };

@@ -32,7 +32,7 @@ impl DetectionResult {
         I: image::GenericImage,
         I::Pixel: 'static + DefaultPixel,
         <I::Pixel as image::Pixel>::Subpixel:
-            conv::ValueInto<f32> + imageproc::definitions::Clamp<f32>,
+        Into<f32> + imageproc::definitions::Clamp<f32>,
     {
         draw_detection_with_options(img, self, &Default::default());
     }
@@ -44,7 +44,7 @@ impl DetectionResult {
         I: image::GenericImage,
         I::Pixel: 'static,
         <I::Pixel as image::Pixel>::Subpixel:
-            conv::ValueInto<f32> + imageproc::definitions::Clamp<f32>,
+            Into<f32> + imageproc::definitions::Clamp<f32>,
     {
         draw_detection_with_options(img, self, options);
     }
