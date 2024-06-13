@@ -10,5 +10,5 @@ pub(crate) use ops::{Activation, QuantizationParameters};
 mod processing;
 pub(crate) use processing::*;
 
-/// Utils to to make use of task results, such as drawing utils.
+/// Utils to make use of task results, such as drawing utils.
 pub mod utils;
