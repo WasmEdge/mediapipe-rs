@@ -22,8 +22,7 @@ impl HandLandmarkResult {
     where
         I: image::GenericImage,
         I::Pixel: 'static + DefaultPixel,
-        <I::Pixel as image::Pixel>::Subpixel:
-            conv::ValueInto<f32> + imageproc::definitions::Clamp<f32>,
+        <I::Pixel as image::Pixel>::Subpixel: Into<f32> + imageproc::definitions::Clamp<f32>,
     {
         let mut options = DrawLandmarksOptions::default();
         options.connections = HandLandmark::CONNECTIONS;
@@ -36,8 +35,7 @@ impl HandLandmarkResult {
     where
         I: image::GenericImage,
         I::Pixel: 'static,
-        <I::Pixel as image::Pixel>::Subpixel:
-            conv::ValueInto<f32> + imageproc::definitions::Clamp<f32>,
+        <I::Pixel as image::Pixel>::Subpixel: Into<f32> + imageproc::definitions::Clamp<f32>,
     {
         draw_landmarks_with_options(img, &self.hand_landmarks, options);
     }
