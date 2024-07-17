@@ -1,4 +1,5 @@
 mod face_detection;
+mod face_landmark;
 mod gesture_recognition;
 mod hand_detection;
 mod hand_landmark;
@@ -8,6 +9,10 @@ mod image_segmentation;
 mod object_detection;
 
 pub use face_detection::{FaceDetector, FaceDetectorBuilder, FaceDetectorSession};
+pub use face_landmark::{
+    FaceLandmarkBlendshapes, FaceLandmarkConnections, FaceLandmarker, FaceLandmarkerBuilder,
+    FaceLandmarkerSession,
+};
 pub use gesture_recognition::{
     GestureRecognizer, GestureRecognizerBuilder, GestureRecognizerSession,
 };
@@ -22,6 +27,7 @@ pub use object_detection::{ObjectDetector, ObjectDetectorBuilder, ObjectDetector
 
 /// Re-export some task results types
 pub mod results {
+    pub use super::face_landmark::{FaceLandmarkResult, FaceLandmarkResults};
     pub use super::gesture_recognition::{GestureRecognizerResult, GestureRecognizerResults};
     pub use super::hand_landmark::{HandLandmarkResult, HandLandmarkResults};
     pub use super::image_segmentation::ImageSegmentationResult;
