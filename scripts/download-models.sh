@@ -126,6 +126,21 @@ face_detection_init() {
     popd
 }
 
+face_landmark_init() {
+    face_landmark_dir="${model_path}/face_landmark"
+    mkdir -p "${face_landmark_dir}"
+    pushd "${face_landmark_dir}"
+
+    model_urls=("https://storage.googleapis.com/mediapipe-assets/face_landmark.tflite"
+    )
+
+    for url in "${model_urls[@]}"; do
+      curl -sLO "${url}"
+    done
+
+    popd
+}
+
 
 audio_classification_init() {
   audio_classification_dir="${model_path}/audio_classification"
@@ -182,6 +197,7 @@ hand_landmark_detection_init
 image_segmentation_init
 image_embedding_init
 face_detection_init
+face_landmark_init
 audio_classification_init
 text_classification_init
 text_embedding_init
