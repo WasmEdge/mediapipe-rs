@@ -72,7 +72,7 @@ impl FaceLandmarkerBuilder {
         let model_resource = crate::model::parse_model(landmark_file.as_ref())?;
 
         // check model
-        model_base_check_impl!(model_resource, 1, 3);
+        model_base_check_impl!(model_resource, 1, 2);
         model_resource_check_and_get_impl!(model_resource, to_tensor_info, 0).try_to_image()?;
         let input_tensor_type =
             model_resource_check_and_get_impl!(model_resource, input_tensor_type, 0);

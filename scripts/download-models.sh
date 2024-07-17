@@ -131,7 +131,7 @@ face_landmark_init() {
     mkdir -p "${face_landmark_dir}"
     pushd "${face_landmark_dir}"
 
-    model_urls=("https://storage.googleapis.com/mediapipe-assets/face_landmark.tflite"
+    model_urls=("https://storage.googleapis.com/mediapipe-tasks/face_landmarker/face_landmarker.task"
     )
 
     for url in "${model_urls[@]}"; do
