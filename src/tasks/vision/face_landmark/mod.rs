@@ -32,7 +32,7 @@ pub struct FaceLandmarker {
 }
 
 impl FaceLandmarker {
-    const LANDMARKS_NORMALIZE_Z: f32 = 0.4;
+    const LANDMARKS_NORMALIZE_Z: f32 = 1.0;
 
     detector_impl!(FaceLandmarkerSession, FaceLandmarkResults);
 
@@ -61,6 +61,9 @@ impl FaceLandmarker {
             self.landmarks_buf_index
         );
 
+        // 468 is the standard number of facial landmarks used in MediaPipe's Face Mesh model (kMeshLandmarksNum).
+        // For models including the iris, this number increases to 478.
+        // Reference: https://github.com/google/mediapipe/blob/master/mediapipe/tasks/cc/vision/face_landmarker/face_landmarker_result.h
         let mut tensors_to_landmarks =
             TensorsToLandmarks::new(468, landmarks_out, landmarks_shape)?;
         tensors_to_landmarks
