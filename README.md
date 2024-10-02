@@ -33,7 +33,7 @@
 * [x] Hand Landmark Detection
 * [x] Image Embedding
 * [x] Face Detection
-* [ ] Face Landmark Detection
+* [x] Face Landmark Detection
 * [ ] Pose Landmark Detection
 * [x] Audio Classification
 * [x] Text Classification
@@ -85,6 +85,8 @@ Every task has three types: ```XxxBuilder```, ```Xxx```, ```XxxSession```. (``Xx
     * image embedding: `ImageEmbedderBuilder` -> `ImageEmbedder` -> `ImageEmbedderSession`
     * image segmentation: `ImageSegmenterBuilder` -> `ImageSegmenter` -> `ImageSegmenterSession`
     * object detection: `ObjectDetectorBuilder` -> `ObjectDetector` -> `ObjectDetectorSession`
+    * face detection: `FaceDetectorBuilder` -> `FaceDetector` -> `FaceDetectorSession`
+    * face landmark detection: `FaceLandmarkerBuilder` -> `FaceLandmarker` -> `FaceLandmarkerSession`
 * audio:
     * audio classification: `AudioClassifierBuilder` -> `AudioClassifier` -> `AudioClassifierSession`
 * text:
@@ -277,6 +279,79 @@ $ cargo run --release --example gesture_recognition -- ./assets/models/gesture_r
       Score:         0.9322255
       Index:         6
 ```
+
+### Face Landmarks Detection
+
+```rust
+use mediapipe_rs::tasks::vision::FaceLandmarkerBuilder;
+use mediapipe_rs::postprocess::utils::DrawLandmarksOptions;
+use mediapipe_rs::tasks::vision::FaceLandmarkConnections;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let (model_path, img_path, output_path) = parse_args()?;
+
+    let mut input_img = image::open(img_path)?;
+    let face_landmark_results = FaceLandmarkerBuilder::new()
+        .num_faces(1) // set max number of faces to detect
+        .min_face_detection_confidence(0.5)
+        .min_face_presence_confidence(0.5)
+        .min_tracking_confidence(0.5)
+        .output_face_blendshapes(true)
+        .build_from_file(model_path)? // create a face landmarker
+        .detect(&input_img)?; // do inference and generate results
+
+    // show formatted result message
+    println!("{}", face_landmark_results);
+
+    if let Some(output_path) = output_path {
+        // draw face landmarks result to image
+        let options = DrawLandmarksOptions::default()
+            .connections(FaceLandmarkConnections::get_connections(
+                &FaceLandmarkConnections::FacemeshTesselation,
+            ))
+            .landmark_radius_percent(0.003);
+
+        for result in face_landmark_results.iter() {
+            result.draw_with_options(&mut input_img, &options);
+        }
+        // save output image
+        input_img.save(output_path)?;
+    }
+
+    Ok(())
+}
+```
+
+Example input: (The image is downloaded from https://storage.googleapis.com/mediapipe-assets/portrait.jpg)
+
+<img height="30%" src="https://storage.googleapis.com/mediapipe-assets/portrait.jpg" width="30%" alt="face_detection_full_range_image.jpg" />
+
+Example output in console:
+
+```console
+$ cargo run --release --example face_landmark -- ./assets/models/face_landmark/face_landmarker.task ./assets/testdata/img/face.jpg ./assets/doc/face_landmark_output.jpg
+
+    Finished release [optimized] target(s) in 4.50s
+     Running `./scripts/wasmedge-runner.sh target/wasm32-wasi/release/examples/face_landmark.wasm ./assets/models/face_landmark/face_landmarker.task ./assets/testdata/img/face.jpg ./assets/doc/face_landmark_output.jpg`
+
+FaceLandmarkResult #0
+  Landmarks:
+    Normalized Landmark #0:
+      x:       0.49687287
+      y:       0.24964334
+      z:       -0.029807145
+    Normalized Landmark #1:
+      x:       0.49801534
+      y:       0.22689381
+      z:       -0.05928771
+    Normalized Landmark #2:
+      x:       0.49707597
+      y:       0.23421054
+      z:       -0.03364953
+```
+
+Example output image:
+<img height="30%" src="./assets/doc/face_landmark_output.jpg" width="30%"/>
 
 ### Audio Input
 

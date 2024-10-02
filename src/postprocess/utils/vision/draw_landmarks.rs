@@ -51,6 +51,12 @@ impl<'a, P: Pixel> DrawLandmarksOptions<'a, P> {
         self.visibility_threshold = visibility_threshold;
         self
     }
+
+    #[inline(always)]
+    pub fn landmark_radius_percent(mut self, landmark_radius_percent: f32) -> Self {
+        self.landmark_radius_percent = landmark_radius_percent;
+        self
+    }
 }
 
 impl<'a, P: Pixel + DefaultPixel> Default for DrawLandmarksOptions<'a, P> {

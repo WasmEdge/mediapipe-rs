@@ -39,8 +39,13 @@ image_classification_init() {
     curl -sLO "${url}"
   done
 
-  # for custom model downloaded from tf hub
-  curl -sL "https://tfhub.dev/google/lite-model/aiy/vision/classifier/birds_V1/3?lite-format=tflite" -o "lite-model_aiy_vision_classifier_birds_V1_3.tflite"
+  # for custom model downloaded from kaggle
+  bird_model_name="lite-model_aiy_vision_classifier_birds_V1_3"
+  kaggle_tflite_filename="3.tflite"
+  curl -sL "https://www.kaggle.com/api/v1/models/google/aiy/tfLite/vision-classifier-birds-v1/3/download" -o "${bird_model_name}.tar.gz"
+  tar -zxvf "${bird_model_name}.tar.gz"
+  mv "${kaggle_tflite_filename}" "${bird_model_name}.tflite"
+  rm -rf "${bird_model_name}.tar.gz"
 
   popd
 }
@@ -126,6 +131,21 @@ face_detection_init() {
     popd
 }
 
+face_landmark_init() {
+    face_landmark_dir="${model_path}/face_landmark"
+    mkdir -p "${face_landmark_dir}"
+    pushd "${face_landmark_dir}"
+
+    model_urls=("https://storage.googleapis.com/mediapipe-tasks/face_landmarker/face_landmarker.task"
+    )
+
+    for url in "${model_urls[@]}"; do
+      curl -sLO "${url}"
+    done
+
+    popd
+}
+
 
 audio_classification_init() {
   audio_classification_dir="${model_path}/audio_classification"
@@ -182,6 +202,7 @@ hand_landmark_detection_init
 image_segmentation_init
 image_embedding_init
 face_detection_init
+face_landmark_init
 audio_classification_init
 text_classification_init
 text_embedding_init
