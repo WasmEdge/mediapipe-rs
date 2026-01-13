@@ -50,7 +50,7 @@ default = ["audio", "vision", "text"]
 
 audio = ["symphonia-core"]
 vision = ["image", "imageproc", "lazy_static", "ab_glyph"]
-text = ["regex", "lazy_static"]
+text = ["regex", "lazy_static", "imageproc/text"]
 
 ffmpeg = ["ffmpeg-next"]
 
