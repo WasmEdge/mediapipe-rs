@@ -4,15 +4,3 @@ target = "wasm32-wasi"
 
 [target.wasm32-wasi]
 runner = "./scripts/wasmedge-runner.sh"
-
-[env]
-# ffmpeg install path (default is ```assets/ffmpeg-lib```)
-FFMPEG_DIR = { value = "assets/ffmpeg-lib", relative = true }
-# wasi sysroot path (default is ```assets/wasi-sysroot```)
-WASI_SYSROOT = { value = "assets/wasi-sysroot", relative = true }
-# lib clang rt path (default is ```assets/clang-rt```)
-CLANG_RT = { value = "assets/clang-rt", relative = true }
-
-# config wasi-sysroot path (default is ```./asset/wasi-sysroot```)
-#BINDGEN_EXTRA_CLANG_ARGS = "--sysroot=./asset/wasi-sysroot --target=wasm32-wasi -fvisibility=default"
-BINDGEN_EXTRA_CLANG_ARGS = "--sysroot=/opt/wasi-sdk/share/wasi-sysroot --target=wasm32-wasi -fvisibility=default"

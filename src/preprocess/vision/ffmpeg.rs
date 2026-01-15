@@ -2,6 +2,7 @@ use super::*;
 use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use ffmpeg_next::avUtilTypes::AVPixelFormat;
 
 type FFMpegVideoInput =
     common::ffmpeg_input::FFMpegInput<ffmpeg_next::decoder::Video, ffmpeg_next::frame::Video>;
@@ -33,11 +34,12 @@ impl FFMpegVideoData {
         } else {
             source.decoder.time_base().numerator()
         };
+
         let filter_desc_in = format!(
             "buffer=video_size={}x{}:pix_fmt={}:time_base={}/{}:pixel_aspect={}/{}",
             source.decoder.width(),
             source.decoder.height(),
-            ffmpeg_next::ffi::AVPixelFormat::from(source.decoder.format()) as u32,
+            ffmpeg_next::util::format::Pixel::from(source.decoder.format() as AVPixelFormat).mask(),
             time_base_num,
             source.decoder.time_base().denominator(),
             source.decoder.aspect_ratio().numerator(),
@@ -105,16 +107,16 @@ impl<'a> ImageToTensor for FFMpegFrame<'a> {
             }
             let out_format = match to_tensor_info.color_space {
                 ImageColorSpaceType::GRAYSCALE => {
-                    ffmpeg_next::ffi::AVPixelFormat::AV_PIX_FMT_GRAY8 as u32
+                    ffmpeg_next::format::Pixel::GRAY8
                 }
-                _ => ffmpeg_next::ffi::AVPixelFormat::AV_PIX_FMT_RGB24 as u32,
+                _ => ffmpeg_next::format::Pixel::RGB24,
             };
             desc.extend(
                 format!(
                     "[s_in];[s_in]scale={}:{}[f];[f]format=pix_fmts={}[out];[out]buffersink",
                     to_tensor_info.width(),
                     to_tensor_info.height(),
-                    out_format
+                    out_format.mask()
                 )
                 .chars(),
             );
@@ -158,7 +160,7 @@ impl<'a> ImageToTensor for FFMpegFrame<'a> {
                 let img = image::ImageBuffer::<image::Rgb<u8>, &[u8]>::from_raw(
                     to_tensor_info.width(),
                     to_tensor_info.height(),
-                    data,
+                    &data,
                 )
                 .unwrap();
                 image::rgb8_image_buffer_to_tensor(&img, to_tensor_info, output_buffer)?;
