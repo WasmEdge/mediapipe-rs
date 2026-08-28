@@ -1,6 +1,6 @@
 [build]
 # default target
-target = "wasm32-wasi"
+target = "wasm32-wasip1"
 
 [target.wasm32-wasi]
 runner = "./scripts/wasmedge-runner.sh"
@@ -14,5 +14,5 @@ WASI_SYSROOT = { value = "assets/wasi-sysroot", relative = true }
 CLANG_RT = { value = "assets/clang-rt", relative = true }
 
 # config wasi-sysroot path (default is ```./asset/wasi-sysroot```)
-#BINDGEN_EXTRA_CLANG_ARGS = "--sysroot=./asset/wasi-sysroot --target=wasm32-wasi -fvisibility=default"
-BINDGEN_EXTRA_CLANG_ARGS = "--sysroot=/opt/wasi-sdk/share/wasi-sysroot --target=wasm32-wasi -fvisibility=default"
+#BINDGEN_EXTRA_CLANG_ARGS = "--sysroot=./asset/wasi-sysroot --target=wasm32-wasip1 -fvisibility=default"
+BINDGEN_EXTRA_CLANG_ARGS = "--sysroot=/opt/wasi-sdk/share/wasi-sysroot --target=wasm32-wasip1 -fvisibility=default"
