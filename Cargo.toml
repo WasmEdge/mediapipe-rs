@@ -52,8 +52,8 @@ branch = "wasm32-wasi"
 default = ["audio", "vision", "text"]
 
 audio = ["symphonia-core"]
-vision = ["image", "imageproc", "lazy_static", "ab_glyph"]
-text = ["regex", "lazy_static","imageproc/text"]
+vision = ["image", "imageproc", "imageproc/text", "lazy_static", "ab_glyph"]
+text = ["regex", "lazy_static"]
 
 ffmpeg = ["ffmpeg-next"]
 
