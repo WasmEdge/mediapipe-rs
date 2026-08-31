@@ -282,7 +282,7 @@
 //! ```shell
 //! export FFMPEG_DIR=/path/to/ffmpeg/library
 //! export WASI_SDK=/opt/wasi-sdk
-//! export BINDGEN_EXTRA_CLANG_ARGS="--sysroot=/opt/wasi-sdk/share/wasi-sysroot --target=wasm32-wasi -fvisibility=default"
+//! export BINDGEN_EXTRA_CLANG_ARGS="--sysroot=/opt/wasi-sdk/share/wasi-sysroot --target=wasm32-wasip1 -fvisibility=default"
 //!
 //! # Then run cargo
 //! ```

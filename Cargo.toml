@@ -15,9 +15,9 @@ publish = true
 
 [package.metadata.docs.rs]
 all-features = true
-# only build for wasm32-wasi now
-default-target = "wasm32-wasi"
-targets = ["wasm32-wasi"]
+# only build for wasm32-wasip1 now
+default-target = "wasm32-wasip1"
+targets = ["wasm32-wasip1"]
 
 include = [
     "LICENSE",

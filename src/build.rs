@@ -44,8 +44,8 @@ mod ffmpeg_dep_libs {
                 return Some(dir);
             }
 
-            dir.push("wasm32-wasi");
-            // ${dir}/${version}/lib/wasm32-wasi/libxxx.a
+            dir.push("wasm32-wasip1");
+            // ${dir}/${version}/lib/wasm32-wasip1/libxxx.a
             if check_lib_exists(dir.clone(), lib_name) {
                 return Some(dir);
             }
@@ -123,7 +123,7 @@ mod ffmpeg_dep_libs {
 
         let mut t = p.clone();
         t.push("lib");
-        t.push("wasm32-wasi");
+        t.push("wasm32-wasip1");
         t.push(lib_name);
         search_list.push(t.display().to_string());
         panic!(
