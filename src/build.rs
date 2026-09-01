@@ -7,7 +7,7 @@ mod ffmpeg_dep_libs {
     const CLANG_RT: &'static str = "CLANG_RT";
 
     const DEFAULT_WASI_SDK: &'static str = "/opt/wasi-sdk";
-    const CLANG_RT_LIB_NAME: &'static str = "clang_rt.builtins-wasm32";
+    const CLANG_RT_LIB_NAME: &'static str = "clang_rt.builtins";
     const WASI_CLOCK_LIB_NAME: &'static str = "wasi-emulated-process-clocks";
 
     fn check_lib_exists(mut dir: PathBuf, lib: &str) -> bool {
@@ -44,8 +44,8 @@ mod ffmpeg_dep_libs {
                 return Some(dir);
             }
 
-            dir.push("wasm32-wasi");
-            // ${dir}/${version}/lib/wasm32-wasi/libxxx.a
+            dir.push("wasm32-wasip1");
+            // ${dir}/${version}/lib/wasm32-wasip1/libxxx.a
             if check_lib_exists(dir.clone(), lib_name) {
                 return Some(dir);
             }
@@ -123,7 +123,7 @@ mod ffmpeg_dep_libs {
 
         let mut t = p.clone();
         t.push("lib");
-        t.push("wasm32-wasi");
+        t.push("wasm32-wasip1");
         t.push(lib_name);
         search_list.push(t.display().to_string());
         panic!(

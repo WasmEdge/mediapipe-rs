@@ -123,7 +123,7 @@ Example output in console:
 ```console
 $ cargo run --release --example image_classification -- ./assets/models/image_classification/efficientnet_lite0_fp32.tflite ./assets/testdata/img/burger.jpg
     Finished release [optimized] target(s) in 0.01s
-     Running `/mediapipe-rs/./scripts/wasmedge-runner.sh target/wasm32-wasi/release/examples/image_classification.wasm ./assets/models/image_classification/efficientnet_lite0_fp32.tflite ./assets/testdata/img/burger.jpg`
+     Running `/mediapipe-rs/./scripts/wasmedge-runner.sh target/wasm32-wasip1/release/examples/image_classification.wasm ./assets/models/image_classification/efficientnet_lite0_fp32.tflite ./assets/testdata/img/burger.jpg`
 ClassificationResult:
   Classification #0:
     Category #0:
@@ -172,7 +172,7 @@ Example output in console:
 ```console
 $ cargo run --release --example object_detection -- ./assets/models/object_detection/efficientdet_lite0_fp32.tflite ./assets/testdata/img/cat_and_dog.jpg
     Finished release [optimized] target(s) in 0.00s
-     Running `/mediapipe-rs/./scripts/wasmedge-runner.sh target/wasm32-wasi/release/examples/object_detection.wasm ./assets/models/object_detection/efficientdet_lite0_fp32.tflite ./assets/testdata/img/cat_and_dog.jpg`
+     Running `/mediapipe-rs/./scripts/wasmedge-runner.sh target/wasm32-wasip1/release/examples/object_detection.wasm ./assets/models/object_detection/efficientdet_lite0_fp32.tflite ./assets/testdata/img/cat_and_dog.jpg`
 DetectionResult:
   Detection #0:
     Box: (left: 0.12283102, top: 0.38476586, right: 0.51069236, bottom: 0.851197)
@@ -222,7 +222,7 @@ Example output in console (use the bert model):
 ```console
 $ cargo run --release --example text_classification -- ./assets/models/text_classification/bert_text_classifier.tflite
     Finished release [optimized] target(s) in 0.01s
-     Running `/mediapipe-rs/./scripts/wasmedge-runner.sh target/wasm32-wasi/release/examples/text_classification.wasm ./assets/models/text_classification/bert_text_classifier.tflite`
+     Running `/mediapipe-rs/./scripts/wasmedge-runner.sh target/wasm32-wasip1/release/examples/text_classification.wasm ./assets/models/text_classification/bert_text_classifier.tflite`
 `I love coding so much!` -- ClassificationResult:
   Classification #0:
     Category #0:
@@ -273,7 +273,7 @@ Example output in console:
 ```console
 $ cargo run --release --example gesture_recognition -- ./assets/models/gesture_recognition/gesture_recognizer.task ./assets/testdata/img/gesture_recognition_google_samples/victory.jpg
     Finished release [optimized] target(s) in 0.02s
-     Running `/mediapipe-rs/./scripts/wasmedge-runner.sh target/wasm32-wasi/release/examples/gesture_recognition.wasm ./assets/models/gesture_recognition/gesture_recognizer.task ./assets/testdata/img/gesture_recognition_google_samples/victory.jpg`
+     Running `/mediapipe-rs/./scripts/wasmedge-runner.sh target/wasm32-wasip1/release/examples/gesture_recognition.wasm ./assets/models/gesture_recognition/gesture_recognizer.task ./assets/testdata/img/gesture_recognition_google_samples/victory.jpg`
       Category name: "Victory"
       Display name:  None
       Score:         0.9322255
@@ -332,7 +332,7 @@ Example output in console:
 $ cargo run --release --example face_landmark -- ./assets/models/face_landmark/face_landmarker.task ./assets/testdata/img/face.jpg ./assets/doc/face_landmark_output.jpg
 
     Finished release [optimized] target(s) in 4.50s
-     Running `./scripts/wasmedge-runner.sh target/wasm32-wasi/release/examples/face_landmark.wasm ./assets/models/face_landmark/face_landmarker.task ./assets/testdata/img/face.jpg ./assets/doc/face_landmark_output.jpg`
+     Running `./scripts/wasmedge-runner.sh target/wasm32-wasip1/release/examples/face_landmark.wasm ./assets/models/face_landmark/face_landmarker.task ./assets/testdata/img/face.jpg ./assets/doc/face_landmark_output.jpg`
 
 FaceLandmarkResult #0
   Landmarks:
@@ -478,7 +478,7 @@ Example:
 ```shell
 export FFMPEG_DIR=/path/to/ffmpeg/library
 export WASI_SDK=/opt/wasi-sdk
-export BINDGEN_EXTRA_CLANG_ARGS="--sysroot=/opt/wasi-sdk/share/wasi-sysroot --target=wasm32-wasi -fvisibility=default"
+export BINDGEN_EXTRA_CLANG_ARGS="--sysroot=/opt/wasi-sdk/share/wasi-sysroot --target=wasm32-wasip1 -fvisibility=default"
 
 # Then run cargo
 ```

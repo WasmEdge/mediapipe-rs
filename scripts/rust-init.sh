@@ -7,5 +7,5 @@ apt update && apt install curl -y
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -q -y
 source "$HOME/.cargo/env"
 
-# add wasm32-wasi target
-rustup target add wasm32-wasi
+# add wasm32-wasip1 target
+rustup target add wasm32-wasip1

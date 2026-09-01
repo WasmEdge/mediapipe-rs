@@ -8,9 +8,10 @@ apt install -y libclang1-14 clang
 FFMPEG_VERSION="v0.0.1"
 FFMPEG_FILENAME="ffmpeg-6.0-wasm32-wasi-v0.0.1.tar.gz"
 
-WASI_SDK_VERSION="wasi-sdk-19"
-LIB_CLANG_RT_FILENAME="libclang_rt.builtins-wasm32-wasi-19.0.tar.gz"
-WASI_SYSROOT_FILENAME="wasi-sysroot-19.0.tar.gz"
+WASI_SYSROOT_VERSION="wasi-sysroot-29.0"
+WASI_SDK_VERSION="wasi-sdk-29"
+LIB_CLANG_RT_FILENAME="libclang_rt-29.0.tar.gz"
+WASI_SYSROOT_FILENAME="wasi-sysroot-29.0.tar.gz"
 
 OUTPUT_ROOT="$(realpath "$(dirname -- "$0")")/../assets"
 TEMP_DIR="/tmp"
@@ -55,6 +56,7 @@ download_wasi_sysroot() {
 
   curl -sLO "${BASE_URL}/${WASI_SDK_VERSION}/${WASI_SYSROOT_FILENAME}"
   tar -zxvf "${WASI_SYSROOT_FILENAME}"
+  mv ${WASI_SYSROOT_VERSION} wasi-sysroot
   mv wasi-sysroot "${OUTPUT_ROOT:?}/"
   rm "${WASI_SYSROOT_FILENAME}"
 
@@ -66,7 +68,7 @@ download_lib_clang_rt() {
 
   BASE_URL="https://github.com/WebAssembly/wasi-sdk/releases/download/"
 
-  LIB_NAME="libclang_rt.builtins-wasm32.a"
+  LIB_NAME="libclang_rt.builtins.a"
 
   OUTPUT_DIR="${OUTPUT_ROOT:?}/clang-rt"
   mkdir -p "${OUTPUT_DIR}"
@@ -80,7 +82,7 @@ download_lib_clang_rt() {
   folder_name=$(basename "${LIB_CLANG_RT_FILENAME}" .tar.gz)
   mkdir -p "${folder_name}"
   tar -zxvf ${LIB_CLANG_RT_FILENAME} -C "${folder_name}"
-  mv "${folder_name}/lib/wasi/${LIB_NAME}" "${OUTPUT_DIR}/${LIB_NAME}"
+  mv "${folder_name}/${folder_name}/wasm32-unknown-wasip1/${LIB_NAME}" "${OUTPUT_DIR}/${LIB_NAME}"
 
   rm -rf "${LIB_CLANG_RT_FILENAME}" "${folder_name}"
   popd
