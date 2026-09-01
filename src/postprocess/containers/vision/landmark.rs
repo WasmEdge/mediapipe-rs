@@ -51,7 +51,7 @@ impl IntoIterator for Landmarks {
 
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
-        todo!()
+      self.0.into_iter()
     }
 }
 
