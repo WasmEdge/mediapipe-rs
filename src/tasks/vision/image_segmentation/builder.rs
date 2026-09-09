@@ -122,7 +122,7 @@ impl ImageSegmenterBuilder {
         };
 
         let output_activation = model_resource.output_activation();
-        return Ok(ImageSegmenter {
+        Ok(ImageSegmenter {
             build_options: self,
             model_resource,
             graph,
@@ -130,6 +130,6 @@ impl ImageSegmenterBuilder {
             labels_locale,
             input_tensor_type,
             output_activation,
-        });
+        })
     }
 }

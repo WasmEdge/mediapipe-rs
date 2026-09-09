@@ -6,29 +6,17 @@ use crate::tasks::common::{BaseTaskOptions, HandLandmarkOptions};
 /// Configure the build options of a new **Hand Landmark** task instance.
 ///
 /// Methods can be chained on it in order to configure it.
+#[derive(Default)]
 pub struct HandLandmarkerBuilder {
     pub(in super::super) base_task_options: BaseTaskOptions,
     pub(in super::super) hand_landmark_options: HandLandmarkOptions,
-}
-
-impl Default for HandLandmarkerBuilder {
-    #[inline(always)]
-    fn default() -> Self {
-        Self {
-            base_task_options: Default::default(),
-            hand_landmark_options: Default::default(),
-        }
-    }
 }
 
 impl HandLandmarkerBuilder {
     /// Create a new builder with default options.
     #[inline(always)]
     pub fn new() -> Self {
-        Self {
-            base_task_options: Default::default(),
-            hand_landmark_options: Default::default(),
-        }
+        Self::default()
     }
 
     base_task_options_impl!(HandLandmarker);
@@ -69,7 +57,7 @@ impl HandLandmarkerBuilder {
             .build_from_buffer(hand_detection_file)?;
 
         // parse model and get model resources.
-        let model_resource = crate::model::parse_model(landmark_file.as_ref())?;
+        let model_resource = crate::model::parse_model(landmark_file)?;
 
         // check model
         model_base_check_impl!(model_resource, 1, 4);

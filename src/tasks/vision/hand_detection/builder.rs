@@ -90,7 +90,7 @@ impl HandDetectorBuilder {
         let input_tensor_type =
             model_resource_check_and_get_impl!(model_resource, input_tensor_type, 0);
 
-        return Ok(HandDetector {
+        Ok(HandDetector {
             build_options: self,
             model_resource,
             graph,
@@ -99,6 +99,6 @@ impl HandDetectorBuilder {
             score_buf_index: 1,
             num_box,
             input_tensor_type,
-        });
+        })
     }
 }

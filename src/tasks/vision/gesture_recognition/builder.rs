@@ -153,7 +153,7 @@ impl GestureRecognizerBuilder {
         }
         .build_from_buffer(landmark_task_file)?;
 
-        let zip_file = ZipFiles::new(hand_gesture_bundle_file.as_ref())?;
+        let zip_file = ZipFiles::new(hand_gesture_bundle_file)?;
         // search files, build graph and check model
 
         let gesture_embed_file = search_file_in_zip!(
@@ -185,7 +185,7 @@ impl GestureRecognizerBuilder {
             output_tensor_shape,
             0
         );
-        let gesture_embed_handedness_out_size = shape.iter().fold(1, |a, b| a * b);
+        let gesture_embed_handedness_out_size = shape.iter().product::<usize>();
 
         let canned_file = search_file_in_zip!(
             zip_file,
@@ -207,7 +207,7 @@ impl GestureRecognizerBuilder {
             input_tensor_shape,
             0
         );
-        let size = shape.iter().fold(1, |a, b| a * b);
+        let size = shape.iter().product::<usize>();
         if size != gesture_embed_handedness_out_size {
             return Err(Error::ModelInconsistentError(format!(
                 "Expect output tensor elements is `{}`, but got `{}`",
@@ -218,7 +218,7 @@ impl GestureRecognizerBuilder {
         let (custom_classify_resources, custom_classify_graph) = {
             let mut search_result = None;
             for name in Self::GESTURE_CUSTOM_GESTURE_CLASSIFIER_CANDIDATE_NAMES {
-                if let Some(r) = zip_file.get_file_offset(*name) {
+                if let Some(r) = zip_file.get_file_offset(name) {
                     search_result = Some(r);
                     break;
                 }
@@ -229,7 +229,7 @@ impl GestureRecognizerBuilder {
                 model_base_check_impl!(r, 1, 1);
                 check_tensor_type!(r, 0, input_tensor_type, TensorType::F32);
                 let shape = model_resource_check_and_get_impl!(r, input_tensor_shape, 0);
-                let size = shape.iter().fold(1, |a, b| a * b);
+                let size = shape.iter().product::<usize>();
                 if size != gesture_embed_handedness_out_size {
                     return Err(Error::ModelInconsistentError(format!(
                         "Expect output tensor elements is `{}`, but got `{}`",

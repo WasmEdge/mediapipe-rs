@@ -4,19 +4,10 @@ use crate::tasks::common::{BaseTaskOptions, EmbeddingOptions};
 /// Configure the build options of a new **Text Embedding** task instance.
 ///
 /// Methods can be chained on it in order to configure it.
+#[derive(Default)]
 pub struct TextEmbedderBuilder {
     pub(super) base_task_options: BaseTaskOptions,
     pub(super) embedding_options: EmbeddingOptions,
-}
-
-impl Default for TextEmbedderBuilder {
-    #[inline(always)]
-    fn default() -> Self {
-        Self {
-            base_task_options: Default::default(),
-            embedding_options: Default::default(),
-        }
-    }
 }
 
 impl TextEmbedderBuilder {
@@ -63,11 +54,11 @@ impl TextEmbedderBuilder {
         )
         .build_from_bytes([buf])?;
 
-        return Ok(TextEmbedder {
+        Ok(TextEmbedder {
             build_options: self,
             model_resource,
             graph,
             input_count,
-        });
+        })
     }
 }

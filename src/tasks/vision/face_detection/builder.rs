@@ -101,7 +101,7 @@ impl FaceDetectorBuilder {
         let input_tensor_type =
             model_resource_check_and_get_impl!(model_resource, input_tensor_type, 0);
 
-        return Ok(FaceDetector {
+        Ok(FaceDetector {
             build_options: self,
             model_resource,
             graph,
@@ -110,6 +110,6 @@ impl FaceDetectorBuilder {
             score_buf_index: 1,
             num_box,
             input_tensor_type,
-        });
+        })
     }
 }

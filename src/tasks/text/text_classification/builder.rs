@@ -5,29 +5,17 @@ use crate::{Error, TensorType};
 /// Configure the build options of a new **Text Classification** task instance.
 ///
 /// Methods can be chained on it in order to configure it.
+#[derive(Default)]
 pub struct TextClassifierBuilder {
     pub(super) base_task_options: BaseTaskOptions,
     pub(super) classification_options: ClassificationOptions,
-}
-
-impl Default for TextClassifierBuilder {
-    #[inline(always)]
-    fn default() -> Self {
-        Self {
-            base_task_options: Default::default(),
-            classification_options: Default::default(),
-        }
-    }
 }
 
 impl TextClassifierBuilder {
     /// Create a new builder with default options.
     #[inline(always)]
     pub fn new() -> Self {
-        Self {
-            base_task_options: Default::default(),
-            classification_options: Default::default(),
-        }
+        Self::default()
     }
 
     base_task_options_impl!(TextClassifier);
@@ -70,10 +58,10 @@ impl TextClassifierBuilder {
         )
         .build_from_bytes([buf])?;
 
-        return Ok(TextClassifier {
+        Ok(TextClassifier {
             build_options: self,
             model_resource,
             graph,
-        });
+        })
     }
 }
