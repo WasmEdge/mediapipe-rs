@@ -4,11 +4,14 @@
 // * https://github.com/google/mediapipe/blob/master/mediapipe/tasks/cc/text/tokenizers/bert_tokenizer.cc
 
 use super::*;
+use std::sync::LazyLock;
 
-lazy_static::lazy_static! {
-    static ref DELIM_REGEX: Regex = Regex::new(r"((\s+|[!-/]|[:-@]|[\[-`]|[{-~]|[\p{P}]|[\x{4E00}-\x{9FFF}]|[\x{3400}-\x{4DBF}]|[\x{20000}-\x{2A6DF}]|[\x{2A700}-\x{2B73F}]|[\x{2B740}-\x{2B81F}]|[\x{2B820}-\x{2CEAF}]|[\x{F900}-\x{FAFF}]|[\x{2F800}-\x{2FA1F}]))").unwrap();
-    static ref INCLUDE_DELIM_REGEX: Regex = Regex::new(r"(([!-/]|[:-@]|[\[-`]|[{-~]|[\p{P}]|[\x{4E00}-\x{9FFF}]|[\x{3400}-\x{4DBF}]|[\x{20000}-\x{2A6DF}]|[\x{2A700}-\x{2B73F}]|[\x{2B740}-\x{2B81F}]|[\x{2B820}-\x{2CEAF}]|[\x{F900}-\x{FAFF}]|[\x{2F800}-\x{2FA1F}]))").unwrap();
-}
+static DELIM_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"((\s+|[!-/]|[:-@]|[\[-`]|[{-~]|[\p{P}]|[\x{4E00}-\x{9FFF}]|[\x{3400}-\x{4DBF}]|[\x{20000}-\x{2A6DF}]|[\x{2A700}-\x{2B73F}]|[\x{2B740}-\x{2B81F}]|[\x{2B820}-\x{2CEAF}]|[\x{F900}-\x{FAFF}]|[\x{2F800}-\x{2FA1F}]))").unwrap()
+});
+static INCLUDE_DELIM_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(([!-/]|[:-@]|[\[-`]|[{-~]|[\p{P}]|[\x{4E00}-\x{9FFF}]|[\x{3400}-\x{4DBF}]|[\x{20000}-\x{2A6DF}]|[\x{2A700}-\x{2B73F}]|[\x{2B740}-\x{2B81F}]|[\x{2B820}-\x{2CEAF}]|[\x{F900}-\x{FAFF}]|[\x{2F800}-\x{2FA1F}]))").unwrap()
+});
 
 pub(super) fn to_bert_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
     s: &str,
@@ -97,9 +100,9 @@ pub(super) fn to_bert_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
 
 const DEFAULT_MAX_BYTES_PER_TOKEN: usize = 100;
 // const DEFAULT_MAX_CHARS_PER_SUB_TOKEN: i32 = 100;
-const DEFAULT_SUFFIX_INDICATOR: &'static str = "##";
+const DEFAULT_SUFFIX_INDICATOR: &str = "##";
 // const DEFAULT_USE_UNKNOWN_TOKEN: bool = true;
-const DEFAULT_UNKNOWN_TOKEN: &'static str = "[UNK]";
+const DEFAULT_UNKNOWN_TOKEN: &str = "[UNK]";
 // const DEFAULT_SPLIT_UNKNOWN_CHARS: bool = false;
 
 #[inline(always)]
@@ -113,7 +116,7 @@ fn do_word_piece_tokenize(
         return;
     }
 
-    if token.as_bytes().len() > DEFAULT_MAX_BYTES_PER_TOKEN {
+    if token.len() > DEFAULT_MAX_BYTES_PER_TOKEN {
         // use unknown token
         input_ids[*index] = *token_index_map.get(DEFAULT_UNKNOWN_TOKEN).unwrap_or(&0);
         *index += 1;
@@ -159,15 +162,14 @@ fn longest_match_starting_at(
     while token_end > token_start {
         let str_to_lookup = if token_start > 0 {
             string_buffer.clear();
-            string_buffer.extend(DEFAULT_SUFFIX_INDICATOR.chars());
-            string_buffer.extend(token[token_start..token_end].chars());
+            string_buffer.push_str(DEFAULT_SUFFIX_INDICATOR);
+            string_buffer.push_str(&token[token_start..token_end]);
             string_buffer.as_str()
         } else {
             &token[..token_end]
         };
-        match token_index_map.get(str_to_lookup) {
-            Some(token_index) => return Some((token_end, *token_index)),
-            None => {} // default split unknown characters is false, so do nothing
+        if let Some(token_index) = token_index_map.get(str_to_lookup) {
+            return Some((token_end, *token_index));
         }
         token_end -= 1;
     }
