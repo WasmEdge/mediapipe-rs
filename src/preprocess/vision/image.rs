@@ -126,17 +126,28 @@ pub(super) fn rgb8_image_buffer_to_tensor<'t, Container>(
 where
     Container: std::ops::Deref<Target = [u8]>,
 {
-    debug_assert!(
-        img.width() == info.width()
-            && img.height() == info.height()
-            && info.color_space != ImageColorSpaceType::GRAYSCALE
-    );
+    let shape = &info.tensor_shape;
+    if shape.batch != 1
+        || shape.channels != 3
+        || img.width() != info.width()
+        || img.height() != info.height()
+    {
+        return Err(Error::ModelInconsistentError(format!(
+            "Expect a `1x{}x{}x3` RGB image tensor, but got batch `{}`, `{}x{}`, channels `{}`",
+            img.height(),
+            img.width(),
+            shape.batch,
+            shape.height,
+            shape.width,
+            shape.channels
+        )));
+    }
 
     let data_layout = info.image_data_layout;
     let res = output_buffer.as_mut();
     let bytes = img.as_bytes();
     let hw = (img.width() * img.height()) as usize;
-    let expected_len = bytes.len() * tensor_byte_size!(info.tensor_type);
+    let expected_len = shape.elem_size() * tensor_byte_size!(info.tensor_type);
     if res.len() < expected_len {
         return Err(Error::ArgumentError(format!(
             "Expect output buffer at least `{}` bytes, but got `{}`",
@@ -276,15 +287,25 @@ mod test {
         mean: Vec<f32>,
         std: Vec<f32>,
     ) -> ImageToTensorInfo {
+        info_with_shape(layout, tensor_type, mean, std, (1, 2, 1, 3))
+    }
+
+    fn info_with_shape(
+        layout: ImageDataLayout,
+        tensor_type: TensorType,
+        mean: Vec<f32>,
+        std: Vec<f32>,
+        (batch, width, height, channels): (usize, usize, usize, usize),
+    ) -> ImageToTensorInfo {
         ImageToTensorInfo {
             image_data_layout: layout,
             color_space: ImageColorSpaceType::RGB,
             tensor_type,
             tensor_shape: ImageLikeTensorShape {
-                batch: 1,
-                width: 2,
-                height: 1,
-                channels: 3,
+                batch,
+                width,
+                height,
+                channels,
             },
             stats_min: vec![],
             stats_max: vec![],
@@ -335,6 +356,26 @@ mod test {
         let mut short = vec![0u8; 6 * 4 - 1];
         let ok = info(ImageDataLayout::NHWC, TensorType::F32, vec![0.], vec![1.]);
         assert!(rgb8_image_buffer_to_tensor(&img, &ok, &mut short).is_err());
+    }
+
+    #[test]
+    fn test_rgb8_rejects_unsupported_tensor_shapes() {
+        let img = RgbImage::from_raw(2, 1, vec![0; 6]).unwrap();
+        let mut buf = vec![0u8; 2 * 6 * 4];
+        for shape in [(2, 2, 1, 3), (1, 2, 1, 1), (1, 2, 1, 4), (1, 1, 2, 3)] {
+            let info = info_with_shape(
+                ImageDataLayout::NHWC,
+                TensorType::F32,
+                vec![0.],
+                vec![1.],
+                shape,
+            );
+            assert!(
+                rgb8_image_buffer_to_tensor(&img, &info, &mut buf).is_err(),
+                "{:?}",
+                shape
+            );
+        }
     }
 
     #[test]
