@@ -57,12 +57,10 @@ impl ToTensorInfo {
     pub fn try_to_audio(&self) -> Result<&audio::AudioToTensorInfo, Error> {
         match &self {
             Self::Audio(a) => Ok(a),
-            _ => {
-                return Err(Error::ModelInconsistentError(format!(
-                    "Expect Audio to Tensor Info, but got `{:?}`",
-                    self
-                )));
-            }
+            _ => Err(Error::ModelInconsistentError(format!(
+                "Expect Audio to Tensor Info, but got `{:?}`",
+                self
+            ))),
         }
     }
 
@@ -72,12 +70,10 @@ impl ToTensorInfo {
     pub fn try_to_image(&self) -> Result<&vision::ImageToTensorInfo, Error> {
         match &self {
             Self::Image(i) => Ok(i),
-            _ => {
-                return Err(Error::ModelInconsistentError(format!(
-                    "Expect Image to Tensor Info, but got `{:?}`",
-                    self
-                )));
-            }
+            _ => Err(Error::ModelInconsistentError(format!(
+                "Expect Image to Tensor Info, but got `{:?}`",
+                self
+            ))),
         }
     }
 
@@ -87,12 +83,10 @@ impl ToTensorInfo {
     pub fn try_to_text(&self) -> Result<&text::TextToTensorInfo, Error> {
         match &self {
             Self::Text(t) => Ok(t),
-            _ => {
-                return Err(Error::ModelInconsistentError(format!(
-                    "Expect Text to Tensor Info, but got `{:?}`",
-                    self
-                )));
-            }
+            _ => Err(Error::ModelInconsistentError(format!(
+                "Expect Text to Tensor Info, but got `{:?}`",
+                self
+            ))),
         }
     }
 }

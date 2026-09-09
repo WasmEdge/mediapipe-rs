@@ -1,7 +1,5 @@
-extern crate image as image_crate;
-
 use super::*;
-pub(super) use image_crate::{
+pub(super) use ::image::{
     imageops, DynamicImage, EncodableLayout, GenericImageView, ImageBuffer, Pixel, Rgb, RgbImage,
 };
 
@@ -44,7 +42,7 @@ impl ImageToTensor for DynamicImage {
         }
     }
 
-    /// return image size: (weight, height)
+    /// return image size: (width, height)
     #[inline(always)]
     fn image_size(&self) -> (u32, u32) {
         self.dimensions()
@@ -63,11 +61,11 @@ impl ImageToTensor for RgbImage {
 
         let mut rgb_img = if let Some(ref roi) = process_options.region_of_interest {
             // check roi
-            let weight = self.width() as f32;
+            let width = self.width() as f32;
             let height = self.height() as f32;
-            let x = (roi.x_min * weight) as u32;
+            let x = (roi.x_min * width) as u32;
             let y = (roi.y_min * height) as u32;
-            let w = (roi.width * weight) as u32;
+            let w = (roi.width * width) as u32;
             let h = (roi.height * height) as u32;
             tmp_rgb_img = imageops::crop_imm(self, x, y, w, h).to_image();
             let abs = process_options.rotation.abs();
@@ -107,7 +105,7 @@ impl ImageToTensor for RgbImage {
         rgb8_image_buffer_to_tensor(rgb_img, info, output_buffer)
     }
 
-    /// return image size: (weight, height)
+    /// return image size: (width, height)
     #[inline(always)]
     fn image_size(&self) -> (u32, u32) {
         self.dimensions()
@@ -115,8 +113,8 @@ impl ImageToTensor for RgbImage {
 }
 
 #[inline(always)]
-pub(super) fn rgb8_image_buffer_to_tensor<'t, Container>(
-    img: &'t ImageBuffer<Rgb<u8>, Container>,
+pub(super) fn rgb8_image_buffer_to_tensor<Container>(
+    img: &ImageBuffer<Rgb<u8>, Container>,
     info: &ImageToTensorInfo,
     output_buffer: &mut impl AsMut<[u8]>,
 ) -> Result<(), Error>
@@ -155,14 +153,14 @@ where
     match info.tensor_type {
         TensorType::F32 => {
             let (means, stds) = rgb_mean_std(info)?;
-            let mut out = res.chunks_exact_mut(std::mem::size_of::<f32>());
+            let mut out = res.as_chunks_mut::<4>().0.iter_mut();
             let mut put = |value: u8, c: usize| {
                 let f = (value as f32 - means[c]) / stds[c];
-                out.next().unwrap().copy_from_slice(&f.to_ne_bytes());
+                *out.next().unwrap() = f.to_ne_bytes();
             };
             match data_layout {
                 ImageDataLayout::NHWC => {
-                    for px in bytes.chunks_exact(3) {
+                    for px in bytes.as_chunks::<3>().0 {
                         put(px[0], 0);
                         put(px[1], 1);
                         put(px[2], 2);
@@ -318,8 +316,10 @@ mod test {
     }
 
     fn to_f32(buf: &[u8]) -> Vec<f32> {
-        buf.chunks_exact(4)
-            .map(|b| f32::from_ne_bytes(b.try_into().unwrap()))
+        buf.as_chunks::<4>()
+            .0
+            .iter()
+            .map(|b| f32::from_ne_bytes(*b))
             .collect()
     }
 

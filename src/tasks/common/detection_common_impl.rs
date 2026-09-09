@@ -44,7 +44,7 @@ macro_rules! detector_session_impl {
         pub fn detect_for_video<InputVideoData: crate::preprocess::vision::VideoData>(
             &mut self,
             video_data: InputVideoData,
-        ) -> Result<crate::postprocess::VideoResultsIter<Self, InputVideoData>, crate::Error> {
+        ) -> Result<crate::postprocess::VideoResultsIter<'_, '_, Self, InputVideoData>, crate::Error> {
             Ok(crate::postprocess::VideoResultsIter::new(self, video_data))
         }
     };

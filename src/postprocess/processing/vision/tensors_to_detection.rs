@@ -7,21 +7,16 @@ use crate::postprocess::{
 };
 
 /// Tells the calculator how to convert the detector output to bounding boxes.
-#[derive(Debug, Clone, Copy)]
+#[allow(clippy::upper_case_acronyms)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum DetectionBoxFormat {
     /// bbox [y_center, x_center, height, width], keypoint [y, x]
+    #[default]
     YXHW,
     /// bbox [x_center, y_center, width, height], keypoint [x, y]
     XYWH,
     /// bbox [xmin, ymin, xmax, ymax], keypoint [x, y]
     XYXY,
-}
-
-impl Default for DetectionBoxFormat {
-    // if UNSPECIFIED, the calculator assumes YXHW
-    fn default() -> Self {
-        Self::YXHW
-    }
 }
 
 struct ToDetectionOptions {
@@ -159,8 +154,10 @@ impl<'a> TensorsToDetection<'a> {
         location_buf: (TensorType, Option<QuantizationParameters>),
         score_buf: (TensorType, Option<QuantizationParameters>),
     ) -> Result<Self, crate::Error> {
-        let mut options = ToDetectionOptions::default();
-        options.min_score_threshold = min_score_threshold;
+        let options = ToDetectionOptions {
+            min_score_threshold,
+            ..Default::default()
+        };
         Ok(Self {
             nms: NonMaxSuppression::new(max_results),
             categories_filter,
@@ -362,7 +359,7 @@ impl<'a> TensorsToDetection<'a> {
             let anchors = self.anchors.unwrap();
             let mut index = 0;
             let mut score_index = 0;
-            for i in 0..num_boxes {
+            for anchor in anchors.iter().take(num_boxes) {
                 let mut max_score = process_scores!(self, scores[score_index]);
                 let mut class_index = 0;
                 let num_classes = self.options.num_classes;
@@ -386,7 +383,7 @@ impl<'a> TensorsToDetection<'a> {
                     {
                         let raw_boxes = &mut location[index..next_index];
 
-                        Self::decode_boxes(&self.options, raw_boxes, &anchors[i]);
+                        Self::decode_boxes(&self.options, raw_boxes, anchor);
                         if let Some(d) =
                             Self::generate_detection(&self.options, category, raw_boxes)
                         {

@@ -65,8 +65,8 @@ impl<'a> From<&'a NormalizedRect> for CropRect {
     fn from(value: &'a NormalizedRect) -> Self {
         let mut width = value.width;
         let mut height = value.height;
-        let x_min = max_f32!(value.x_center - width / 2., 0.);
-        let y_min = max_f32!(value.y_center - height / 2., 0.);
+        let x_min = (value.x_center - width / 2.).max(0.);
+        let y_min = (value.y_center - height / 2.).max(0.);
         if x_min + width > 1. {
             width = 1. - x_min;
         }

@@ -22,7 +22,7 @@ impl ImageEmbedder {
 
     /// Create a new task session that contains processing buffers and can do inference.
     #[inline(always)]
-    pub fn new_session(&self) -> Result<ImageEmbedderSession, Error> {
+    pub fn new_session(&self) -> Result<ImageEmbedderSession<'_>, Error> {
         let input_to_tensor_info =
             model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
                 .try_to_image()?;
@@ -140,7 +140,7 @@ impl<'model> ImageEmbedderSession<'model> {
     pub fn embed_for_video<InputVideoData: VideoData>(
         &mut self,
         video_data: InputVideoData,
-    ) -> Result<VideoResultsIter<Self, InputVideoData>, Error> {
+    ) -> Result<VideoResultsIter<'_, '_, Self, InputVideoData>, Error> {
         Ok(VideoResultsIter::new(self, video_data))
     }
 }
@@ -155,9 +155,7 @@ impl<'model> super::TaskSession for ImageEmbedderSession<'model> {
         video_data: &mut impl VideoData,
     ) -> Result<Option<Self::Result>, Error> {
         if let Some(frame) = video_data.next_frame()? {
-            return self
-                .embed_with_options(&frame, process_options)
-                .map(|r| Some(r));
+            return self.embed_with_options(&frame, process_options).map(Some);
         }
         Ok(None)
     }

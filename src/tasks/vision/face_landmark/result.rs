@@ -69,11 +69,7 @@ impl Display for FaceLandmarkResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "  Landmarks:")?;
         for (i, l) in self.face_landmarks.iter().enumerate() {
-            writeln!(
-                f,
-                "    Normalized Landmark #{}:",
-                i
-            )?;
+            writeln!(f, "    Normalized Landmark #{}:", i)?;
             write!(f, "{}", l)?;
         }
         Ok(())

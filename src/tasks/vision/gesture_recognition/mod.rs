@@ -70,7 +70,7 @@ impl GestureRecognizer {
 
     /// Create a new task session that contains processing buffers and can do inference.
     #[inline(always)]
-    pub fn new_session(&self) -> Result<GestureRecognizerSession, Error> {
+    pub fn new_session(&self) -> Result<GestureRecognizerSession<'_>, Error> {
         // get input shapes
         let gesture_embed_hand_landmarks_input_shape = model_resource_check_and_get_impl!(
             self.gesture_embed_model_resources,
@@ -99,11 +99,11 @@ impl GestureRecognizer {
         };
         let gesture_embed_hand_landmarks_input_size = gesture_embed_hand_landmarks_input_shape
             .iter()
-            .fold(1, |a, b| a * b);
+            .product::<usize>();
         let gesture_embed_hand_world_landmarks_input_size =
             gesture_embed_hand_world_landmarks_input_shape
                 .iter()
-                .fold(1, |a, b| a * b);
+                .product::<usize>();
 
         // tensors to classifications
         let mut tensors_to_classification = TensorsToClassification::new();
@@ -225,7 +225,7 @@ impl<'model> GestureRecognizerSession<'model> {
                 self.gesture_recognizer.gesture_embed_handedness_input_index,
                 TensorType::F32,
                 self.gesture_embed_handedness_input_shape,
-                &self.gesture_embed_handedness_input_buffer,
+                self.gesture_embed_handedness_input_buffer,
             )?;
             self.gesture_embed_execution_ctx.set_input(
                 self.gesture_recognizer
@@ -289,7 +289,7 @@ impl<'model> GestureRecognizerSession<'model> {
     pub fn recognize_for_video<InputVideoData: VideoData>(
         &mut self,
         video_data: InputVideoData,
-    ) -> Result<VideoResultsIter<Self, InputVideoData>, Error> {
+    ) -> Result<VideoResultsIter<'_, '_, Self, InputVideoData>, Error> {
         Ok(VideoResultsIter::new(self, video_data))
     }
 }
@@ -305,7 +305,7 @@ impl<'model> super::TaskSession for GestureRecognizerSession<'model> {
     ) -> Result<Option<Self::Result>, Error> {
         // todo: video track optimize
         if let Some(frame) = video_data.next_frame()? {
-            return self.recognize(&frame).map(|r| Some(r));
+            return self.recognize(&frame).map(Some);
         }
         Ok(None)
     }

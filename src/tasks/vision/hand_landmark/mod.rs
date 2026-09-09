@@ -1,10 +1,10 @@
 mod builder;
-mod hand_landmark;
+mod landmark;
 mod result;
 
 use super::{HandDetector, HandDetectorBuilder, HandDetectorSession};
 pub use builder::HandLandmarkerBuilder;
-pub use hand_landmark::HandLandmark;
+pub use landmark::HandLandmark;
 pub use result::{HandLandmarkResult, HandLandmarkResults};
 
 use crate::model::ModelResourceTrait;
@@ -46,7 +46,7 @@ impl HandLandmarker {
 
     /// Create a new task session that contains processing buffers and can do inference.
     #[inline(always)]
-    pub fn new_session(&self) -> Result<HandLandmarkerSession, Error> {
+    pub fn new_session(&self) -> Result<HandLandmarkerSession<'_>, Error> {
         let image_to_tensor_info =
             model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
                 .try_to_image()?;
@@ -135,13 +135,13 @@ impl<'model> HandLandmarkerSession<'model> {
         for d in hand_detection_result.detections.iter() {
             // get roi
             let hand_rect = NormalizedRect::from_detection(
-                &d,
+                d,
                 Self::DETECTION_TO_RECT_ROTATION_OPTION,
                 img_w,
                 img_h,
                 false,
             )
-            .transform(img_w, img_h, 2.6, 2.6, 0.0, -0.5, None, true);
+            .transform((img_w, img_h), (2.6, 2.6), (0.0, -0.5), None, true);
 
             // image to tensor
             input.to_tensor(
@@ -222,7 +222,7 @@ impl<'model> HandLandmarkerSession<'model> {
     pub fn detect_for_video<InputVideoData: VideoData>(
         &mut self,
         video_data: InputVideoData,
-    ) -> Result<VideoResultsIter<Self, InputVideoData>, Error> {
+    ) -> Result<VideoResultsIter<'_, '_, Self, InputVideoData>, Error> {
         Ok(VideoResultsIter::new(self, video_data))
     }
 }
@@ -238,7 +238,7 @@ impl<'model> super::TaskSession for HandLandmarkerSession<'model> {
     ) -> Result<Option<Self::Result>, Error> {
         // todo: video track optimize
         if let Some(frame) = video_data.next_frame()? {
-            return self.detect(&frame).map(|r| Some(r));
+            return self.detect(&frame).map(Some);
         }
         Ok(None)
     }

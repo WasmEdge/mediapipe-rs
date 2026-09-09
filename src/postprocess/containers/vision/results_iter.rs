@@ -25,6 +25,7 @@ where
     }
 
     /// poll next result
+    #[allow(clippy::should_implement_trait)]
     #[inline(always)]
     pub fn next(&mut self) -> Result<Option<TaskSession::Result>, crate::Error> {
         self.session

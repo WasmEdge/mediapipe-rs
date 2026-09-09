@@ -66,7 +66,7 @@ impl AudioData for SymphoniaAudioData {
                         return Ok(None);
                     }
                 }
-                return Err(Error::from(e));
+                Err(Error::from(e))
             }
         }
     }

@@ -81,7 +81,7 @@ impl Display for GestureRecognizerResult {
             writeln!(f, "  No Gesture Classifications")?;
         } else {
             writeln!(f, "  Gesture Classification: ")?;
-            let classification = self.gestures.classifications.get(0).unwrap();
+            let classification = self.gestures.classifications.first().unwrap();
             for (i, c) in classification.categories.iter().enumerate() {
                 writeln!(f, "    Category #{}:", i)?;
                 write!(f, "{}", c)?;

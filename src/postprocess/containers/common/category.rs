@@ -81,7 +81,7 @@ mod test {
 
     #[test]
     fn test_category_order() {
-        let mut categories = vec![
+        let mut categories = [
             category(0, 0.1),
             category(1, f32::NAN),
             category(2, 0.9),

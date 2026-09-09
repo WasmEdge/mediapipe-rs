@@ -10,6 +10,7 @@ pub(super) use softmax::Softmax;
 
 pub use dequantize::QuantizationParameters;
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum Activation {
     None,

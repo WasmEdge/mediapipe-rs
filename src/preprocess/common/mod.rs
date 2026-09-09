@@ -5,12 +5,11 @@ pub(super) mod ffmpeg_input;
 /// `values.len() * size_of::<T>()` bytes.
 #[cfg(any(feature = "audio", feature = "text"))]
 pub(crate) fn write_ne_bytes<T: ToNeBytes>(out: &mut [u8], values: impl IntoIterator<Item = T>) {
-    let mut slots = out.chunks_exact_mut(std::mem::size_of::<T>());
+    let mut rest = out;
     for value in values {
-        slots
-            .next()
-            .expect("output buffer length is checked by the caller")
-            .copy_from_slice(value.to_ne_bytes().as_ref());
+        let (slot, tail) = rest.split_at_mut(std::mem::size_of::<T>());
+        slot.copy_from_slice(value.to_ne_bytes().as_ref());
+        rest = tail;
     }
 }
 

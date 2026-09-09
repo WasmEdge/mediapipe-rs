@@ -153,8 +153,7 @@ impl<'buf> EndOfCentralDirectoryRecord<'buf> {
         let central_directory = res.offset_of_start_of_central_directory() as usize;
         let central_directory_end =
             central_directory.checked_add(res.size_of_central_directory() as usize);
-        if central_directory >= start_pos
-            || central_directory_end.map_or(true, |end| end > start_pos)
+        if central_directory >= start_pos || central_directory_end.is_none_or(|end| end > start_pos)
         {
             return Err(Error::ZipFileParseError(format!(
                 "Central directory `{}..{:?}` must end before the end of central directory record at `{}`",
@@ -166,7 +165,7 @@ impl<'buf> EndOfCentralDirectoryRecord<'buf> {
                 "Comment length is too long".into(),
             ));
         }
-        return Ok(res);
+        Ok(res)
     }
 
     #[inline]
@@ -536,7 +535,7 @@ impl<'buf> ZipFiles<'buf> {
         if start_pos == buf.len() {
             return Ok(None);
         }
-        Self::new_with_start_pos(buf, start_pos).map(|z| Some(z))
+        Self::new_with_start_pos(buf, start_pos).map(Some)
     }
 
     #[inline]
@@ -626,9 +625,8 @@ mod test {
         CentralDirectory, EndOfCentralDirectoryRecord, LocalFileHeader, ZipFiles,
     };
 
-    const ZIP_PATH: &'static str = "assets/testdata/test.zip";
-    const MODEL_PATH: &'static str =
-        "assets/models/image_classification/efficientnet_lite0_fp32.tflite";
+    const ZIP_PATH: &str = "assets/testdata/test.zip";
+    const MODEL_PATH: &str = "assets/models/image_classification/efficientnet_lite0_fp32.tflite";
 
     #[test]
     fn test_end_of_central_directory_record() {

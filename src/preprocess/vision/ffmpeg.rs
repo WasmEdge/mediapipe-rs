@@ -81,8 +81,8 @@ impl<'a> ImageToTensor for FFMpegFrame<'a> {
         // crop and rotate, then scale using filter
         let data = if process_options.rotation != 0. || process_options.region_of_interest.is_some()
         {
-            const IN_NODE: &'static str = "Parsed_buffer_0";
-            const OUT_NODE_PREFIX: &'static str = "Parsed_buffersink_";
+            const IN_NODE: &str = "Parsed_buffer_0";
+            const OUT_NODE_PREFIX: &str = "Parsed_buffersink_";
             let mut num_node = 3;
 
             // config filter desc
@@ -176,7 +176,7 @@ impl<'a> ImageToTensor for FFMpegFrame<'a> {
         Ok(())
     }
 
-    /// return image size: (weight, height)
+    /// return image size: (width, height)
     fn image_size(&self) -> (u32, u32) {
         (
             self.0.source.decoder.width(),

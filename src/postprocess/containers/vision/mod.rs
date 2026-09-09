@@ -1,25 +1,3 @@
-macro_rules! min_f32 {
-    ( $x:expr, $y:expr ) => {{
-        let diff = $x - $y;
-        if diff < 0. {
-            $x
-        } else {
-            $y
-        }
-    }};
-}
-
-macro_rules! max_f32 {
-    ( $x:expr, $y:expr ) => {{
-        let diff = $x - $y;
-        if diff > 0. {
-            $x
-        } else {
-            $y
-        }
-    }};
-}
-
 mod crop_rect;
 mod detection_result;
 mod image_mask;

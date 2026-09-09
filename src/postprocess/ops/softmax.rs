@@ -19,7 +19,7 @@ impl Softmax for [f32] {
         }
 
         for i in self.iter_mut() {
-            *i = *i / sum;
+            *i /= sum;
         }
     }
 }

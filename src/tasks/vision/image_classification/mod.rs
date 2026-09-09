@@ -23,7 +23,7 @@ impl ImageClassifier {
 
     /// Create a new task session that contains processing buffers and can do inference.
     #[inline(always)]
-    pub fn new_session(&self) -> Result<ImageClassifierSession, Error> {
+    pub fn new_session(&self) -> Result<ImageClassifierSession<'_>, Error> {
         let input_to_tensor_info =
             model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
                 .try_to_image()?;
@@ -165,7 +165,7 @@ impl<'model> ImageClassifierSession<'model> {
     pub fn classify_for_video<InputVideoData: VideoData>(
         &mut self,
         video_data: InputVideoData,
-    ) -> Result<VideoResultsIter<Self, InputVideoData>, Error> {
+    ) -> Result<VideoResultsIter<'_, '_, Self, InputVideoData>, Error> {
         Ok(VideoResultsIter::new(self, video_data))
     }
 }

@@ -111,10 +111,10 @@ pub(crate) fn projection_normalized_landmarks(
         cos = angle.cos();
         sin = angle.sin();
     }
-    let rect_x_min = max_f32!(0.0, normalized_rect.x_center - normalized_rect.width * 0.5);
-    let rect_y_min = max_f32!(0.0, normalized_rect.y_center - normalized_rect.height * 0.5);
-    let rect_x_max = min_f32!(1.0, normalized_rect.x_center + normalized_rect.width * 0.5);
-    let rect_y_max = min_f32!(1.0, normalized_rect.y_center + normalized_rect.height * 0.5);
+    let rect_x_min = (normalized_rect.x_center - normalized_rect.width * 0.5).max(0.0);
+    let rect_y_min = (normalized_rect.y_center - normalized_rect.height * 0.5).max(0.0);
+    let rect_x_max = (normalized_rect.x_center + normalized_rect.width * 0.5).min(1.0);
+    let rect_y_max = (normalized_rect.y_center + normalized_rect.height * 0.5).min(1.0);
     let width = rect_x_max - rect_x_min;
     let height = rect_y_max - rect_y_min;
 

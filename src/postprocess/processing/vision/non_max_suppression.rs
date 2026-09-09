@@ -10,6 +10,7 @@ pub enum NonMaxSuppressionOverlapType {
     IntersectionOverUnion,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Copy, Clone)]
 pub enum NonMaxSuppressionAlgorithm {
     DEFAULT,
@@ -110,13 +111,13 @@ impl NonMaxSuppression {
         indexed_scores: Vec<(usize, f32)>,
     ) {
         let mut retains = vec![false; detections.len()];
-        let mut retained_locations = Vec::new();
+        let mut retained_locations: Vec<&Rect<f32>> = Vec::new();
         for (index, score) in indexed_scores {
             let location = &detections[index].bounding_box;
             let mut suppressed = false;
 
             for retained_location in &retained_locations {
-                let similarity = self.overlap_similarity(location, *retained_location);
+                let similarity = self.overlap_similarity(location, retained_location);
                 if similarity > self.min_suppression_threshold {
                     suppressed = true;
                     break;
@@ -161,8 +162,7 @@ impl NonMaxSuppression {
             }
 
             let location = &in_detections[indexed_scores[0].0].bounding_box;
-            for i in 1..indexed_scores.len() {
-                let indexed_score = indexed_scores[i];
+            for &indexed_score in &indexed_scores[1..] {
                 let rest_detection = &in_detections[indexed_score.0];
 
                 let similarity = self.overlap_similarity(location, &rest_detection.bounding_box);
