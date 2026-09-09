@@ -5,7 +5,7 @@ use std::ops::{Deref, DerefMut};
 /// Landmark represents a point in 3D space with x, y, z coordinates. The
 /// landmark coordinates are in meters. z represents the landmark depth, and the
 /// smaller the value the closer the world landmark is to the camera.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Landmark {
     pub x: f32,
     pub y: f32,
@@ -63,11 +63,9 @@ pub type NormalizedLandmarks = Landmarks;
 
 impl Landmark {
     pub const LANDMARK_TOLERANCE: f32 = 1e-6;
-}
 
-/// Approximate equality on x, y, z within [`Landmark::LANDMARK_TOLERANCE`].
-impl PartialEq for Landmark {
-    fn eq(&self, other: &Self) -> bool {
+    /// Compare x, y and z within [`Landmark::LANDMARK_TOLERANCE`].
+    pub fn approx_eq(&self, other: &Self) -> bool {
         (self.x - other.x).abs() < Self::LANDMARK_TOLERANCE
             && (self.y - other.y).abs() < Self::LANDMARK_TOLERANCE
             && (self.z - other.z).abs() < Self::LANDMARK_TOLERANCE
@@ -166,15 +164,17 @@ mod test {
     }
 
     #[test]
-    fn test_landmark_eq_is_symmetric() {
+    fn test_landmark_approx_eq_is_symmetric() {
         let a = landmark(0.0, 0.0, 0.0);
         let b = landmark(0.0, 1.0, 0.0);
         let c = landmark(0.0, 0.0, 1.0);
-        assert_ne!(a, b);
-        assert_ne!(b, a);
-        assert_ne!(a, c);
-        assert_ne!(c, a);
-        assert_eq!(a, landmark(0.0, 1e-7, -1e-7));
+        assert!(!a.approx_eq(&b));
+        assert!(!b.approx_eq(&a));
+        assert!(!a.approx_eq(&c));
+        assert!(!c.approx_eq(&a));
+        assert!(a.approx_eq(&landmark(0.0, 1e-7, -1e-7)));
+        assert_ne!(a, landmark(0.0, 1e-7, -1e-7));
+        assert_eq!(a, landmark(0.0, 0.0, 0.0));
     }
 
     #[test]
