@@ -20,7 +20,6 @@ mod ffmpeg_dep_libs {
         };
 
         dir.push(filename);
-        eprintln!("cargo:warning={}", dir.display());
         dir.exists() && !dir.is_dir()
     }
 
