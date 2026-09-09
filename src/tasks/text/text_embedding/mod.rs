@@ -57,7 +57,7 @@ impl TextEmbedder {
 
     /// Embed one text using a new session.
     #[inline(always)]
-    pub fn embed(&self, input: &impl TextToTensors) -> Result<EmbeddingResult, Error> {
+    pub fn embed<T: TextToTensors + ?Sized>(&self, input: &T) -> Result<EmbeddingResult, Error> {
         self.new_session()?.embed(input)
     }
 }
@@ -76,7 +76,10 @@ pub struct TextEmbedderSession<'a> {
 impl<'a> TextEmbedderSession<'a> {
     /// Embed one text use this session.
     #[inline(always)]
-    pub fn embed(&mut self, input: &impl TextToTensors) -> Result<EmbeddingResult, Error> {
+    pub fn embed<T: TextToTensors + ?Sized>(
+        &mut self,
+        input: &T,
+    ) -> Result<EmbeddingResult, Error> {
         input.to_tensors(self.input_to_tensor_info, &mut self.input_tensor_bufs)?;
 
         let tensor_type = TensorType::I32;

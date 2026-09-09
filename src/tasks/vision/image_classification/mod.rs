@@ -99,14 +99,18 @@ impl ImageClassifier {
 /// Session to run inference.
 /// If process multiple images or videos, reuse it can get better performance.
 ///
-/// ```rust
-/// use mediapipe_rs::tasks::vision::ImageClassifier;
+/// ```no_run
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let images: Vec<image::DynamicImage> = vec![];
+/// use mediapipe_rs::tasks::vision::ImageClassifierBuilder;
 ///
-/// let image_classifier: ImageClassifier;
+/// let image_classifier = ImageClassifierBuilder::new().build_from_file("model.tflite")?;
 /// let mut session = image_classifier.new_session()?;
-/// for image in images {
+/// for image in &images {
 ///     session.classify(image)?;
 /// }
+/// # Ok(())
+/// # }
 /// ```
 pub struct ImageClassifierSession<'model> {
     execution_ctx: GraphExecutionContext<'model>,

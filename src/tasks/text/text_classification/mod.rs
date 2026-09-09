@@ -70,7 +70,10 @@ impl TextClassifier {
 
     /// Classify the input using a new session.
     #[inline(always)]
-    pub fn classify(&self, input: &impl TextToTensors) -> Result<ClassificationResult, Error> {
+    pub fn classify<T: TextToTensors + ?Sized>(
+        &self,
+        input: &T,
+    ) -> Result<ClassificationResult, Error> {
         self.new_session()?.classify(input)
     }
 }
@@ -78,14 +81,18 @@ impl TextClassifier {
 /// Session to run inference.
 /// If process multiple text, reuse it can get better performance.
 ///
-/// ```rust
-/// use mediapipe_rs::tasks::text::TextClassifier;
+/// ```no_run
+/// # fn main() -> Result<(), mediapipe_rs::Error> {
+/// # let texts: Vec<String> = vec![];
+/// use mediapipe_rs::tasks::text::TextClassifierBuilder;
 ///
-/// let text_classifier: TextClassifier;
+/// let text_classifier = TextClassifierBuilder::new().build_from_file("model.tflite")?;
 /// let mut session = text_classifier.new_session()?;
-/// for text in texts {
+/// for text in &texts {
 ///     session.classify(text)?;
 /// }
+/// # Ok(())
+/// # }
 /// ```
 pub struct TextClassifierSession<'a> {
     execution_ctx: GraphExecutionContext<'a>,
@@ -98,7 +105,10 @@ pub struct TextClassifierSession<'a> {
 
 impl<'a> TextClassifierSession<'a> {
     /// Classify the input using this session.
-    pub fn classify(&mut self, input: &impl TextToTensors) -> Result<ClassificationResult, Error> {
+    pub fn classify<T: TextToTensors + ?Sized>(
+        &mut self,
+        input: &T,
+    ) -> Result<ClassificationResult, Error> {
         input.to_tensors(self.input_to_tensor_info, &mut self.input_tensor_bufs)?;
 
         for index in 0..self.input_tensor_bufs.len() {

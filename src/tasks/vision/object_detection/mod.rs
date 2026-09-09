@@ -94,14 +94,18 @@ impl ObjectDetector {
 /// Session to run inference.
 /// If process multiple images or videos, reuse it can get better performance.
 ///
-/// ```rust
-/// use mediapipe_rs::tasks::vision::ObjectDetector;
+/// ```no_run
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let images: Vec<image::DynamicImage> = vec![];
+/// use mediapipe_rs::tasks::vision::ObjectDetectorBuilder;
 ///
-/// let object_detector: ObjectDetector;
+/// let object_detector = ObjectDetectorBuilder::new().build_from_file("model.tflite")?;
 /// let mut session = object_detector.new_session()?;
-/// for image in images {
+/// for image in &images {
 ///     session.detect(image)?;
 /// }
+/// # Ok(())
+/// # }
 /// ```
 pub struct ObjectDetectorSession<'model> {
     detector: &'model ObjectDetector,

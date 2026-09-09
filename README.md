@@ -241,7 +241,7 @@ $ cargo run --release --example text_classification -- ./assets/models/text_clas
 
 ```
 
-### Gesture Recognition
+#### Gesture Recognition
 
 ```rust
 use mediapipe_rs::tasks::vision::GestureRecognizerBuilder;
@@ -430,7 +430,7 @@ use mediapipe_rs::Error;
 
 fn inference(
     text_classifier: &TextClassifier,
-    inputs: &Vec<String>
+    inputs: &[String]
 ) -> Result<Vec<ClassificationResult>, Error> {
     let mut res = Vec::with_capacity(inputs.len());
     for input in inputs {
@@ -450,7 +450,7 @@ use mediapipe_rs::Error;
 
 fn inference(
     text_classifier: &TextClassifier,
-    inputs: &Vec<String>
+    inputs: &[String]
 ) -> Result<Vec<ClassificationResult>, Error> {
     let mut res = Vec::with_capacity(inputs.len());
     // only create one session and reuse the resources in session.

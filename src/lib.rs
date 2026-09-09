@@ -16,7 +16,9 @@
 //! * ```XxxBuilder``` is used to create a task instance ```Xxx```, which has many options to set.
 //!
 //!   example: use ```ImageClassifierBuilder``` to build a ```ImageClassifier``` task instance.
-//!   ```
+//!   ```no_run
+//!   # fn main() -> Result<(), mediapipe_rs::Error> {
+//!   # let model_path = "model.tflite";
 //!   use mediapipe_rs::tasks::vision::ImageClassifierBuilder;
 //!
 //!   let classifier = ImageClassifierBuilder::new()
@@ -24,27 +26,44 @@
 //!         .category_deny_list(vec!["denied label".into()]) // set deny list
 //!         .gpu() // set running device
 //!         .build_from_file(model_path)?; // create a image classifier
+//!   # Ok(())
+//!   # }
 //!   ```
 //! * ```Xxx``` is a task instance, which contains task information and model information.
 //!
 //!   example: use ```ImageClassifier``` to create a new ```ImageClassifierSession```
-//!   ```
+//!   ```no_run
+//!   # fn main() -> Result<(), mediapipe_rs::Error> {
+//!   # let classifier = mediapipe_rs::tasks::vision::ImageClassifierBuilder::new().build_from_file("model.tflite")?;
 //!   let classifier_session = classifier.new_session()?;
+//!   # Ok(())
+//!   # }
 //!   ```
 //! * ```XxxSession``` is a running session to perform pre-process, inference, and post-process, which has buffers to store
 //!   mid-results.
 //!
 //!   example: use ```ImageClassifierSession``` to run the image classification task and return classification results:
-//!   ```
+//!   ```no_run
+//!   # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!   # let classifier = mediapipe_rs::tasks::vision::ImageClassifierBuilder::new().build_from_file("model.tflite")?;
+//!   # let img = image::open("image.jpg")?;
+//!   let mut classifier_session = classifier.new_session()?;
 //!   let classification_result = classifier_session.classify(&img)?;
+//!   # Ok(())
+//!   # }
 //!   ```
 //!   **Note**: the session can be reused to speed up, if the code just uses the session once, it can use the task's wrapper
 //!   function to simplify.
-//!   ```
+//!   ```no_run
+//!   # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!   # let classifier = mediapipe_rs::tasks::vision::ImageClassifierBuilder::new().build_from_file("model.tflite")?;
+//!   # let img = image::open("image.jpg")?;
 //!   // let classifier_session = classifier.new_session()?;
 //!   // let classification_result = classifier_session.classify(&img)?;
 //!   // The above 2-line code is equal to:
 //!   let classification_result = classifier.classify(&img)?;
+//!   # Ok(())
+//!   # }
 //!   ```
 //!
 //! ## Available tasks
@@ -65,8 +84,11 @@
 //!
 //! ### Image classification
 //!
-//! ```rust
+//! ```no_run
 //! use mediapipe_rs::tasks::vision::ImageClassifierBuilder;
+//! # fn parse_args() -> Result<(String, String), Box<dyn std::error::Error>> {
+//! #     Ok(("model.tflite".into(), "image.jpg".into()))
+//! # }
 //!
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let (model_path, img_path) = parse_args()?;
@@ -76,7 +98,7 @@
 //!         .build_from_file(model_path)? // create a image classifier
 //!         .classify(&image::open(img_path)?)?; // do inference and generate results
 //!
-//!     //! show formatted result message
+//!     // show formatted result message
 //!     println!("{}", classification_result);
 //!
 //!     Ok(())
@@ -85,9 +107,12 @@
 //!
 //! ### Object Detection
 //!
-//! ```rust
+//! ```no_run
 //! use mediapipe_rs::postprocess::utils::draw_detection;
 //! use mediapipe_rs::tasks::vision::ObjectDetectorBuilder;
+//! # fn parse_args() -> Result<(String, String, Option<String>), Box<dyn std::error::Error>> {
+//! #     Ok(("model.tflite".into(), "image.jpg".into(), None))
+//! # }
 //!
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let (model_path, img_path, output_path) = parse_args()?;
@@ -113,8 +138,11 @@
 //! ```
 //!
 //! ### Text Classification
-//! ```rust
+//! ```no_run
 //! use mediapipe_rs::tasks::text::TextClassifierBuilder;
+//! # fn parse_args() -> Result<String, Box<dyn std::error::Error>> {
+//! #     Ok("model.tflite".into())
+//! # }
 //!
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let model_path = parse_args()?;
@@ -138,10 +166,13 @@
 //! ```
 //!
 //!
-//! ## Gesture Recognition
+//! ### Gesture Recognition
 //!
-//! ```rust
+//! ```no_run
 //! use mediapipe_rs::tasks::vision::GestureRecognizerBuilder;
+//! # fn parse_args() -> Result<(String, String), Box<dyn std::error::Error>> {
+//! #     Ok(("gesture_recognizer.task".into(), "image.jpg".into()))
+//! # }
 //!
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let (model_path, img_path) = parse_args()?;
@@ -152,11 +183,11 @@
 //!         .build_from_file(model_path)? // create a task instance
 //!         .recognize(&image::open(img_path)?)?; // do inference and generate results
 //!
-//! for g in gesture_recognition_results {
+//!     for g in gesture_recognition_results {
 //!         println!("{}", g.gestures.classifications[0].categories[0]);
 //!     }
 //!
-//! Ok(())
+//!     Ok(())
 //! }
 //! ```
 //!
@@ -167,8 +198,11 @@
 //!
 //! Examples for Audio Classification:
 //!
-//! ```rust
+//! ```no_run
 //! use mediapipe_rs::tasks::audio::AudioClassifierBuilder;
+//! # fn parse_args() -> Result<(String, String), Box<dyn std::error::Error>> {
+//! #     Ok(("model.tflite".into(), "audio.wav".into()))
+//! # }
 //!
 //! #[cfg(feature = "ffmpeg")]
 //! use mediapipe_rs::preprocess::audio::FFMpegAudioData;
@@ -229,14 +263,14 @@
 //! ### Example: Text Classification
 //!
 //! Origin:
-//! ```rust
+//! ```
 //! use mediapipe_rs::tasks::text::TextClassifier;
 //! use mediapipe_rs::postprocess::ClassificationResult;
 //! use mediapipe_rs::Error;
 //!
 //! fn inference(
 //!     text_classifier: &TextClassifier,
-//!     inputs: &Vec<String>
+//!     inputs: &[String]
 //! ) -> Result<Vec<ClassificationResult>, Error> {
 //!     let mut res = Vec::with_capacity(inputs.len());
 //!     for input in inputs {
@@ -248,14 +282,14 @@
 //! ```
 //!
 //! Use the session to speed up:
-//! ```rust
+//! ```
 //! use mediapipe_rs::tasks::text::TextClassifier;
 //! use mediapipe_rs::postprocess::ClassificationResult;
 //! use mediapipe_rs::Error;
 //!
 //! fn inference(
 //!     text_classifier: &TextClassifier,
-//!     inputs: &Vec<String>
+//!     inputs: &[String]
 //! ) -> Result<Vec<ClassificationResult>, Error> {
 //!     let mut res = Vec::with_capacity(inputs.len());
 //!     // only create one session and reuse the resources in session.
@@ -297,7 +331,7 @@
 //! ## GPU and TPU support
 //!
 //! The default device is CPU, and user can use APIs to choose device to use:
-//! ```rust
+//! ```
 //! use mediapipe_rs::tasks::vision::ObjectDetectorBuilder;
 //!
 //! fn create_gpu(model_blob: Vec<u8>) {

@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 /// Text model input interface. Every Text data implement the [`TextToTensors`] trait can be used as text tasks input.
-/// Now the builtin impl: [`str`], [`String`], [`Cow<'a, str>`].
+/// Now the builtin impl: [`str`], [`String`], [`Cow<'a, str>`] and references to them.
 pub trait TextToTensors {
     fn to_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
         &self,
@@ -118,7 +118,7 @@ impl TextToTensorInfo {
     }
 }
 
-impl TextToTensors for &str {
+impl TextToTensors for str {
     fn to_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
         &self,
         to_tensor_info: &TextToTensorInfo,
@@ -171,6 +171,17 @@ impl TextToTensors for &str {
     }
 }
 
+impl<S: TextToTensors + ?Sized> TextToTensors for &S {
+    #[inline(always)]
+    fn to_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
+        &self,
+        to_tensor_info: &TextToTensorInfo,
+        output_buffers: &mut T,
+    ) -> Result<(), Error> {
+        (**self).to_tensors(to_tensor_info, output_buffers)
+    }
+}
+
 impl TextToTensors for String {
     #[inline(always)]
     fn to_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
@@ -182,17 +193,14 @@ impl TextToTensors for String {
     }
 }
 
-impl<'a> TextToTensors for Cow<'a, str> {
+impl TextToTensors for Cow<'_, str> {
     #[inline(always)]
     fn to_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
         &self,
         to_tensor_info: &TextToTensorInfo,
         output_buffers: &mut T,
     ) -> Result<(), Error> {
-        match self {
-            Cow::Borrowed(s) => (*s).to_tensors(to_tensor_info, output_buffers),
-            Cow::Owned(s) => s.to_tensors(to_tensor_info, output_buffers),
-        }
+        self.as_ref().to_tensors(to_tensor_info, output_buffers)
     }
 }
 
