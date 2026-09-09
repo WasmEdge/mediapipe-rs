@@ -61,3 +61,79 @@ ffmpeg = ["ffmpeg-next"]
 [dev-dependencies]
 image = { version = "0.25", default-features = false, features = ["jpeg"] }
 symphonia = { version = "0.5", default-features = false, features = ["wav", "pcm"] }
+
+[[example]]
+name = "audio_classification"
+required-features = ["audio"]
+
+[[example]]
+name = "face_landmark"
+required-features = ["vision"]
+
+[[example]]
+name = "gesture_recognition"
+required-features = ["vision"]
+
+[[example]]
+name = "image_classification"
+required-features = ["vision"]
+
+[[example]]
+name = "image_embedding"
+required-features = ["vision"]
+
+[[example]]
+name = "object_detection"
+required-features = ["vision"]
+
+[[example]]
+name = "text_classification"
+required-features = ["text"]
+
+[[test]]
+name = "audio_classification"
+required-features = ["audio"]
+
+[[test]]
+name = "face_detection"
+required-features = ["vision"]
+
+[[test]]
+name = "face_landmark"
+required-features = ["vision"]
+
+[[test]]
+name = "ffmpeg_video_input"
+required-features = ["vision", "ffmpeg"]
+
+[[test]]
+name = "gesture_recognition"
+required-features = ["vision"]
+
+[[test]]
+name = "hand_landmark"
+required-features = ["vision"]
+
+[[test]]
+name = "image_classification"
+required-features = ["vision"]
+
+[[test]]
+name = "image_embedding"
+required-features = ["vision"]
+
+[[test]]
+name = "image_segmentation"
+required-features = ["vision"]
+
+[[test]]
+name = "object_detection"
+required-features = ["vision"]
+
+[[test]]
+name = "text_classification"
+required-features = ["text"]
+
+[[test]]
+name = "text_embedding"
+required-features = ["text"]
