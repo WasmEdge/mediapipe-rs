@@ -7,16 +7,19 @@ pub(super) use image_crate::{
 
 const IMAGE_RESIZE_FILTER: imageops::FilterType = imageops::FilterType::Gaussian;
 
-macro_rules! get_rgb_mean_std_from_info {
-    ( $info:ident ) => {{
-        let r_mean = $info.normalization_options.0.get(0).unwrap();
-        let r_std = $info.normalization_options.1.get(0).unwrap();
-        let g_mean = $info.normalization_options.0.get(1).unwrap_or(r_mean);
-        let g_std = $info.normalization_options.1.get(1).unwrap_or(r_std);
-        let b_mean = $info.normalization_options.0.get(1).unwrap_or(r_mean);
-        let b_std = $info.normalization_options.1.get(1).unwrap_or(r_std);
-        (r_mean, r_std, g_mean, g_std, b_mean, b_std)
-    }};
+/// Returns per-channel (mean, std) for RGB. Channels absent from the metadata reuse the first value.
+fn rgb_mean_std(info: &ImageToTensorInfo) -> Result<([f32; 3], [f32; 3]), Error> {
+    let (mean, std) = (&info.normalization_options.0, &info.normalization_options.1);
+    let (Some(&mean0), Some(&std0)) = (mean.first(), std.first()) else {
+        return Err(Error::ModelInconsistentError(
+            "Float32 image input requires NormalizationOptions (mean/std) in model metadata".into(),
+        ));
+    };
+    let pick = |v: &[f32], i: usize, default: f32| v.get(i).copied().unwrap_or(default);
+    Ok((
+        [mean0, pick(mean, 1, mean0), pick(mean, 2, mean0)],
+        [std0, pick(std, 1, std0), pick(std, 2, std0)],
+    ))
 }
 
 impl ImageToTensor for DynamicImage {
@@ -129,72 +132,59 @@ where
             && info.color_space != ImageColorSpaceType::GRAYSCALE
     );
 
-    info.normalization_options.0.get(0).unwrap_or(&1f32);
-
     let data_layout = info.image_data_layout;
     let res = output_buffer.as_mut();
-    let mut res_index = 0;
+    let bytes = img.as_bytes();
+    let hw = (img.width() * img.height()) as usize;
+    let expected_len = bytes.len() * tensor_byte_size!(info.tensor_type);
+    if res.len() < expected_len {
+        return Err(Error::ArgumentError(format!(
+            "Expect output buffer at least `{}` bytes, but got `{}`",
+            expected_len,
+            res.len()
+        )));
+    }
     match info.tensor_type {
         TensorType::F32 => {
-            let (r_mean, r_std, g_mean, g_std, b_mean, b_std) = get_rgb_mean_std_from_info!(info);
-            let bytes = img.as_bytes();
-            debug_assert_eq!(res.len(), bytes.len() * std::mem::size_of::<f32>());
-
-            let hw = (img.width() * img.height()) as usize;
-            return match data_layout {
-                ImageDataLayout::NHWC => {
-                    let mut i = 0;
-                    while i < bytes.len() {
-                        let f = ((bytes[i] as f32) - r_mean) / r_std;
-                        res[res_index..res_index + 4].copy_from_slice(&f.to_ne_bytes());
-                        res_index += 4;
-                        let f = ((bytes[i + 1] as f32) - g_mean) / g_std;
-                        res[res_index..res_index + 4].copy_from_slice(&f.to_ne_bytes());
-                        res_index += 4;
-                        let f = ((bytes[i + 2] as f32) - b_mean) / b_std;
-                        res[res_index..res_index + 4].copy_from_slice(&f.to_ne_bytes());
-                        res_index += 4;
-                        i += 3;
-                    }
-                    Ok(())
-                }
-                ImageDataLayout::NCHW | ImageDataLayout::CHWN => {
-                    for start in 0..3 {
-                        let mut i = start as usize;
-                        while i < hw {
-                            let f = ((bytes[i] as f32) - r_mean) / r_std;
-                            res[res_index..res_index + 4].copy_from_slice(&f.to_ne_bytes());
-                            res_index += 4;
-                            i += 3;
-                        }
-                    }
-                    Ok(())
-                }
+            let (means, stds) = rgb_mean_std(info)?;
+            let mut out = res.chunks_exact_mut(std::mem::size_of::<f32>());
+            let mut put = |value: u8, c: usize| {
+                let f = (value as f32 - means[c]) / stds[c];
+                out.next().unwrap().copy_from_slice(&f.to_ne_bytes());
             };
-        }
-        TensorType::U8 => {
-            let bytes = img.as_bytes();
-            debug_assert_eq!(res.len(), bytes.len());
-            return match data_layout {
+            match data_layout {
                 ImageDataLayout::NHWC => {
-                    // just copy
-                    res.copy_from_slice(bytes);
-                    Ok(())
+                    for px in bytes.chunks_exact(3) {
+                        put(px[0], 0);
+                        put(px[1], 1);
+                        put(px[2], 2);
+                    }
                 }
                 // batch is always 1 now
                 ImageDataLayout::NCHW | ImageDataLayout::CHWN => {
-                    let hw = (img.width() * img.height()) as usize;
                     for c in 0..3 {
-                        let mut i = c as usize;
-                        while i < hw {
-                            res[res_index] = bytes[i];
-                            res_index += 1;
-                            i += c;
+                        for p in 0..hw {
+                            put(bytes[p * 3 + c], c);
                         }
                     }
-                    Ok(())
                 }
-            };
+            }
+            Ok(())
+        }
+        TensorType::U8 => {
+            match data_layout {
+                ImageDataLayout::NHWC => res[..bytes.len()].copy_from_slice(bytes),
+                // batch is always 1 now
+                ImageDataLayout::NCHW | ImageDataLayout::CHWN => {
+                    let mut out = res.iter_mut();
+                    for c in 0..3 {
+                        for p in 0..hw {
+                            *out.next().unwrap() = bytes[p * 3 + c];
+                        }
+                    }
+                }
+            }
+            Ok(())
         }
         _ => unimplemented!(),
     }
@@ -273,5 +263,91 @@ mod ops_inner {
                 destination.put_pixel(x, y, pixel);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn info(
+        layout: ImageDataLayout,
+        tensor_type: TensorType,
+        mean: Vec<f32>,
+        std: Vec<f32>,
+    ) -> ImageToTensorInfo {
+        ImageToTensorInfo {
+            image_data_layout: layout,
+            color_space: ImageColorSpaceType::RGB,
+            tensor_type,
+            tensor_shape: ImageLikeTensorShape {
+                batch: 1,
+                width: 2,
+                height: 1,
+                channels: 3,
+            },
+            stats_min: vec![],
+            stats_max: vec![],
+            normalization_options: (mean, std),
+        }
+    }
+
+    fn to_f32(buf: &[u8]) -> Vec<f32> {
+        buf.chunks_exact(4)
+            .map(|b| f32::from_ne_bytes(b.try_into().unwrap()))
+            .collect()
+    }
+
+    #[test]
+    fn test_rgb8_to_f32_per_channel_normalization() {
+        let img = RgbImage::from_raw(2, 1, vec![10, 20, 30, 40, 50, 60]).unwrap();
+        let mut buf = vec![0u8; 6 * 4];
+
+        let nhwc = info(
+            ImageDataLayout::NHWC,
+            TensorType::F32,
+            vec![0., 1., 2.],
+            vec![1., 2., 4.],
+        );
+        rgb8_image_buffer_to_tensor(&img, &nhwc, &mut buf).unwrap();
+        assert_eq!(to_f32(&buf), [10., 9.5, 7., 40., 24.5, 14.5]);
+
+        let nchw = info(
+            ImageDataLayout::NCHW,
+            TensorType::F32,
+            vec![0., 1., 2.],
+            vec![1., 2., 4.],
+        );
+        rgb8_image_buffer_to_tensor(&img, &nchw, &mut buf).unwrap();
+        assert_eq!(to_f32(&buf), [10., 40., 9.5, 24.5, 7., 14.5]);
+
+        let single = info(ImageDataLayout::NHWC, TensorType::F32, vec![10.], vec![10.]);
+        rgb8_image_buffer_to_tensor(&img, &single, &mut buf).unwrap();
+        assert_eq!(to_f32(&buf), [0., 1., 2., 3., 4., 5.]);
+    }
+
+    #[test]
+    fn test_rgb8_to_f32_requires_normalization_options() {
+        let img = RgbImage::from_raw(2, 1, vec![0; 6]).unwrap();
+        let mut buf = vec![0u8; 6 * 4];
+        let missing = info(ImageDataLayout::NHWC, TensorType::F32, vec![], vec![]);
+        assert!(rgb8_image_buffer_to_tensor(&img, &missing, &mut buf).is_err());
+        let mut short = vec![0u8; 6 * 4 - 1];
+        let ok = info(ImageDataLayout::NHWC, TensorType::F32, vec![0.], vec![1.]);
+        assert!(rgb8_image_buffer_to_tensor(&img, &ok, &mut short).is_err());
+    }
+
+    #[test]
+    fn test_rgb8_to_u8_layouts() {
+        let img = RgbImage::from_raw(2, 1, vec![10, 20, 30, 40, 50, 60]).unwrap();
+        let mut buf = vec![0u8; 6];
+
+        let nhwc = info(ImageDataLayout::NHWC, TensorType::U8, vec![], vec![]);
+        rgb8_image_buffer_to_tensor(&img, &nhwc, &mut buf).unwrap();
+        assert_eq!(buf, [10, 20, 30, 40, 50, 60]);
+
+        let nchw = info(ImageDataLayout::NCHW, TensorType::U8, vec![], vec![]);
+        rgb8_image_buffer_to_tensor(&img, &nchw, &mut buf).unwrap();
+        assert_eq!(buf, [10, 40, 20, 50, 30, 60]);
     }
 }
