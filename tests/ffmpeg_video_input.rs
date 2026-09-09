@@ -5,15 +5,15 @@ mod ffmpeg {
         ImageClassifierBuilder, ImageProcessingOptions, ObjectDetectorBuilder,
     };
 
-    const IMAGE_CLASSIFICATION_MODEL: &'static str =
+    const IMAGE_CLASSIFICATION_MODEL: &str =
         "assets/models/image_classification/efficientnet_lite0_fp32.tflite";
-    const OBJECT_DETECTION_MODEL: &'static str =
+    const OBJECT_DETECTION_MODEL: &str =
         "assets/models/object_detection/efficientdet_lite0_fp32.tflite";
 
-    const VIDEO_1: &'static str = "assets/testdata/video/bird_burger_tabby.mp4";
+    const VIDEO_1: &str = "assets/testdata/video/bird_burger_tabby.mp4";
 
-    const FRAME_CLASSIFY_CATEGORIES: &[&'static str] = &["junco", "cheeseburger", "tabby"];
-    const FRAME_DETECTION_CATEGORIES: &[&'static str] = &["bird", "sandwich", "cat"];
+    const FRAME_CLASSIFY_CATEGORIES: &[&str] = &["junco", "cheeseburger", "tabby"];
+    const FRAME_DETECTION_CATEGORIES: &[&str] = &["bird", "sandwich", "cat"];
 
     #[test]
     fn test_image_classification() {

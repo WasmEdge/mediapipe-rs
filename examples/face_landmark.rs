@@ -10,9 +10,9 @@ fn parse_args() -> Result<(String, String, Option<String>), Box<dyn std::error::
     Ok((args[1].clone(), args[2].clone(), args.get(3).cloned()))
 }
 
-use mediapipe_rs::tasks::vision::FaceLandmarkerBuilder;
 use mediapipe_rs::postprocess::utils::DrawLandmarksOptions;
 use mediapipe_rs::tasks::vision::FaceLandmarkConnections;
+use mediapipe_rs::tasks::vision::FaceLandmarkerBuilder;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (model_path, img_path, output_path) = parse_args()?;

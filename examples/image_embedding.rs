@@ -1,7 +1,10 @@
 fn parse_args() -> Result<(String, String, String), String> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 4 {
-        return Err(format!("Usage {} model_path image_1_path image_2_path", args[0]).into());
+        return Err(format!(
+            "Usage {} model_path image_1_path image_2_path",
+            args[0]
+        ));
     }
     Ok((args[1].clone(), args[2].clone(), args[3].clone()))
 }

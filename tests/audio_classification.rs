@@ -2,10 +2,10 @@ use mediapipe_rs::preprocess::audio::{AudioData, SymphoniaAudioData};
 use mediapipe_rs::tasks::audio::AudioClassifierBuilder;
 use symphonia::core::io::MediaSourceStream;
 
-const MODEL_1: &'static str =
+const MODEL_1: &str =
     "assets/models/audio_classification/yamnet_audio_classifier_with_metadata.tflite";
 
-const AUDIO_PATH: &'static str = "assets/testdata/audio/speech_16000_hz_mono.wav";
+const AUDIO_PATH: &str = "assets/testdata/audio/speech_16000_hz_mono.wav";
 
 #[test]
 fn test_audio_classification() {
