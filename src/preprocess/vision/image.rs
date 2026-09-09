@@ -29,9 +29,9 @@ impl ImageToTensor for DynamicImage {
         output_buffer: &mut T,
     ) -> Result<(), Error> {
         match info.color_space {
-            ImageColorSpaceType::GRAYSCALE => Err(grayscale_unsupported()),
+            ImageColorSpaceType::Grayscale => Err(grayscale_unsupported()),
             // we treat unknown as rgb8
-            ImageColorSpaceType::RGB | ImageColorSpaceType::UNKNOWN => {
+            ImageColorSpaceType::Rgb | ImageColorSpaceType::Unknown => {
                 if let Some(rgb) = self.as_rgb8() {
                     rgb.to_tensor(info, process_options, output_buffer)
                 } else {
@@ -98,7 +98,7 @@ impl ImageToTensor for RgbImage {
             rgb_img = &tmp_rgb_img;
         }
 
-        if info.color_space == ImageColorSpaceType::GRAYSCALE {
+        if info.color_space == ImageColorSpaceType::Grayscale {
             return Err(grayscale_unsupported());
         }
 
@@ -159,7 +159,7 @@ where
                 *out.next().unwrap() = f.to_ne_bytes();
             };
             match data_layout {
-                ImageDataLayout::NHWC => {
+                ImageDataLayout::Nhwc => {
                     for px in bytes.as_chunks::<3>().0 {
                         put(px[0], 0);
                         put(px[1], 1);
@@ -167,7 +167,7 @@ where
                     }
                 }
                 // batch is always 1 now
-                ImageDataLayout::NCHW | ImageDataLayout::CHWN => {
+                ImageDataLayout::Nchw | ImageDataLayout::Chwn => {
                     for c in 0..3 {
                         for p in 0..hw {
                             put(bytes[p * 3 + c], c);
@@ -179,9 +179,9 @@ where
         }
         TensorType::U8 => {
             match data_layout {
-                ImageDataLayout::NHWC => res[..bytes.len()].copy_from_slice(bytes),
+                ImageDataLayout::Nhwc => res[..bytes.len()].copy_from_slice(bytes),
                 // batch is always 1 now
-                ImageDataLayout::NCHW | ImageDataLayout::CHWN => {
+                ImageDataLayout::Nchw | ImageDataLayout::Chwn => {
                     let mut out = res.iter_mut();
                     for c in 0..3 {
                         for p in 0..hw {
@@ -301,7 +301,7 @@ mod test {
     ) -> ImageToTensorInfo {
         ImageToTensorInfo {
             image_data_layout: layout,
-            color_space: ImageColorSpaceType::RGB,
+            color_space: ImageColorSpaceType::Rgb,
             tensor_type,
             tensor_shape: ImageLikeTensorShape {
                 batch,
@@ -329,7 +329,7 @@ mod test {
         let mut buf = vec![0u8; 6 * 4];
 
         let nhwc = info(
-            ImageDataLayout::NHWC,
+            ImageDataLayout::Nhwc,
             TensorType::F32,
             vec![0., 1., 2.],
             vec![1., 2., 4.],
@@ -338,7 +338,7 @@ mod test {
         assert_eq!(to_f32(&buf), [10., 9.5, 7., 40., 24.5, 14.5]);
 
         let nchw = info(
-            ImageDataLayout::NCHW,
+            ImageDataLayout::Nchw,
             TensorType::F32,
             vec![0., 1., 2.],
             vec![1., 2., 4.],
@@ -346,7 +346,7 @@ mod test {
         rgb8_image_buffer_to_tensor(&img, &nchw, &mut buf).unwrap();
         assert_eq!(to_f32(&buf), [10., 40., 9.5, 24.5, 7., 14.5]);
 
-        let single = info(ImageDataLayout::NHWC, TensorType::F32, vec![10.], vec![10.]);
+        let single = info(ImageDataLayout::Nhwc, TensorType::F32, vec![10.], vec![10.]);
         rgb8_image_buffer_to_tensor(&img, &single, &mut buf).unwrap();
         assert_eq!(to_f32(&buf), [0., 1., 2., 3., 4., 5.]);
     }
@@ -355,10 +355,10 @@ mod test {
     fn test_rgb8_to_f32_requires_normalization_options() {
         let img = RgbImage::from_raw(2, 1, vec![0; 6]).unwrap();
         let mut buf = vec![0u8; 6 * 4];
-        let missing = info(ImageDataLayout::NHWC, TensorType::F32, vec![], vec![]);
+        let missing = info(ImageDataLayout::Nhwc, TensorType::F32, vec![], vec![]);
         assert!(rgb8_image_buffer_to_tensor(&img, &missing, &mut buf).is_err());
         let mut short = vec![0u8; 6 * 4 - 1];
-        let ok = info(ImageDataLayout::NHWC, TensorType::F32, vec![0.], vec![1.]);
+        let ok = info(ImageDataLayout::Nhwc, TensorType::F32, vec![0.], vec![1.]);
         assert!(rgb8_image_buffer_to_tensor(&img, &ok, &mut short).is_err());
     }
 
@@ -368,7 +368,7 @@ mod test {
         let mut buf = vec![0u8; 2 * 6 * 4];
         for shape in [(2, 2, 1, 3), (1, 2, 1, 1), (1, 2, 1, 4), (1, 1, 2, 3)] {
             let info = info_with_shape(
-                ImageDataLayout::NHWC,
+                ImageDataLayout::Nhwc,
                 TensorType::F32,
                 vec![0.],
                 vec![1.],
@@ -387,11 +387,11 @@ mod test {
         let img = RgbImage::from_raw(2, 1, vec![10, 20, 30, 40, 50, 60]).unwrap();
         let mut buf = vec![0u8; 6];
 
-        let nhwc = info(ImageDataLayout::NHWC, TensorType::U8, vec![], vec![]);
+        let nhwc = info(ImageDataLayout::Nhwc, TensorType::U8, vec![], vec![]);
         rgb8_image_buffer_to_tensor(&img, &nhwc, &mut buf).unwrap();
         assert_eq!(buf, [10, 20, 30, 40, 50, 60]);
 
-        let nchw = info(ImageDataLayout::NCHW, TensorType::U8, vec![], vec![]);
+        let nchw = info(ImageDataLayout::Nchw, TensorType::U8, vec![], vec![]);
         rgb8_image_buffer_to_tensor(&img, &nchw, &mut buf).unwrap();
         assert_eq!(buf, [10, 40, 20, 50, 30, 60]);
     }

@@ -13,18 +13,10 @@ pub(super) use softmax::Softmax;
 pub use dequantize::QuantizationParameters;
 
 #[cfg(feature = "vision")]
-#[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default)]
 pub enum Activation {
+    #[default]
     None,
-    SIGMOID,
-    SOFTMAX,
-}
-
-#[cfg(feature = "vision")]
-impl Default for Activation {
-    #[inline(always)]
-    fn default() -> Self {
-        Self::None
-    }
+    Sigmoid,
+    Softmax,
 }

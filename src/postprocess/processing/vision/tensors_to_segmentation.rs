@@ -21,7 +21,7 @@ impl TensorsToSegmentation {
         tensor_buf_info: (TensorType, Option<QuantizationParameters>),
         tensor_shape: &[usize],
     ) -> Result<Self, crate::Error> {
-        let tensor_shape = ImageLikeTensorShape::parse(ImageDataLayout::NHWC, tensor_shape)?;
+        let tensor_shape = ImageLikeTensorShape::parse(ImageDataLayout::Nhwc, tensor_shape)?;
         if tensor_shape.batch != 1 {
             return Err(crate::Error::ModelInconsistentError(format!(
                 "Unsupported batch size `{}`, now only support batch size = 1",
@@ -74,8 +74,8 @@ impl TensorsToSegmentation {
         // apply activation
         match self.activation {
             Activation::None => { /* do nothing */ }
-            Activation::SIGMOID => tensor.sigmoid_inplace(),
-            Activation::SOFTMAX => {
+            Activation::Sigmoid => tensor.sigmoid_inplace(),
+            Activation::Softmax => {
                 if channels > 1 {
                     for scores in tensor.chunks_exact_mut(channels) {
                         scores.softmax_inplace();
@@ -137,7 +137,7 @@ mod test {
 
     #[test]
     fn test_confidence_masks_softmax_per_pixel() {
-        let mut s = segmentation(Activation::SOFTMAX, 2);
+        let mut s = segmentation(Activation::Softmax, 2);
         s.tensor_buffer
             .as_f32_mut()
             .copy_from_slice(&[0., 0., 1., 1.]);

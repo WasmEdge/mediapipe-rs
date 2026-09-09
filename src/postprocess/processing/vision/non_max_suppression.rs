@@ -9,11 +9,10 @@ pub enum NonMaxSuppressionOverlapType {
     IntersectionOverUnion,
 }
 
-#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Copy, Clone)]
 pub enum NonMaxSuppressionAlgorithm {
-    DEFAULT,
-    WEIGHTED,
+    Default,
+    Weighted,
 }
 
 pub struct NonMaxSuppression {
@@ -29,7 +28,7 @@ impl NonMaxSuppression {
         let max_results = max_results.unwrap_or(usize::MAX);
         Self {
             overlap_type: NonMaxSuppressionOverlapType::Jaccard,
-            algorithm: NonMaxSuppressionAlgorithm::DEFAULT,
+            algorithm: NonMaxSuppressionAlgorithm::Default,
             max_results,
             min_suppression_threshold: 1.0, // default
         }
@@ -69,10 +68,10 @@ impl NonMaxSuppression {
         }
         indexed_scores.sort_by(|a, b| b.1.total_cmp(&a.1));
         match self.algorithm {
-            NonMaxSuppressionAlgorithm::DEFAULT => {
+            NonMaxSuppressionAlgorithm::Default => {
                 self.non_max_suppression(&mut detection_result.detections, indexed_scores);
             }
-            NonMaxSuppressionAlgorithm::WEIGHTED => {
+            NonMaxSuppressionAlgorithm::Weighted => {
                 self.non_max_suppression_weighted(&mut detection_result.detections, indexed_scores);
             }
         }

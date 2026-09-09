@@ -321,18 +321,13 @@ impl TfLiteModelResource {
                             let meta = generated::custom_img_segmentation::root_as_image_segmenter_options(data.bytes())?;
                             let activation = meta.activation();
 
-                            self.output_activation = if activation
-                                == generated::custom_img_segmentation::Activation::NONE
-                            {
+                            use generated::custom_img_segmentation::Activation as MetaActivation;
+                            self.output_activation = if activation == MetaActivation::NONE {
                                 Activation::None
-                            } else if activation
-                                == generated::custom_img_segmentation::Activation::SIGMOID
-                            {
-                                Activation::SIGMOID
-                            } else if activation
-                                == generated::custom_img_segmentation::Activation::SOFTMAX
-                            {
-                                Activation::SOFTMAX
+                            } else if activation == MetaActivation::SIGMOID {
+                                Activation::Sigmoid
+                            } else if activation == MetaActivation::SOFTMAX {
+                                Activation::Softmax
                             } else {
                                 return Err(crate::Error::ModelParseError(
                                     format!(
@@ -359,7 +354,7 @@ impl TfLiteModelResource {
     ) -> Result<(), Error> {
         let tensor_shape = if let Some(shape) = self.input_shape.get(i) {
             if let Ok(s) = crate::preprocess::vision::ImageLikeTensorShape::parse(
-                ImageDataLayout::NHWC,
+                ImageDataLayout::Nhwc,
                 shape.as_slice(),
             ) {
                 s
@@ -405,12 +400,12 @@ impl TfLiteModelResource {
         }
 
         let color_space = match props.color_space() {
-            tflite_metadata::ColorSpaceType::RGB => ImageColorSpaceType::RGB,
-            tflite_metadata::ColorSpaceType::GRAYSCALE => ImageColorSpaceType::GRAYSCALE,
-            _ => ImageColorSpaceType::UNKNOWN,
+            tflite_metadata::ColorSpaceType::RGB => ImageColorSpaceType::Rgb,
+            tflite_metadata::ColorSpaceType::GRAYSCALE => ImageColorSpaceType::Grayscale,
+            _ => ImageColorSpaceType::Unknown,
         };
         let img_info = ImageToTensorInfo {
-            image_data_layout: ImageDataLayout::NHWC,
+            image_data_layout: ImageDataLayout::Nhwc,
             color_space,
             tensor_type: self.input_tensor_type_for_metadata(i)?,
             tensor_shape,

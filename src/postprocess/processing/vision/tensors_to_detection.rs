@@ -7,14 +7,13 @@ use crate::postprocess::{
 };
 
 /// Tells the calculator how to convert the detector output to bounding boxes.
-#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Clone, Copy, Default)]
 pub enum DetectionBoxFormat {
     /// bbox [y_center, x_center, height, width], keypoint [y, x]
     #[default]
-    YXHW,
+    Yxhw,
     /// bbox [x_center, y_center, width, height], keypoint [x, y]
-    XYWH,
+    Xywh,
 }
 
 struct ToDetectionOptions {
@@ -433,13 +432,13 @@ impl<'a> TensorsToDetection<'a> {
         let mut w;
         let box_offset = options.box_coord_offset;
         match options.box_format {
-            DetectionBoxFormat::YXHW => {
+            DetectionBoxFormat::Yxhw => {
                 y_center = raw_boxes[box_offset];
                 x_center = raw_boxes[box_offset + 1];
                 h = raw_boxes[box_offset + 2];
                 w = raw_boxes[box_offset + 3];
             }
-            DetectionBoxFormat::XYWH => {
+            DetectionBoxFormat::Xywh => {
                 x_center = raw_boxes[box_offset];
                 y_center = raw_boxes[box_offset + 1];
                 w = raw_boxes[box_offset + 2];
@@ -475,11 +474,11 @@ impl<'a> TensorsToDetection<'a> {
                 let keypoint_y;
                 let keypoint_x;
                 match options.box_format {
-                    DetectionBoxFormat::YXHW => {
+                    DetectionBoxFormat::Yxhw => {
                         keypoint_y = raw_boxes[index];
                         keypoint_x = raw_boxes[index + 1];
                     }
-                    DetectionBoxFormat::XYWH => {
+                    DetectionBoxFormat::Xywh => {
                         keypoint_x = raw_boxes[index];
                         keypoint_y = raw_boxes[index + 1];
                     }

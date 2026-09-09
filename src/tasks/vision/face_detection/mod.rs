@@ -77,11 +77,11 @@ impl FaceDetector {
         tensors_to_detection.set_key_points(6, 2, 4);
         tensors_to_detection.set_sigmoid_score(true);
         tensors_to_detection.set_score_clipping_thresh(100.);
-        tensors_to_detection.set_box_format(DetectionBoxFormat::XYWH);
+        tensors_to_detection.set_box_format(DetectionBoxFormat::Xywh);
         tensors_to_detection.set_nms_min_suppression_threshold(self.min_suppression_threshold());
         tensors_to_detection
             .set_nms_overlap_type(NonMaxSuppressionOverlapType::IntersectionOverUnion);
-        tensors_to_detection.set_nms_algorithm(NonMaxSuppressionAlgorithm::WEIGHTED);
+        tensors_to_detection.set_nms_algorithm(NonMaxSuppressionAlgorithm::Weighted);
         tensors_to_detection.realloc(self.num_box);
 
         let execution_ctx = self.graph.init_execution_context()?;

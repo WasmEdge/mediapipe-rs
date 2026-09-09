@@ -45,17 +45,17 @@ pub trait VideoData {
 /// Data layout in memory for image tensor. ```NCHW```, ```NHWC```, ```CHWN```.
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum ImageDataLayout {
-    NCHW,
-    NHWC,
-    CHWN,
+    Nchw,
+    Nhwc,
+    Chwn,
 }
 
 /// Image Color Type.
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum ImageColorSpaceType {
-    RGB,
-    GRAYSCALE,
-    UNKNOWN,
+    Rgb,
+    Grayscale,
+    Unknown,
 }
 
 /// Necessary information for the image to tensor.
@@ -103,13 +103,13 @@ impl ImageLikeTensorShape {
                 channels: 1,
             }),
             3 => match data_layout {
-                ImageDataLayout::NCHW | ImageDataLayout::CHWN => Ok(Self {
+                ImageDataLayout::Nchw | ImageDataLayout::Chwn => Ok(Self {
                     batch: 1,
                     width: shape[2],
                     height: shape[1],
                     channels: shape[0],
                 }),
-                ImageDataLayout::NHWC => Ok(Self {
+                ImageDataLayout::Nhwc => Ok(Self {
                     batch: 1,
                     width: shape[1],
                     height: shape[0],
@@ -117,19 +117,19 @@ impl ImageLikeTensorShape {
                 }),
             },
             4 => match data_layout {
-                ImageDataLayout::NCHW => Ok(Self {
+                ImageDataLayout::Nchw => Ok(Self {
                     batch: shape[0],
                     width: shape[3],
                     height: shape[2],
                     channels: shape[1],
                 }),
-                ImageDataLayout::NHWC => Ok(Self {
+                ImageDataLayout::Nhwc => Ok(Self {
                     batch: shape[0],
                     width: shape[2],
                     height: shape[1],
                     channels: shape[3],
                 }),
-                ImageDataLayout::CHWN => Ok(Self {
+                ImageDataLayout::Chwn => Ok(Self {
                     batch: shape[3],
                     width: shape[2],
                     height: shape[1],
