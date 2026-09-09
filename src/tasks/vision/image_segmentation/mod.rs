@@ -199,7 +199,7 @@ impl<'model> ImageSegmenterSession<'model> {
     pub fn segment_for_video<InputVideoData: VideoData>(
         &mut self,
         video_data: InputVideoData,
-    ) -> Result<VideoResultsIter<'_, '_, Self, InputVideoData>, Error> {
+    ) -> Result<VideoResultsIter<'_, Self, InputVideoData>, Error> {
         Ok(VideoResultsIter::new(self, video_data))
     }
 }
