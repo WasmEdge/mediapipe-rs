@@ -158,18 +158,18 @@ impl<'a> TensorsToDetection<'a> {
         max_results: i32,
         location_buf: (TensorType, Option<QuantizationParameters>),
         score_buf: (TensorType, Option<QuantizationParameters>),
-    ) -> Self {
+    ) -> Result<Self, crate::Error> {
         let mut options = ToDetectionOptions::default();
         options.min_score_threshold = min_score_threshold;
-        Self {
+        Ok(Self {
             nms: NonMaxSuppression::new(max_results),
             categories_filter,
-            location_buf: empty_output_buffer!(location_buf),
-            score_buf: empty_output_buffer!(score_buf),
+            location_buf: OutputBuffer::new(location_buf, 0)?,
+            score_buf: OutputBuffer::new(score_buf, 0)?,
             anchors: Some(anchors),
             categories_buf: None,
             options,
-        }
+        })
     }
 
     #[inline]
@@ -179,16 +179,16 @@ impl<'a> TensorsToDetection<'a> {
         location_buf: (TensorType, Option<QuantizationParameters>),
         categories_buf: (TensorType, Option<QuantizationParameters>),
         score_buf: (TensorType, Option<QuantizationParameters>),
-    ) -> Self {
-        Self {
+    ) -> Result<Self, crate::Error> {
+        Ok(Self {
             anchors: None,
             nms: NonMaxSuppression::new(max_results),
             categories_filter,
-            location_buf: empty_output_buffer!(location_buf),
-            score_buf: empty_output_buffer!(score_buf),
-            categories_buf: Some(empty_output_buffer!(categories_buf)),
+            location_buf: OutputBuffer::new(location_buf, 0)?,
+            score_buf: OutputBuffer::new(score_buf, 0)?,
+            categories_buf: Some(OutputBuffer::new(categories_buf, 0)?),
             options: Default::default(),
-        }
+        })
     }
 
     pub(crate) fn set_box_indices(&mut self, bound_box_properties: &[usize; 4]) {
@@ -269,35 +269,33 @@ impl<'a> TensorsToDetection<'a> {
     }
 
     #[inline(always)]
-    pub(crate) fn location_buf(&mut self) -> &mut [u8] {
-        self.location_buf.data_buffer.as_mut_slice()
+    pub(crate) fn location_buf(&mut self) -> &mut OutputBuffer {
+        &mut self.location_buf
     }
 
     #[inline(always)]
-    pub(crate) fn categories_buf(&mut self) -> Option<&mut [u8]> {
-        if let Some(ref mut c) = self.categories_buf {
-            return Some(c.data_buffer.as_mut_slice());
-        }
-        None
+    pub(crate) fn categories_buf(&mut self) -> Option<&mut OutputBuffer> {
+        self.categories_buf.as_mut()
     }
 
     #[inline(always)]
-    pub(crate) fn score_buf(&mut self) -> &mut [u8] {
-        self.score_buf.data_buffer.as_mut_slice()
+    pub(crate) fn score_buf(&mut self) -> &mut OutputBuffer {
+        &mut self.score_buf
     }
 
     #[inline(always)]
     pub(crate) fn realloc(&mut self, num_boxes: usize) {
-        realloc_output_buffer!(self.score_buf, num_boxes * self.options.num_classes);
-        if let Some(ref mut c) = self.categories_buf {
-            realloc_output_buffer!(c, num_boxes);
+        self.score_buf.resize(num_boxes * self.options.num_classes);
+        if let Some(c) = &mut self.categories_buf {
+            c.resize(num_boxes);
         }
-        realloc_output_buffer!(self.location_buf, num_boxes * self.options.num_coords);
+        self.location_buf
+            .resize(num_boxes * self.options.num_coords);
     }
 
     pub(crate) fn result(&mut self, num_boxes: usize) -> DetectionResult {
-        let scores = output_buffer_mut_slice!(self.score_buf);
-        let location = output_buffer_mut_slice!(self.location_buf);
+        let scores = self.score_buf.as_f32_mut();
+        let location = self.location_buf.as_f32_mut();
 
         // check buf if is valid
         debug_assert!(location.len() >= num_boxes * self.options.num_coords);
@@ -309,7 +307,7 @@ impl<'a> TensorsToDetection<'a> {
         let mut detections = Vec::with_capacity(num_boxes);
         if let Some(ref mut categories_buf) = self.categories_buf {
             assert_eq!(self.options.num_classes, 1);
-            let categories_buf = output_buffer_mut_slice!(categories_buf);
+            let categories_buf = categories_buf.as_f32_mut();
             let mut index = 0;
             for i in 0..num_boxes {
                 let next_index = index + self.options.num_coords;

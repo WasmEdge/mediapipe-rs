@@ -8,7 +8,9 @@ pub use hand_landmark::HandLandmark;
 pub use result::{HandLandmarkResult, HandLandmarkResults};
 
 use crate::model::ModelResourceTrait;
-use crate::postprocess::{CategoriesFilter, NormalizedRect, TensorsToLandmarks, VideoResultsIter};
+use crate::postprocess::{
+    fetch_output, CategoriesFilter, NormalizedRect, TensorsToLandmarks, VideoResultsIter,
+};
 use crate::preprocess::vision::{ImageToTensor, ImageToTensorInfo, VideoData};
 use crate::{Error, Graph, GraphExecutionContext, TensorType};
 
@@ -158,7 +160,8 @@ impl<'model> HandLandmarkerSession<'model> {
             self.execution_ctx.compute()?;
 
             // check hand presence score
-            self.execution_ctx.get_output(
+            fetch_output(
+                &self.execution_ctx,
                 self.hand_landmarker.score_buf_index,
                 &mut self.score_of_hand_presence,
             )?;
@@ -168,7 +171,8 @@ impl<'model> HandLandmarkerSession<'model> {
             }
 
             // get handedness, left or right
-            self.execution_ctx.get_output(
+            fetch_output(
+                &self.execution_ctx,
                 self.hand_landmarker.handedness_buf_index,
                 &mut self.score_of_handedness,
             )?;
@@ -183,14 +187,14 @@ impl<'model> HandLandmarkerSession<'model> {
             };
 
             // get landmarks
-            self.execution_ctx.get_output(
+            self.tensors_to_landmarks.landmark_buffer().fetch(
+                &self.execution_ctx,
                 self.hand_landmarker.landmarks_buf_index,
-                self.tensors_to_landmarks.landmark_buffer(),
             )?;
             let mut hand_landmarks = self.tensors_to_landmarks.result(true);
-            self.execution_ctx.get_output(
+            self.tensors_to_world_landmarks.landmark_buffer().fetch(
+                &self.execution_ctx,
                 self.hand_landmarker.world_landmarks_buf_index,
-                self.tensors_to_world_landmarks.landmark_buffer(),
             )?;
             let mut hand_world_landmarks = self.tensors_to_world_landmarks.result(false);
 

@@ -31,19 +31,19 @@ impl TensorsToSegmentation {
         let elem_size = tensor_shape.elem_size();
         Ok(Self {
             activation,
-            tensor_buffer: empty_output_buffer!(tensor_buf_info, elem_size),
+            tensor_buffer: OutputBuffer::new(tensor_buf_info, elem_size)?,
             image_data_layout,
             tensor_shape,
         })
     }
 
     #[inline(always)]
-    pub(crate) fn tenor_buffer(&mut self) -> &mut [u8] {
-        self.tensor_buffer.data_buffer.as_mut_slice()
+    pub(crate) fn tensor_buffer(&mut self) -> &mut OutputBuffer {
+        &mut self.tensor_buffer
     }
 
     pub(crate) fn category_mask(&mut self) -> ImageCategoryMask {
-        let tensor = output_buffer_mut_slice!(self.tensor_buffer);
+        let tensor = self.tensor_buffer.as_f32_mut();
         let mut res = ImageCategoryMask::new(
             self.tensor_shape.width as u32,
             self.tensor_shape.height as u32,
@@ -81,7 +81,7 @@ impl TensorsToSegmentation {
     }
 
     pub(crate) fn confidence_masks(&mut self) -> Vec<ImageConfidenceMask> {
-        let tensor = output_buffer_mut_slice!(self.tensor_buffer);
+        let tensor = self.tensor_buffer.as_f32_mut();
         let channels = self.tensor_shape.channels;
 
         // apply activation

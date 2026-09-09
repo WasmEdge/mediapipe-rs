@@ -52,7 +52,7 @@ impl AudioClassifier {
             self.build_options.classification_options.max_results,
             get_type_and_quantization!(self.model_resource, 0),
             output_tensor_shape,
-        );
+        )?;
         Ok(AudioClassifierSession {
             classifier: self,
             execution_ctx,
@@ -116,15 +116,9 @@ impl<'model> super::TaskSession for AudioClassifierSession<'model> {
             )?;
             self.execution_ctx.compute()?;
 
-            let output_buffer = self.tensors_to_classification.output_buffer(0);
-            let output_size = self.execution_ctx.get_output(0, output_buffer)?;
-            if output_size != output_buffer.len() {
-                return Err(Error::ModelInconsistentError(format!(
-                    "Model output bytes size is `{}`, but got `{}`",
-                    output_buffer.len(),
-                    output_size
-                )));
-            }
+            self.tensors_to_classification
+                .output_buffer(0)
+                .fetch(&self.execution_ctx, 0)?;
 
             return Ok(Some(
                 self.tensors_to_classification.result(Some(timestamp_ms)),

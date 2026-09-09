@@ -10,39 +10,26 @@ pub(super) fn regex_to_tensors<E: AsMut<[u8]>>(
     pad_id: i32,
 ) -> Result<(), Error> {
     let indices_size = max_seq_len as usize;
-    if output_buffer.as_mut().len() < std::mem::size_of::<i32>() * indices_size {
+    let min_bytes = token_ids_bytes(max_seq_len)?;
+    if output_buffer.as_mut().len() < min_bytes {
         return Err(Error::ModelInconsistentError(format!(
             "Output buffer bytes is too small, expect `{}` but got `{}`",
-            std::mem::size_of::<i32>() * indices_size,
+            min_bytes,
             output_buffer.as_mut().len()
         )));
     }
 
-    let buffer = unsafe {
-        core::slice::from_raw_parts_mut(
-            output_buffer.as_mut().as_mut_ptr() as *mut i32,
-            indices_size,
-        )
-    };
-
-    let mut index = 0;
-    if let Some(id) = token_index_map.get(TextToTensorInfo::REGEX_START_TOKEN) {
-        buffer[index] = *id;
-        index += 1;
-    }
-
-    for words in delim_regex.split(s) {
-        buffer[index] = *token_index_map.get(words).unwrap_or(&unknown_id);
-        index += 1;
-        if index == indices_size {
-            break;
-        }
-    }
-
-    while index < indices_size {
-        buffer[index] = pad_id;
-        index += 1;
-    }
-
+    let start = token_index_map
+        .get(TextToTensorInfo::REGEX_START_TOKEN)
+        .copied();
+    let words = delim_regex
+        .split(s)
+        .map(|word| *token_index_map.get(word).unwrap_or(&unknown_id));
+    let ids = start
+        .into_iter()
+        .chain(words)
+        .chain(std::iter::repeat(pad_id))
+        .take(indices_size);
+    write_ne_bytes(output_buffer.as_mut(), ids);
     Ok(())
 }

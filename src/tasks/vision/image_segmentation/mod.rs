@@ -128,8 +128,9 @@ impl<'model> ImageSegmenterSession<'model> {
 
         self.execution_ctx.compute()?;
 
-        let output_buffer = self.tensors_to_segmentation.tenor_buffer();
-        self.execution_ctx.get_output(0, output_buffer)?;
+        self.tensors_to_segmentation
+            .tensor_buffer()
+            .fetch(&self.execution_ctx, 0)?;
 
         let category_mask = if self.output_category {
             let mask = self.tensors_to_segmentation.category_mask();

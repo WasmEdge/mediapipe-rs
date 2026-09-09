@@ -2,7 +2,7 @@ mod builder;
 pub use builder::ObjectDetectorBuilder;
 
 use crate::model::ModelResourceTrait;
-use crate::postprocess::{CategoriesFilter, DetectionResult, TensorsToDetection};
+use crate::postprocess::{fetch_output, CategoriesFilter, DetectionResult, TensorsToDetection};
 use crate::preprocess::vision::ImageToTensorInfo;
 use crate::{Error, Graph, GraphExecutionContext, TensorType};
 
@@ -53,7 +53,7 @@ impl ObjectDetector {
             get_type_and_quantization!(self.model_resource, self.location_buf_index),
             get_type_and_quantization!(self.model_resource, self.categories_buf_index),
             get_type_and_quantization!(self.model_resource, self.score_buf_index),
-        );
+        )?;
         tensors_to_detection.set_box_indices(&self.bound_box_properties);
 
         let execution_ctx = self.graph.init_execution_context()?;
@@ -106,33 +106,29 @@ impl<'model> ObjectDetectorSession<'model> {
         self.execution_ctx.compute()?;
 
         // get num box
-        let output_size = self
-            .execution_ctx
-            .get_output(self.detector.num_box_buf_index, &mut self.num_box_buf)?;
-        if output_size != 4 {
-            return Err(Error::ModelInconsistentError(format!(
-                "Model output bytes size is `{}`, but got `{}`",
-                4, output_size
-            )));
-        }
+        fetch_output(
+            &self.execution_ctx,
+            self.detector.num_box_buf_index,
+            &mut self.num_box_buf,
+        )?;
         let num_box = self.num_box_buf[0].round() as usize;
 
         // realloc
         self.tensors_to_detection.realloc(num_box);
 
         // get other buffers
-        self.execution_ctx.get_output(
-            self.detector.location_buf_index,
-            self.tensors_to_detection.location_buf(),
-        )?;
-        self.execution_ctx.get_output(
-            self.detector.categories_buf_index,
-            self.tensors_to_detection.categories_buf().unwrap(),
-        )?;
-        self.execution_ctx.get_output(
-            self.detector.score_buf_index,
-            self.tensors_to_detection.score_buf(),
-        )?;
+        self.tensors_to_detection
+            .location_buf()
+            .fetch(&self.execution_ctx, self.detector.location_buf_index)?;
+        self.tensors_to_detection
+            .categories_buf()
+            .ok_or_else(|| {
+                Error::ModelInconsistentError("Missing categories output buffer".into())
+            })?
+            .fetch(&self.execution_ctx, self.detector.categories_buf_index)?;
+        self.tensors_to_detection
+            .score_buf()
+            .fetch(&self.execution_ctx, self.detector.score_buf_index)?;
 
         // generate result
         Ok(self.tensors_to_detection.result(num_box))

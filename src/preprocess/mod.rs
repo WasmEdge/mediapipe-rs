@@ -1,4 +1,6 @@
 mod common;
+#[cfg(any(feature = "audio", feature = "text"))]
+pub(crate) use common::write_ne_bytes;
 
 #[cfg(feature = "audio")]
 pub mod audio;
