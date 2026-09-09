@@ -15,7 +15,7 @@ jobs:
       options: --user root
     steps:
       - name: checkout
-        uses: actions/checkout@main
+        uses: actions/checkout@v7
 
       - name: use the Azure apt mirror
         run: sed -i 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
