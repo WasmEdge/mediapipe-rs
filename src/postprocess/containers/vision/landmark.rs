@@ -5,7 +5,7 @@ use std::ops::{Deref, DerefMut};
 /// Landmark represents a point in 3D space with x, y, z coordinates. The
 /// landmark coordinates are in meters. z represents the landmark depth, and the
 /// smaller the value the closer the world landmark is to the camera.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Landmark {
     pub x: f32,
     pub y: f32,
@@ -51,7 +51,7 @@ impl IntoIterator for Landmarks {
 
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
-        todo!()
+        self.0.into_iter()
     }
 }
 
@@ -63,15 +63,12 @@ pub type NormalizedLandmarks = Landmarks;
 
 impl Landmark {
     pub const LANDMARK_TOLERANCE: f32 = 1e-6;
-}
 
-impl Eq for Landmark {}
-
-impl PartialEq for Landmark {
-    fn eq(&self, other: &Self) -> bool {
-        return (self.x - other.x).abs() < Self::LANDMARK_TOLERANCE
-            && (self.y - other.y) < Self::LANDMARK_TOLERANCE
-            && (self.z - other.z) < Self::LANDMARK_TOLERANCE;
+    /// Compare x, y and z within [`Landmark::LANDMARK_TOLERANCE`].
+    pub fn approx_eq(&self, other: &Self) -> bool {
+        (self.x - other.x).abs() < Self::LANDMARK_TOLERANCE
+            && (self.y - other.y).abs() < Self::LANDMARK_TOLERANCE
+            && (self.z - other.z).abs() < Self::LANDMARK_TOLERANCE
     }
 }
 
@@ -148,5 +145,42 @@ pub(crate) fn projection_world_landmark(
             l.x = x;
             l.y = y;
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn landmark(x: f32, y: f32, z: f32) -> Landmark {
+        Landmark {
+            x,
+            y,
+            z,
+            visibility: None,
+            presence: None,
+            name: None,
+        }
+    }
+
+    #[test]
+    fn test_landmark_approx_eq_is_symmetric() {
+        let a = landmark(0.0, 0.0, 0.0);
+        let b = landmark(0.0, 1.0, 0.0);
+        let c = landmark(0.0, 0.0, 1.0);
+        assert!(!a.approx_eq(&b));
+        assert!(!b.approx_eq(&a));
+        assert!(!a.approx_eq(&c));
+        assert!(!c.approx_eq(&a));
+        assert!(a.approx_eq(&landmark(0.0, 1e-7, -1e-7)));
+        assert_ne!(a, landmark(0.0, 1e-7, -1e-7));
+        assert_eq!(a, landmark(0.0, 0.0, 0.0));
+    }
+
+    #[test]
+    fn test_landmarks_into_iter() {
+        let landmarks = Landmarks(vec![landmark(1.0, 2.0, 3.0), landmark(4.0, 5.0, 6.0)]);
+        let xs: Vec<f32> = landmarks.into_iter().map(|l| l.x).collect();
+        assert_eq!(xs, [1.0, 4.0]);
     }
 }

@@ -292,7 +292,7 @@ impl<'a> TensorsToDetection<'a> {
         if let Some(ref mut c) = self.categories_buf {
             realloc_output_buffer!(c, num_boxes);
         }
-        realloc_output_buffer!(self.location_buf, num_boxes * num_boxes);
+        realloc_output_buffer!(self.location_buf, num_boxes * self.options.num_coords);
     }
 
     pub(crate) fn result(&mut self, num_boxes: usize) -> DetectionResult {

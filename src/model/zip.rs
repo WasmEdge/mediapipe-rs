@@ -51,7 +51,7 @@ struct EndOfCentralDirectoryRecord<'buf> {
 
 impl<'buf> EndOfCentralDirectoryRecord<'buf> {
     const HEAD_SIGNATURE: &'static [u8] = &[0x50, 0x4b, 0x05, 0x06];
-    const MIN_SIZE: usize = 20; // at least 20 bytes
+    const MIN_SIZE: usize = 22;
 
     const NUMBER_OF_THIS_DISK_POS: usize = 4;
     const DISK_WHERE_CENTRAL_DIRECTORY_STARTS_POS: usize = 6;
@@ -608,6 +608,10 @@ mod test {
     #[test]
     fn test_end_of_central_directory_record() {
         assert!(EndOfCentralDirectoryRecord::new(&[]).is_err());
+
+        let mut truncated = vec![0u8; 23];
+        truncated[2..6].copy_from_slice(EndOfCentralDirectoryRecord::HEAD_SIGNATURE);
+        assert!(EndOfCentralDirectoryRecord::new(&truncated).is_err());
 
         let buf = std::fs::read(ZIP_PATH).unwrap();
         let r = EndOfCentralDirectoryRecord::new(buf.as_slice()).unwrap();

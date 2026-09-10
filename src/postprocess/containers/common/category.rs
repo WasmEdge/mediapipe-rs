@@ -46,18 +46,57 @@ impl Eq for Category {}
 
 impl PartialEq<Self> for Category {
     fn eq(&self, other: &Self) -> bool {
-        self.index.eq(&other.index)
+        self.cmp(other) == Ordering::Equal
     }
 }
 
 impl PartialOrd<Self> for Category {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        other.score.partial_cmp(&self.score)
+        Some(self.cmp(other))
     }
 }
 
+/// Orders by descending score, then by ascending index.
 impl Ord for Category {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.score.partial_cmp(&self.score).unwrap()
+        other
+            .score
+            .total_cmp(&self.score)
+            .then_with(|| self.index.cmp(&other.index))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn category(index: u32, score: f32) -> Category {
+        Category {
+            index,
+            score,
+            category_name: None,
+            display_name: None,
+        }
+    }
+
+    #[test]
+    fn test_category_order() {
+        let mut categories = vec![
+            category(0, 0.1),
+            category(1, f32::NAN),
+            category(2, 0.9),
+            category(3, 0.1),
+        ];
+        categories.sort();
+        let indices: Vec<u32> = categories.iter().map(|c| c.index).collect();
+        assert_eq!(indices, [1, 2, 0, 3]);
+
+        assert_eq!(category(0, 0.5), category(0, 0.5));
+        assert_ne!(category(0, 0.5), category(0, 0.6));
+        assert_ne!(category(0, 0.5), category(1, 0.5));
+        assert_eq!(
+            category(0, 0.5).partial_cmp(&category(1, 0.5)),
+            Some(Ordering::Less)
+        );
     }
 }

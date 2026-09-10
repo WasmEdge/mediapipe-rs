@@ -97,21 +97,21 @@ impl<'a, Source: AudioData> AudioDataToTensorIter<'a, Source> {
         }
 
         let mono_output = self.audio_to_tensor_info.num_channels == 1;
-        let channels_match = num_channels != self.audio_to_tensor_info.num_channels as usize;
-        if !mono_output && !channels_match {
+        let channels_mismatch = num_channels != self.audio_to_tensor_info.num_channels;
+        if channels_mismatch && !mono_output {
             return Err(Error::ArgumentError(format!(
                 "Audio input has `{}` channel(s) but the model requires `{}` channel(s)",
                 num_channels, self.audio_to_tensor_info.num_channels
             )));
         }
 
-        if !channels_match {
-            // cal the mean
+        if channels_mismatch {
+            // downmix to mono: average all channels into channel 0
             let (mean, buffers) = self.input_buffer.as_mut_slice().split_at_mut(1);
-            let mean = mean[0].as_mut_slice();
+            let mean = &mut mean[0][..num_samples];
             for samples in buffers {
-                for j in 0..samples.len() {
-                    mean[j] += samples[j];
+                for (m, s) in mean.iter_mut().zip(&samples[..num_samples]) {
+                    *m += *s;
                 }
             }
             let div = num_channels as f32;
@@ -177,5 +177,48 @@ impl<'a, Source: AudioData> AudioDataToTensorIter<'a, Source> {
             }
             _ => unreachable!(),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn info(num_channels: usize) -> AudioToTensorInfo {
+        AudioToTensorInfo {
+            num_channels,
+            num_samples: 4,
+            sample_rate: 4,
+            num_overlapping_samples: 0,
+            tensor_type: TensorType::F32,
+        }
+    }
+
+    fn poll(info: &AudioToTensorInfo, channels: Vec<Vec<f32>>) -> Result<Vec<f32>, Error> {
+        let data = AudioRawData::new(channels, 4)?;
+        let mut iter = AudioDataToTensorIter::new(info, data)?;
+        let mut buffers = [vec![0u8; info.num_channels * info.num_samples * 4]];
+        iter.poll_next_tensors(&mut buffers)?;
+        Ok(buffers[0]
+            .chunks_exact(4)
+            .map(|b| f32::from_ne_bytes(b.try_into().unwrap()))
+            .collect())
+    }
+
+    #[test]
+    fn test_stereo_input_downmixes_to_mono_model() {
+        let out = poll(&info(1), vec![vec![1., 1., 1., 1.], vec![3., 3., 3., 3.]]).unwrap();
+        assert_eq!(out, [2., 2., 2., 2.]);
+    }
+
+    #[test]
+    fn test_matching_channels_pass_through() {
+        let out = poll(&info(2), vec![vec![1., 1., 1., 1.], vec![3., 3., 3., 3.]]).unwrap();
+        assert_eq!(out, [1., 1., 1., 1., 3., 3., 3., 3.]);
+    }
+
+    #[test]
+    fn test_channel_mismatch_for_multichannel_model_is_error() {
+        assert!(poll(&info(2), vec![vec![1., 1., 1., 1.]]).is_err());
     }
 }

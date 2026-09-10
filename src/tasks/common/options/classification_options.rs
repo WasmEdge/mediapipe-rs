@@ -92,7 +92,7 @@ macro_rules! classification_options_check {
             ));
         }
         if !$self.$field_name.category_allow_list.is_empty()
-            && !$self.classification_options.category_deny_list.is_empty()
+            && !$self.$field_name.category_deny_list.is_empty()
         {
             return Err(crate::Error::ArgumentError(
                 "Cannot use both `category_allow_list` and `category_deny_list`".into(),

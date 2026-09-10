@@ -54,18 +54,13 @@ impl TensorsToEmbedding {
             if self.quantize {
                 float_embedding = Vec::new();
                 quantized_embedding = Vec::with_capacity(tensor.len());
-                if self.l2_normalize {
-                    let inv_l2_norm = Self::get_inverse_l2_norm(tensor);
-                    for t in tensor {
-                        let value = (*t) * inv_l2_norm;
-                        let i = (value * 128.).round() as i32;
-                        quantized_embedding.push(std::cmp::max(-128, std::cmp::min(i, 127) as i8));
-                    }
+                let scale = if self.l2_normalize {
+                    Self::get_inverse_l2_norm(tensor)
                 } else {
-                    for t in tensor {
-                        let i = ((*t) * 128.).round() as i32;
-                        quantized_embedding.push(std::cmp::max(-128, std::cmp::min(i, 127) as i8));
-                    }
+                    1.0
+                };
+                for t in tensor {
+                    quantized_embedding.push(Self::quantize_value((*t) * scale));
                 }
             } else {
                 quantized_embedding = Vec::new();
@@ -94,6 +89,12 @@ impl TensorsToEmbedding {
         }
     }
 
+    /// Scales by 128 and saturates to the i8 range before narrowing.
+    #[inline(always)]
+    fn quantize_value(value: f32) -> i8 {
+        ((value * 128.).round() as i32).clamp(-128, 127) as i8
+    }
+
     /// Computes the inverse L2 norm of the provided array of values. Returns 1.0 in case all values are 0.
     fn get_inverse_l2_norm(values: &[f32]) -> f32 {
         let mut squared_l2_norm = 0.0;
@@ -107,5 +108,20 @@ impl TensorsToEmbedding {
             inv_l2_norm = 1.0 / squared_l2_norm.sqrt();
         }
         return inv_l2_norm;
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::TensorsToEmbedding;
+
+    #[test]
+    fn test_quantize_value_saturates() {
+        assert_eq!(TensorsToEmbedding::quantize_value(0.5), 64);
+        assert_eq!(TensorsToEmbedding::quantize_value(-0.5), -64);
+        assert_eq!(TensorsToEmbedding::quantize_value(1.0), 127);
+        assert_eq!(TensorsToEmbedding::quantize_value(-1.0), -128);
+        assert_eq!(TensorsToEmbedding::quantize_value(3.0), 127);
+        assert_eq!(TensorsToEmbedding::quantize_value(-3.0), -128);
     }
 }
