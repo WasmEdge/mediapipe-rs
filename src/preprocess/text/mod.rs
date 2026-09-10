@@ -170,7 +170,10 @@ impl TextToTensors for &str {
                 );
             }
             TextToTensorInfo::StringModel | TextToTensorInfo::UseModel => {
-                todo!("Text String model")
+                Err(Error::ModelInconsistentError(
+                    "String tensor and Universal Sentence Encoder text models are not supported"
+                        .into(),
+                ))
             }
         }
     }

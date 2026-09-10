@@ -31,9 +31,7 @@ impl ImageToTensor for DynamicImage {
         output_buffer: &mut T,
     ) -> Result<(), Error> {
         match info.color_space {
-            ImageColorSpaceType::GRAYSCALE => {
-                unimplemented!()
-            }
+            ImageColorSpaceType::GRAYSCALE => Err(grayscale_unsupported()),
             // we treat unknown as rgb8
             ImageColorSpaceType::RGB | ImageColorSpaceType::UNKNOWN => {
                 if let Some(rgb) = self.as_rgb8() {
@@ -103,8 +101,7 @@ impl ImageToTensor for RgbImage {
         }
 
         if info.color_space == ImageColorSpaceType::GRAYSCALE {
-            // todo: gray image
-            unimplemented!()
+            return Err(grayscale_unsupported());
         }
 
         rgb8_image_buffer_to_tensor(rgb_img, info, output_buffer)
@@ -197,8 +194,15 @@ where
             }
             Ok(())
         }
-        _ => unimplemented!(),
+        tensor_type => Err(Error::ModelInconsistentError(format!(
+            "Unsupported image input tensor type `{:?}`, expect F32 or U8",
+            tensor_type
+        ))),
     }
+}
+
+pub(super) fn grayscale_unsupported() -> Error {
+    Error::ModelInconsistentError("Grayscale image input is not supported".into())
 }
 
 mod ops_inner {

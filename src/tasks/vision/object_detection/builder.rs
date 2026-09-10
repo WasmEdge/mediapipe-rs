@@ -1,5 +1,7 @@
 use super::ObjectDetector;
+use crate::postprocess::TensorsToDetection;
 use crate::tasks::common::{BaseTaskOptions, ClassificationOptions};
+use crate::TensorType;
 
 /// Configure the build options of a new **Object Detection** task instance.
 ///
@@ -66,14 +68,7 @@ impl ObjectDetectorBuilder {
         if model_resource
             .output_bounding_box_properties(location_buf_index, &mut bound_box_properties)
         {
-            for i in 0..4 {
-                if bound_box_properties[i] >= 4 {
-                    return Err(crate::Error::ModelInconsistentError(format!(
-                        "BoundingBoxProperties must contains `0,1,2,3`, but got `{}`",
-                        bound_box_properties[i]
-                    )));
-                }
-            }
+            TensorsToDetection::check_box_indices(&bound_box_properties)?;
         }
 
         let categories_buf_index = model_resource_check_and_get_impl!(
@@ -86,20 +81,37 @@ impl ObjectDetectorBuilder {
             output_tensor_name_to_index,
             "score"
         );
-        let num_box_buf_index = {
-            let mut p = [true; 4];
-            p[location_buf_index] = false;
-            p[categories_buf_index] = false;
-            p[score_buf_index] = false;
-            let mut i = 0;
-            while i < 4 {
-                if p[i] {
-                    break;
-                }
-                i += 1;
-            }
-            i
-        };
+        let named = [location_buf_index, categories_buf_index, score_buf_index];
+        let used = named
+            .iter()
+            .filter(|i| **i < 4)
+            .fold(0u8, |mask, i| mask | (1 << i));
+        let num_box_buf_index = (0..4)
+            .find(|i| used & (1 << i) == 0)
+            .filter(|_| used.count_ones() == 3)
+            .ok_or_else(|| {
+                crate::Error::ModelInconsistentError(format!(
+                    "Output tensors `location`, `category`, `score` must be three distinct indices in `0..4`, but got `{:?}`",
+                    named
+                ))
+            })?;
+        check_tensor_type!(
+            model_resource,
+            num_box_buf_index,
+            output_tensor_type,
+            TensorType::F32
+        );
+        let num_box_shape = model_resource_check_and_get_impl!(
+            model_resource,
+            output_tensor_shape,
+            num_box_buf_index
+        );
+        if num_box_shape.iter().product::<usize>() != 1 {
+            return Err(crate::Error::ModelInconsistentError(format!(
+                "Expect the detection count output to hold one value, but got shape `{:?}`",
+                num_box_shape
+            )));
+        }
         return Ok(ObjectDetector {
             build_options: self,
             model_resource,
