@@ -1,7 +1,7 @@
 use super::ObjectDetector;
+use crate::model::check_scalar_f32_output;
 use crate::postprocess::TensorsToDetection;
 use crate::tasks::common::{BaseTaskOptions, ClassificationOptions};
-use crate::TensorType;
 
 /// Configure the build options of a new **Object Detection** task instance.
 ///
@@ -95,23 +95,7 @@ impl ObjectDetectorBuilder {
                     named
                 ))
             })?;
-        check_tensor_type!(
-            model_resource,
-            num_box_buf_index,
-            output_tensor_type,
-            TensorType::F32
-        );
-        let num_box_shape = model_resource_check_and_get_impl!(
-            model_resource,
-            output_tensor_shape,
-            num_box_buf_index
-        );
-        if num_box_shape.iter().product::<usize>() != 1 {
-            return Err(crate::Error::ModelInconsistentError(format!(
-                "Expect the detection count output to hold one value, but got shape `{:?}`",
-                num_box_shape
-            )));
-        }
+        check_scalar_f32_output(model_resource.as_ref(), num_box_buf_index)?;
         return Ok(ObjectDetector {
             build_options: self,
             model_resource,

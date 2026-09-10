@@ -1,6 +1,6 @@
-use super::{FaceDetectorBuilder, FaceLandmarker, TensorType};
+use super::{FaceDetectorBuilder, FaceLandmarker};
 
-use crate::model::ZipFiles;
+use crate::model::{check_scalar_f32_output, ZipFiles};
 use crate::tasks::common::{BaseTaskOptions, FaceLandmarkOptions};
 
 /// Configure the build options of a new **Face Landmark** task instance.
@@ -81,12 +81,7 @@ impl FaceLandmarkerBuilder {
         let score_buf_index = 1;
         let landmarks_buf_index = 0;
         // now only fp32 model
-        check_tensor_type!(
-            model_resource,
-            score_buf_index,
-            output_tensor_type,
-            TensorType::F32
-        );
+        check_scalar_f32_output(model_resource.as_ref(), score_buf_index)?;
 
         let graph = crate::GraphBuilder::new(
             model_resource.model_backend(),
