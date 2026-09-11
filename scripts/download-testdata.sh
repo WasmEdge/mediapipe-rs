@@ -45,7 +45,7 @@ install_ffmpeg() {
   if which ffmpeg; then
     echo "FFMpeg is installed."
   else
-    apt install ffmpeg -y
+    apt install -y --no-install-recommends ffmpeg
   fi
 }
 
