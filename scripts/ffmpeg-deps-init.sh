@@ -3,7 +3,7 @@
 set -ex
 
 # install libclang and clang
-apt install -y libclang1-14 clang
+apt install -y --no-install-recommends libclang1-14 clang
 
 FFMPEG_VERSION="v0.0.1"
 FFMPEG_FILENAME="ffmpeg-6.0-wasm32-wasi-v0.0.1.tar.gz"

@@ -17,6 +17,9 @@ jobs:
       - name: checkout
         uses: actions/checkout@main
 
+      - name: use the Azure apt mirror
+        run: sed -i 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+
       - name: install curl and rust
         run: ./scripts/rust-init.sh
 
