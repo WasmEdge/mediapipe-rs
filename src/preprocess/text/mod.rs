@@ -48,6 +48,18 @@ pub enum TextToTensorInfo {
     UseModel,
 }
 
+/// Byte size of `max_seq_len` token ids; fails when it does not fit in `usize`.
+fn token_ids_bytes(max_seq_len: u32) -> Result<usize, Error> {
+    (max_seq_len as usize)
+        .checked_mul(std::mem::size_of::<i32>())
+        .ok_or_else(|| {
+            Error::ModelInconsistentError(format!(
+                "Max seq length `{}` is too large for this target",
+                max_seq_len
+            ))
+        })
+}
+
 macro_rules! check_map {
     ( $token_index_map:ident, $val:expr ) => {
         match $token_index_map.get($val) {
@@ -158,7 +170,10 @@ impl TextToTensors for &str {
                 );
             }
             TextToTensorInfo::StringModel | TextToTensorInfo::UseModel => {
-                todo!("Text String model")
+                Err(Error::ModelInconsistentError(
+                    "String tensor and Universal Sentence Encoder text models are not supported"
+                        .into(),
+                ))
             }
         }
     }
@@ -186,5 +201,92 @@ impl<'a> TextToTensors for Cow<'a, str> {
             Cow::Borrowed(s) => (*s).to_tensors(to_tensor_info, output_buffers),
             Cow::Owned(s) => s.to_tensors(to_tensor_info, output_buffers),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn map(pairs: &[(&str, i32)]) -> HashMap<String, i32> {
+        pairs.iter().map(|(k, v)| (k.to_string(), *v)).collect()
+    }
+
+    fn to_i32(buf: &[u8]) -> Vec<i32> {
+        buf.chunks_exact(4)
+            .map(|b| i32::from_ne_bytes(b.try_into().unwrap()))
+            .collect()
+    }
+
+    #[test]
+    fn test_regex_model_to_tensors() {
+        let vocab = map(&[("<START>", 1), ("<PAD>", 0), ("<UNKNOWN>", 2), ("hello", 3)]);
+        let info = TextToTensorInfo::new_regex_model(4, r"\s+", vocab.clone()).unwrap();
+        let mut buffers = [vec![0u8; 16]];
+        "hello world".to_tensors(&info, &mut buffers).unwrap();
+        assert_eq!(to_i32(&buffers[0]), [1, 3, 2, 0]);
+
+        "a b c d e f".to_tensors(&info, &mut buffers).unwrap();
+        assert_eq!(to_i32(&buffers[0]), [1, 2, 2, 2]);
+
+        let mut short = [vec![0u8; 15]];
+        assert!("hello".to_tensors(&info, &mut short).is_err());
+
+        // the sequence limit also applies to the start token
+        let info = TextToTensorInfo::new_regex_model(1, r"\s+", vocab.clone()).unwrap();
+        let mut one = [vec![0u8; 4]];
+        "hello world".to_tensors(&info, &mut one).unwrap();
+        assert_eq!(to_i32(&one[0]), [1]);
+
+        let info = TextToTensorInfo::new_regex_model(0, r"\s+", vocab).unwrap();
+        let mut none = [Vec::<u8>::new()];
+        "hello world".to_tensors(&info, &mut none).unwrap();
+    }
+
+    #[test]
+    fn test_bert_model_to_tensors() {
+        let info = TextToTensorInfo::new_bert_model(
+            5,
+            map(&[
+                ("[CLS]", 101),
+                ("[SEP]", 102),
+                ("[UNK]", 100),
+                ("hello", 7592),
+                ("world", 2088),
+            ]),
+        )
+        .unwrap();
+        let mut buffers = [vec![1u8; 20], vec![1u8; 20], vec![1u8; 20]];
+        "Hello world".to_tensors(&info, &mut buffers).unwrap();
+        assert_eq!(to_i32(&buffers[0]), [101, 7592, 2088, 102, 0]);
+        assert_eq!(to_i32(&buffers[1]), [0, 0, 0, 0, 0]);
+        assert_eq!(to_i32(&buffers[2]), [1, 1, 1, 1, 0]);
+
+        "hello world hello world hello"
+            .to_tensors(&info, &mut buffers)
+            .unwrap();
+        assert_eq!(to_i32(&buffers[0]), [101, 7592, 2088, 7592, 102]);
+        assert_eq!(to_i32(&buffers[2]), [1, 1, 1, 1, 1]);
+    }
+
+    /// `max_seq_len * 4` overflows `usize` on wasm32; the buffer check must reject it
+    /// instead of allocating the token ids.
+    #[test]
+    fn test_huge_max_seq_len_is_rejected() {
+        let max_seq_len = 1 << 30;
+        let regex = TextToTensorInfo::new_regex_model(
+            max_seq_len,
+            r"\s+",
+            map(&[("<START>", 1), ("<PAD>", 0), ("<UNKNOWN>", 2)]),
+        )
+        .unwrap();
+        let mut buffers = [vec![0u8; 16]];
+        assert!("hello".to_tensors(&regex, &mut buffers).is_err());
+
+        let bert =
+            TextToTensorInfo::new_bert_model(max_seq_len, map(&[("[CLS]", 101), ("[SEP]", 102)]))
+                .unwrap();
+        let mut buffers = [vec![0u8; 16], vec![0u8; 16], vec![0u8; 16]];
+        assert!("hello".to_tensors(&bert, &mut buffers).is_err());
     }
 }

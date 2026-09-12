@@ -90,19 +90,7 @@ impl TfLiteModelResource {
                 let t = tensors.get(index);
                 self.input_types.push(Self::tflite_type_parse(t.type_())?);
                 if let Some(s) = t.shape() {
-                    let len = s.len();
-                    let mut shape = Vec::with_capacity(len);
-                    for d in 0..len {
-                        let val = s.get(d) as usize;
-                        if val < 1 {
-                            return Err(Error::ModelParseError(format!(
-                                "Invalid model input `{}` shape `{}, size is `0`",
-                                i, d
-                            )));
-                        }
-                        shape.push(val);
-                    }
-                    self.input_shape.push(shape);
+                    self.input_shape.push(Self::parse_shape("input", i, s)?);
                 } else {
                     return Err(Error::ModelParseError(format!(
                         "Missing tensor shape for input `{}`",
@@ -127,19 +115,7 @@ impl TfLiteModelResource {
                 self.output_types.push(tensor_type);
 
                 if let Some(s) = t.shape() {
-                    let len = s.len();
-                    let mut shape = Vec::with_capacity(len);
-                    for d in 0..len {
-                        let val = s.get(d) as usize;
-                        if val < 1 {
-                            return Err(Error::ModelParseError(format!(
-                                "Invalid model output `{}` shape `{}, size is `0`",
-                                i, d
-                            )));
-                        }
-                        shape.push(val);
-                    }
-                    self.output_shape.push(shape);
+                    self.output_shape.push(Self::parse_shape("output", i, s)?);
                 } else {
                     return Err(Error::ModelParseError(format!(
                         "Missing tensor shape for output `{}`",
@@ -171,6 +147,41 @@ impl TfLiteModelResource {
         Ok(())
     }
 
+    /// Largest element size of the supported tensor types, see `tensor_byte_size!`.
+    const MAX_TENSOR_BYTE_SIZE: usize = 4;
+
+    /// Every dimension must be positive and the tensor byte size for the largest element type
+    /// must fit in `usize`, so that later `product()` and byte-size computations cannot overflow.
+    fn parse_shape(
+        kind: &str,
+        index: usize,
+        dims: flatbuffers::Vector<'_, i32>,
+    ) -> Result<Vec<usize>, Error> {
+        let mut shape = Vec::with_capacity(dims.len());
+        let mut bytes: usize = Self::MAX_TENSOR_BYTE_SIZE;
+        for (d, dim) in dims.iter().enumerate() {
+            let val = usize::try_from(dim)
+                .ok()
+                .filter(|v| *v > 0)
+                .ok_or_else(|| {
+                    Error::ModelParseError(format!(
+                    "Invalid model {} `{}` shape: dimension `{}` is `{}`, expect a positive size",
+                    kind, index, d, dim
+                ))
+                })?;
+            bytes = bytes.checked_mul(val).ok_or_else(|| {
+                Error::ModelParseError(format!(
+                    "Model {} `{}` shape `{:?}` is too large",
+                    kind,
+                    index,
+                    dims.iter().collect::<Vec<_>>()
+                ))
+            })?;
+            shape.push(val);
+        }
+        Ok(shape)
+    }
+
     #[inline]
     fn parse_model_metadata<'buf>(
         model: &tflite_model::Model<'buf>,
@@ -181,15 +192,8 @@ impl TfLiteModelResource {
                 if m.name() == Some(Self::METADATA_NAME) {
                     let buf_index = m.buffer() as usize;
                     if buf_index < model_buffers.len() {
-                        let data_option = model_buffers.get(buf_index).data();
-                        if data_option.is_some() {
-                            // todo: submit an issue to flatbuffers and fix the checked error in rust
-                            let metadata = unsafe {
-                                tflite_metadata::root_as_model_metadata_unchecked(
-                                    data_option.unwrap().bytes(),
-                                )
-                            };
-                            return Ok(Some(metadata));
+                        if let Some(data) = model_buffers.get(buf_index).data() {
+                            return Self::verify_model_metadata(data.bytes()).map(Some);
                         }
                     }
 
@@ -201,6 +205,12 @@ impl TfLiteModelResource {
             }
         }
         Ok(None)
+    }
+
+    /// Verify the metadata flatbuffer. The generated `Content` verifier tolerates the union
+    /// discriminant without a value that TFLite metadata writers emit.
+    fn verify_model_metadata(bytes: &[u8]) -> Result<tflite_metadata::ModelMetadata<'_>, Error> {
+        Ok(tflite_metadata::root_as_model_metadata(bytes)?)
     }
 
     #[inline]
@@ -408,7 +418,7 @@ impl TfLiteModelResource {
         let img_info = ImageToTensorInfo {
             image_data_layout: ImageDataLayout::NHWC,
             color_space,
-            tensor_type: self.input_types.get(i).unwrap().clone(),
+            tensor_type: self.input_tensor_type_for_metadata(i)?,
             tensor_shape,
             stats_min,
             stats_max,
@@ -430,7 +440,12 @@ impl TfLiteModelResource {
         i: usize,
         props: tflite_metadata::AudioProperties,
     ) -> Result<(), Error> {
-        let input_shape = self.input_shape.get(i).unwrap();
+        let Some(input_shape) = self.input_shape.get(i) else {
+            return Err(Error::ModelParseError(format!(
+                "Audio input tensor metadata `{}` has no matching input tensor",
+                i
+            )));
+        };
         let num_channels = props.channels() as usize;
         if num_channels == 0 {
             return Err(Error::ModelParseError(format!(
@@ -445,13 +460,13 @@ impl TfLiteModelResource {
                 input_buffer_size, num_channels
             )));
         }
-        let num_samples = *input_shape.last().unwrap() / num_channels;
+        let num_samples = input_buffer_size / num_channels;
         let audio_info = AudioToTensorInfo {
             num_channels,
             num_samples,
             sample_rate: props.sample_rate() as usize,
             num_overlapping_samples: 0,
-            tensor_type: self.input_types.get(i).unwrap().clone(),
+            tensor_type: self.input_tensor_type_for_metadata(i)?,
         };
 
         while self.to_tensor_info.len() < i {
@@ -499,8 +514,15 @@ impl TfLiteModelResource {
             }
         }
         // regex model
-        if self.to_tensor_info.is_empty() && self.input_types.len() == 1 {
-            let input_tensor = subgraph.input_tensor_metadata().unwrap().get(0);
+        let first_input_metadata = subgraph
+            .input_tensor_metadata()
+            .filter(|m| !m.is_empty())
+            .map(|m| m.get(0));
+        if let (true, 1, Some(input_tensor)) = (
+            self.to_tensor_info.is_empty(),
+            self.input_types.len(),
+            first_input_metadata,
+        ) {
             if let Some(process_units) = input_tensor.process_units() {
                 for i in 0..process_units.len() {
                     if let Some(r) = process_units.get(i).options_as_regex_tokenizer_options() {
@@ -627,6 +649,15 @@ impl TfLiteModelResource {
         Ok(res as u32)
     }
 
+    fn input_tensor_type_for_metadata(&self, i: usize) -> Result<TensorType, Error> {
+        self.input_types.get(i).copied().ok_or_else(|| {
+            Error::ModelParseError(format!(
+                "Input tensor metadata `{}` has no matching input tensor",
+                i
+            ))
+        })
+    }
+
     #[inline(always)]
     fn get_file_content(&self, filename: &str) -> Result<&[u8], Error> {
         match self.associated_files.get(filename) {
@@ -741,3 +772,190 @@ impl ModelResourceTrait for TfLiteModelResource {
 }
 
 // todo: The GPU backend isn't able to process int data. If the input tensor is quantized, forces the image preprocessing graph to use CPU backend.
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_parse_model_metadata_of_task_models() {
+        let models = [
+            "assets/models/image_classification/efficientnet_lite0_uint8.tflite",
+            "assets/models/object_detection/efficientdet_lite0_uint8.tflite",
+            "assets/models/text_classification/bert_text_classifier.tflite",
+            "assets/models/text_classification/average_word_embedding.tflite",
+            "assets/models/audio_classification/yamnet_audio_classifier_with_metadata.tflite",
+            "assets/models/image_segmentation/selfie_segm_128_128_3.tflite",
+        ];
+        for path in models {
+            let buf = std::fs::read(path).unwrap();
+            let resource = TfLiteModelResource::new(&buf).unwrap();
+            assert!(resource.to_tensor_info(0).is_some(), "{}", path);
+        }
+    }
+
+    /// Metadata with `content_properties_type` but no `content_properties` value, as TFLite
+    /// metadata writers emit it. Verification must accept it and still check what follows.
+    #[test]
+    fn test_metadata_union_without_value_is_verified() {
+        use tflite_metadata::*;
+        let mut fbb = flatbuffers::FlatBufferBuilder::new();
+        let range = {
+            let mut b = ValueRangeBuilder::new(&mut fbb);
+            b.add_min(0);
+            b.add_max(1);
+            b.finish()
+        };
+        let content = {
+            let mut b = ContentBuilder::new(&mut fbb);
+            b.add_content_properties_type(ContentProperties::FeatureProperties);
+            b.add_range(range);
+            b.finish()
+        };
+        let tensor = {
+            let mut b = TensorMetadataBuilder::new(&mut fbb);
+            b.add_content(content);
+            b.finish()
+        };
+        let tensors = fbb.create_vector(&[tensor]);
+        let subgraph = {
+            let mut b = SubGraphMetadataBuilder::new(&mut fbb);
+            b.add_output_tensor_metadata(tensors);
+            b.finish()
+        };
+        let subgraphs = fbb.create_vector(&[subgraph]);
+        let root = {
+            let mut b = ModelMetadataBuilder::new(&mut fbb);
+            b.add_subgraph_metadata(subgraphs);
+            b.finish()
+        };
+        finish_model_metadata_buffer(&mut fbb, root);
+        let bytes = fbb.finished_data().to_vec();
+
+        let metadata = TfLiteModelResource::verify_model_metadata(&bytes).unwrap();
+        let content = metadata
+            .subgraph_metadata()
+            .unwrap()
+            .get(0)
+            .output_tensor_metadata()
+            .unwrap()
+            .get(0)
+            .content()
+            .unwrap();
+        assert_eq!(
+            content.content_properties_type(),
+            ContentProperties::FeatureProperties
+        );
+        assert!(content.content_properties().is_none());
+        assert_eq!(content.range().unwrap().max(), 1);
+
+        // `range` was built first, so it sits at the end of the buffer; cutting it must be
+        // reported even though the union check before it was tolerated.
+        let truncated = &bytes[..bytes.len() - 4];
+        let err = TfLiteModelResource::verify_model_metadata(truncated).unwrap_err();
+        assert!(
+            err.to_string().contains("`range`"),
+            "unexpected error: {}",
+            err
+        );
+    }
+
+    #[cfg(feature = "audio")]
+    #[test]
+    fn test_audio_num_samples_uses_all_dimensions() {
+        use tflite_metadata::*;
+        let mut fbb = flatbuffers::FlatBufferBuilder::new();
+        let props = {
+            let mut b = AudioPropertiesBuilder::new(&mut fbb);
+            b.add_sample_rate(16000);
+            b.add_channels(2);
+            b.finish()
+        };
+        fbb.finish(props, None);
+        let props = flatbuffers::root::<AudioProperties>(fbb.finished_data()).unwrap();
+
+        let mut resource = TfLiteModelResource {
+            input_shape: vec![vec![1, 15600, 2]],
+            output_shape: Vec::new(),
+            input_types: vec![TensorType::F32],
+            output_types: Vec::new(),
+            output_quantization_parameters: Vec::new(),
+            to_tensor_info: Vec::new(),
+            output_label_files: Vec::new(),
+            output_name_map: Default::default(),
+            associated_files: Default::default(),
+            output_activation: Default::default(),
+            #[cfg(feature = "vision")]
+            output_bound_box_indices: Vec::new(),
+        };
+        resource.parse_audio_model_input_info(0, props).unwrap();
+        let info = resource.to_tensor_info(0).unwrap().try_to_audio().unwrap();
+        assert_eq!(info.num_channels, 2);
+        assert_eq!(info.num_samples, 15600);
+        assert_eq!(info.sample_rate, 16000);
+    }
+
+    fn model_with_shapes(shapes: &[&[i32]]) -> Vec<u8> {
+        use tflite_model::*;
+        let mut fbb = flatbuffers::FlatBufferBuilder::new();
+        let tensors: Vec<_> = shapes
+            .iter()
+            .map(|dims| {
+                let shape = fbb.create_vector(dims);
+                let mut b = TensorBuilder::new(&mut fbb);
+                b.add_shape(shape);
+                b.add_type_(TensorType::FLOAT32);
+                b.finish()
+            })
+            .collect();
+        let tensors = fbb.create_vector(&tensors);
+        let inputs = fbb.create_vector(&[0i32]);
+        let outputs: Vec<i32> = (1..shapes.len() as i32).collect();
+        let outputs = fbb.create_vector(&outputs);
+        let subgraph = {
+            let mut b = SubGraphBuilder::new(&mut fbb);
+            b.add_tensors(tensors);
+            b.add_inputs(inputs);
+            b.add_outputs(outputs);
+            b.finish()
+        };
+        let subgraphs = fbb.create_vector(&[subgraph]);
+        let root = {
+            let mut b = ModelBuilder::new(&mut fbb);
+            b.add_subgraphs(subgraphs);
+            b.finish()
+        };
+        finish_model_buffer(&mut fbb, root);
+        fbb.finished_data().to_vec()
+    }
+
+    #[test]
+    fn test_parse_shape_rejects_invalid_dimensions() {
+        let ok = model_with_shapes(&[&[1, 4], &[1, 2, 3]]);
+        let resource = TfLiteModelResource::new(&ok).unwrap();
+        assert_eq!(resource.input_tensor_shape(0), Some(&[1, 4][..]));
+        assert_eq!(resource.output_tensor_shape(0), Some(&[1, 2, 3][..]));
+
+        for bad in [&[-1i32, -1][..], &[0, 4], &[i32::MAX, i32::MAX, i32::MAX]] {
+            let buf = model_with_shapes(&[&[1, 4], bad]);
+            assert!(TfLiteModelResource::new(&buf).is_err(), "{:?}", bad);
+        }
+
+        // element count fits in usize but the F32 byte size does not
+        let elems = usize::MAX / TfLiteModelResource::MAX_TENSOR_BYTE_SIZE + 1;
+        if let Ok(dim) = i32::try_from(elems) {
+            let buf = model_with_shapes(&[&[1, 4], &[dim]]);
+            assert!(TfLiteModelResource::new(&buf).is_err());
+        }
+    }
+
+    #[test]
+    fn test_parse_model_rejects_garbage() {
+        assert!(TfLiteModelResource::new(&[0u8; 64]).is_err());
+        let mut buf =
+            std::fs::read("assets/models/image_classification/efficientnet_lite0_uint8.tflite")
+                .unwrap();
+        buf.truncate(buf.len() / 2);
+        assert!(TfLiteModelResource::new(&buf).is_err());
+    }
+}

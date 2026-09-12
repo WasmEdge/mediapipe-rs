@@ -56,7 +56,7 @@ impl TensorsToLandmarks {
         Ok(Self {
             num_landmarks,
             num_dimensions,
-            landmark_buffer: empty_output_buffer!(landmark_buf, elem_size),
+            landmark_buffer: OutputBuffer::new(landmark_buf, elem_size)?,
             options: Default::default(),
         })
     }
@@ -84,12 +84,12 @@ impl TensorsToLandmarks {
     }
 
     #[inline(always)]
-    pub(crate) fn landmark_buffer(&mut self) -> &mut [u8] {
-        self.landmark_buffer.data_buffer.as_mut_slice()
+    pub(crate) fn landmark_buffer(&mut self) -> &mut OutputBuffer {
+        &mut self.landmark_buffer
     }
 
     pub fn result(&mut self, normalized: bool) -> Landmarks {
-        let mut landmark_buf = output_buffer_mut_slice!(self.landmark_buffer);
+        let landmark_buf = self.landmark_buffer.as_f32_mut();
         let mut landmarks = Vec::with_capacity(self.num_landmarks);
 
         let mut index = 0;

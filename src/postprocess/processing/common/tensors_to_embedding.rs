@@ -29,16 +29,16 @@ impl TensorsToEmbedding {
         tensor_buf: (TensorType, Option<QuantizationParameters>),
         tensor_shape: &[usize],
         head_name: Option<String>,
-    ) {
+    ) -> Result<(), crate::Error> {
         let elem_size = tensor_shape.iter().fold(1, |a, b| a * b);
-        self.outputs
-            .push(empty_output_buffer!(tensor_buf, elem_size));
+        self.outputs.push(OutputBuffer::new(tensor_buf, elem_size)?);
         self.head_names.push(head_name);
+        Ok(())
     }
 
     #[inline(always)]
-    pub(crate) fn output_buffer(&mut self, index: usize) -> &mut [u8] {
-        self.outputs[index].data_buffer.as_mut_slice()
+    pub(crate) fn output_buffer(&mut self, index: usize) -> &mut OutputBuffer {
+        &mut self.outputs[index]
     }
 
     pub(crate) fn result(&mut self, timestamp_ms: Option<u64>) -> EmbeddingResult {
@@ -46,8 +46,7 @@ impl TensorsToEmbedding {
         let mut embeddings = Vec::with_capacity(embeddings_count);
 
         for id in 0..embeddings_count {
-            let out = self.outputs.get_mut(id).unwrap();
-            let tensor = output_buffer_mut_slice!(out);
+            let tensor = self.outputs[id].as_f32_mut();
 
             let mut float_embedding;
             let mut quantized_embedding;

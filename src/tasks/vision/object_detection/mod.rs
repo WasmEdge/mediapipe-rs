@@ -2,7 +2,7 @@ mod builder;
 pub use builder::ObjectDetectorBuilder;
 
 use crate::model::ModelResourceTrait;
-use crate::postprocess::{CategoriesFilter, DetectionResult, TensorsToDetection};
+use crate::postprocess::{fetch_output, CategoriesFilter, DetectionResult, TensorsToDetection};
 use crate::preprocess::vision::ImageToTensorInfo;
 use crate::{Error, Graph, GraphExecutionContext, TensorType};
 
@@ -22,6 +22,9 @@ pub struct ObjectDetector {
 }
 
 impl ObjectDetector {
+    /// Upper bound for the detection count when the model declares dynamic output shapes.
+    const MAX_DYNAMIC_DETECTIONS: usize = 1024;
+
     classification_options_get_impl!();
 
     detector_impl!(ObjectDetectorSession, DetectionResult);
@@ -53,8 +56,19 @@ impl ObjectDetector {
             get_type_and_quantization!(self.model_resource, self.location_buf_index),
             get_type_and_quantization!(self.model_resource, self.categories_buf_index),
             get_type_and_quantization!(self.model_resource, self.score_buf_index),
+        )?;
+        tensors_to_detection.set_box_indices(&self.bound_box_properties)?;
+        let location_shape = model_resource_check_and_get_impl!(
+            self.model_resource,
+            output_tensor_shape,
+            self.location_buf_index
         );
-        tensors_to_detection.set_box_indices(&self.bound_box_properties);
+        // TFLite_Detection_PostProcess declares dynamic (empty) output shapes.
+        let max_num_box = if location_shape.is_empty() {
+            Self::MAX_DYNAMIC_DETECTIONS
+        } else {
+            tensors_to_detection.max_boxes(location_shape.iter().product())
+        };
 
         let execution_ctx = self.graph.init_execution_context()?;
         Ok(ObjectDetectorSession {
@@ -62,6 +76,7 @@ impl ObjectDetector {
             execution_ctx,
             tensors_to_detection,
             num_box_buf: [0f32],
+            max_num_box,
             image_to_tensor_info,
             input_tensor_shape,
             input_buffer: vec![0; tensor_bytes!(self.input_tensor_type, input_tensor_shape)],
@@ -88,6 +103,7 @@ pub struct ObjectDetectorSession<'model> {
 
     image_to_tensor_info: &'model ImageToTensorInfo,
     num_box_buf: [f32; 1],
+    max_num_box: usize,
     input_tensor_shape: &'model [usize],
     input_buffer: Vec<u8>,
 }
@@ -106,33 +122,29 @@ impl<'model> ObjectDetectorSession<'model> {
         self.execution_ctx.compute()?;
 
         // get num box
-        let output_size = self
-            .execution_ctx
-            .get_output(self.detector.num_box_buf_index, &mut self.num_box_buf)?;
-        if output_size != 4 {
-            return Err(Error::ModelInconsistentError(format!(
-                "Model output bytes size is `{}`, but got `{}`",
-                4, output_size
-            )));
-        }
-        let num_box = self.num_box_buf[0].round() as usize;
+        fetch_output(
+            &self.execution_ctx,
+            self.detector.num_box_buf_index,
+            &mut self.num_box_buf,
+        )?;
+        let num_box = TensorsToDetection::detection_count(self.num_box_buf[0], self.max_num_box)?;
 
         // realloc
         self.tensors_to_detection.realloc(num_box);
 
         // get other buffers
-        self.execution_ctx.get_output(
-            self.detector.location_buf_index,
-            self.tensors_to_detection.location_buf(),
-        )?;
-        self.execution_ctx.get_output(
-            self.detector.categories_buf_index,
-            self.tensors_to_detection.categories_buf().unwrap(),
-        )?;
-        self.execution_ctx.get_output(
-            self.detector.score_buf_index,
-            self.tensors_to_detection.score_buf(),
-        )?;
+        self.tensors_to_detection
+            .location_buf()
+            .fetch(&self.execution_ctx, self.detector.location_buf_index)?;
+        self.tensors_to_detection
+            .categories_buf()
+            .ok_or_else(|| {
+                Error::ModelInconsistentError("Missing categories output buffer".into())
+            })?
+            .fetch(&self.execution_ctx, self.detector.categories_buf_index)?;
+        self.tensors_to_detection
+            .score_buf()
+            .fetch(&self.execution_ctx, self.detector.score_buf_index)?;
 
         // generate result
         Ok(self.tensors_to_detection.result(num_box))

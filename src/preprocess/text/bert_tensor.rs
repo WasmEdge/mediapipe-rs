@@ -26,7 +26,7 @@ pub(super) fn to_bert_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
         )));
     }
     let indices_size = max_seq_len as usize;
-    let min_bytes = indices_size * std::mem::size_of::<i32>();
+    let min_bytes = token_ids_bytes(max_seq_len)?;
     for i in 0..3 {
         if output_buffers.as_mut()[i].as_mut().len() < min_bytes {
             return Err(Error::ModelInconsistentError(format!(
@@ -37,21 +37,10 @@ pub(super) fn to_bert_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
             )));
         }
     }
-    // get buffer
-    let input_ids = unsafe {
-        core::slice::from_raw_parts_mut(
-            output_buffers.as_mut()[0].as_mut().as_mut_ptr() as *mut i32,
-            indices_size,
-        )
-    };
-    let segment_ids = &mut output_buffers.as_mut()[1].as_mut()[..min_bytes];
-    segment_ids.fill(0);
-    let input_masks = unsafe {
-        core::slice::from_raw_parts_mut(
-            output_buffers.as_mut()[2].as_mut().as_mut_ptr() as *mut i32,
-            indices_size,
-        )
-    };
+    let mut input_ids = vec![0i32; indices_size];
+    let mut input_masks = vec![0i32; indices_size];
+    let input_ids = input_ids.as_mut_slice();
+    let input_masks = input_masks.as_mut_slice();
     let mut index = 0;
     // [CLS]
     input_ids[index] = classifier_token_id;
@@ -97,12 +86,12 @@ pub(super) fn to_bert_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
         input_ids[indices_size - 1] = separator_token_id;
     }
 
-    // fill rest
     input_masks[..index].fill(1);
-    if index < indices_size {
-        input_ids[index..].fill(0);
-        input_masks[index..].fill(0);
-    }
+
+    let buffers = output_buffers.as_mut();
+    write_ne_bytes(buffers[0].as_mut(), input_ids.iter().copied());
+    buffers[1].as_mut()[..min_bytes].fill(0);
+    write_ne_bytes(buffers[2].as_mut(), input_masks.iter().copied());
     Ok(())
 }
 

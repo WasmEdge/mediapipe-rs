@@ -23,7 +23,7 @@ impl<'a> TensorsToClassification<'a> {
         max_results: i32,
         buffer_config: (TensorType, Option<QuantizationParameters>),
         buffer_shape: &[usize],
-    ) {
+    ) -> Result<(), crate::Error> {
         let max_results = if max_results < 0 {
             usize::MAX
         } else {
@@ -34,17 +34,14 @@ impl<'a> TensorsToClassification<'a> {
 
         let elem_size = buffer_shape.iter().fold(1, |a, b| a * b);
         self.outputs
-            .push(empty_output_buffer!(buffer_config, elem_size));
+            .push(OutputBuffer::new(buffer_config, elem_size)?);
+        Ok(())
     }
 
     /// index must be valid. or panic!
     #[inline(always)]
-    pub(crate) fn output_buffer(&mut self, index: usize) -> &mut [u8] {
-        self.outputs
-            .get_mut(index)
-            .unwrap()
-            .data_buffer
-            .as_mut_slice()
+    pub(crate) fn output_buffer(&mut self, index: usize) -> &mut OutputBuffer {
+        &mut self.outputs[index]
     }
 
     #[inline]
@@ -59,8 +56,7 @@ impl<'a> TensorsToClassification<'a> {
             let max_results = self.max_results[id];
             let categories_filter = self.categories_filters.get(id).unwrap();
 
-            let out = self.outputs.get_mut(id).unwrap();
-            let scores = output_buffer_mut_slice!(out);
+            let scores = self.outputs[id].as_f32_mut();
             let mut categories = Vec::new();
             for i in 0..scores.len() {
                 if let Some(category) = categories_filter.create_category(i, scores[i]) {

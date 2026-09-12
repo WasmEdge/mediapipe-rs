@@ -3,16 +3,14 @@ mod face_landmark_blendshapes;
 mod face_landmark_connections;
 mod result;
 
-use super::{
-    FaceDetector, FaceDetectorBuilder, FaceDetectorSession
-};
+use super::{FaceDetector, FaceDetectorBuilder, FaceDetectorSession};
 pub use builder::FaceLandmarkerBuilder;
 pub use face_landmark_blendshapes::FaceLandmarkBlendshapes;
 pub use face_landmark_connections::FaceLandmarkConnections;
 pub use result::{FaceLandmarkResult, FaceLandmarkResults};
 
 use crate::model::ModelResourceTrait;
-use crate::postprocess::{NormalizedRect, TensorsToLandmarks, VideoResultsIter};
+use crate::postprocess::{fetch_output, NormalizedRect, TensorsToLandmarks, VideoResultsIter};
 use crate::preprocess::vision::{ImageToTensor, ImageToTensorInfo, VideoData};
 use crate::{Error, Graph, GraphExecutionContext, TensorType};
 
@@ -139,7 +137,8 @@ impl<'model> FaceLandmarkerSession<'model> {
             self.execution_ctx.compute()?;
 
             // check face presence score
-            self.execution_ctx.get_output(
+            fetch_output(
+                &self.execution_ctx,
                 self.face_landmarker.score_buf_index,
                 &mut self.score_of_face_presence,
             )?;
@@ -149,9 +148,9 @@ impl<'model> FaceLandmarkerSession<'model> {
             }
 
             // get landmarks
-            self.execution_ctx.get_output(
+            self.tensors_to_landmarks.landmark_buffer().fetch(
+                &self.execution_ctx,
                 self.face_landmarker.landmarks_buf_index,
-                self.tensors_to_landmarks.landmark_buffer(),
             )?;
             let mut face_landmarks = self.tensors_to_landmarks.result(true);
 
@@ -162,9 +161,7 @@ impl<'model> FaceLandmarkerSession<'model> {
                 false,
             );
 
-            face_landmark_results.push(FaceLandmarkResult {
-                face_landmarks,
-            });
+            face_landmark_results.push(FaceLandmarkResult { face_landmarks });
         }
 
         Ok(FaceLandmarkResults(face_landmark_results))
