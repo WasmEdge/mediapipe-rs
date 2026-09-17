@@ -68,7 +68,6 @@ impl ImageSegmenter {
         let tensors_to_segmentation = TensorsToSegmentation::new(
             self.output_activation,
             get_type_and_quantization!(self.model_resource, 0),
-            input_to_tensor_info.image_data_layout,
             output_tensor_shape,
         )?;
         let execution_ctx = self.graph.init_execution_context()?;
@@ -128,8 +127,9 @@ impl<'model> ImageSegmenterSession<'model> {
 
         self.execution_ctx.compute()?;
 
-        let output_buffer = self.tensors_to_segmentation.tenor_buffer();
-        self.execution_ctx.get_output(0, output_buffer)?;
+        self.tensors_to_segmentation
+            .tensor_buffer()
+            .fetch(&self.execution_ctx, 0)?;
 
         let category_mask = if self.output_category {
             let mask = self.tensors_to_segmentation.category_mask();
@@ -209,14 +209,15 @@ impl<'model> super::TaskSession for ImageSegmenterSession<'model> {
         video_data: &mut impl VideoData,
     ) -> Result<Option<Self::Result>, Error> {
         if process_options.region_of_interest.is_some() {
-            return Err(Error::ArgumentError(format!(
-                "{} does not support region of interest.",
-                stringify!($SessionName)
-            )));
+            return Err(Error::ArgumentError(
+                "ImageSegmenterSession does not support region of interest.".into(),
+            ));
         }
-
-        // todo: support rotation
-        assert_eq!(process_options.rotation, 0.);
+        if process_options.rotation != 0. {
+            return Err(Error::ArgumentError(
+                "ImageSegmenterSession does not support rotation.".into(),
+            ));
+        }
 
         if let Some(frame) = video_data.next_frame()? {
             frame.to_tensor(

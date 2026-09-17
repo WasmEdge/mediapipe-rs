@@ -1861,7 +1861,30 @@ pub mod tflite {
             pos: usize,
         ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
             use self::flatbuffers::Verifiable;
-            v.visit_table(pos)?
+            // HAND-PATCHED (keep when regenerating): TFLite metadata writers emit
+            // `content_properties_type` without the empty `content_properties` table. The Rust
+            // verifier reports that as an inconsistent union while the C++ verifier accepts it.
+            // Accept the mismatch, verify the discriminant and the remaining fields as usual;
+            // the accessors return `None` for the missing value and never follow an unverified
+            // value whose discriminant is NONE.
+            macro_rules! visit_rest {
+                ($table:expr) => {{
+                    $table
+                        .visit_field::<ContentProperties>(
+                            "content_properties_type",
+                            Self::VT_CONTENT_PROPERTIES_TYPE,
+                            false,
+                        )?
+                        .visit_field::<flatbuffers::ForwardsUOffset<ValueRange>>(
+                            "range",
+                            Self::VT_RANGE,
+                            false,
+                        )?
+                        .finish();
+                    Ok(())
+                }};
+            }
+            let union = v.visit_table(pos)?
      .visit_union::<ContentProperties, _>("content_properties_type", Self::VT_CONTENT_PROPERTIES_TYPE, "content_properties", Self::VT_CONTENT_PROPERTIES, false, |key, v, pos| {
         match key {
           ContentProperties::FeatureProperties => v.verify_union_variant::<flatbuffers::ForwardsUOffset<FeatureProperties>>("ContentProperties::FeatureProperties", pos),
@@ -1870,10 +1893,14 @@ pub mod tflite {
           ContentProperties::AudioProperties => v.verify_union_variant::<flatbuffers::ForwardsUOffset<AudioProperties>>("ContentProperties::AudioProperties", pos),
           _ => Ok(()),
         }
-     })?
-     .visit_field::<flatbuffers::ForwardsUOffset<ValueRange>>("range", Self::VT_RANGE, false)?
-     .finish();
-            Ok(())
+     });
+            match union {
+                Ok(table) => visit_rest!(table),
+                Err(flatbuffers::InvalidFlatbuffer::InconsistentUnion { .. }) => {
+                    visit_rest!(v.visit_table(pos)?)
+                }
+                Err(e) => Err(e),
+            }
         }
     }
     pub struct ContentArgs<'a> {

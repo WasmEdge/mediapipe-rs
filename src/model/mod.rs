@@ -160,6 +160,22 @@ macro_rules! check_tensor_type {
     }};
 }
 
+/// Check that output tensor `index` holds one `F32` value.
+pub(crate) fn check_scalar_f32_output(
+    model_resource: &dyn ModelResourceTrait,
+    index: usize,
+) -> Result<(), Error> {
+    check_tensor_type!(model_resource, index, output_tensor_type, TensorType::F32);
+    let shape = model_resource_check_and_get_impl!(model_resource, output_tensor_shape, index);
+    if !shape.iter().all(|d| *d == 1) {
+        return Err(Error::ModelInconsistentError(format!(
+            "Expect output `{}` to hold one value, but got shape `{:?}`",
+            index, shape
+        )));
+    }
+    Ok(())
+}
+
 mod memory_text_file;
 mod tflite;
 mod zip;

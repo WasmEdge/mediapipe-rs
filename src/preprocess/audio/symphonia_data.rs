@@ -1,7 +1,9 @@
 use super::*;
-use symphonia_core::audio::{AudioBufferRef, Signal};
+use symphonia_core::audio::{AudioBuffer, AudioBufferRef, Signal};
 use symphonia_core::codecs::Decoder;
+use symphonia_core::conv::IntoSample;
 use symphonia_core::formats::FormatReader;
+use symphonia_core::sample::Sample;
 
 /// Audio Data which using the `symphonia` crate as a decoder.
 pub struct SymphoniaAudioData {
@@ -20,33 +22,19 @@ impl SymphoniaAudioData {
     }
 }
 
-macro_rules! output_to_buffer {
-    ( $audio:ident, $sample_buffer:ident, $tp:ty ) => {{
-        let max = <$tp>::MAX as f32;
-        let spec = $audio.spec();
-        let sample_rate = spec.rate;
-        let num_channels = spec.channels.count();
-        let mut num_samples = 0;
-
-        for c in 0..num_channels {
-            if $sample_buffer.len() <= c {
-                $sample_buffer.push(Vec::new());
-            }
-            let output_buffer = $sample_buffer.get_mut(c).unwrap();
-
-            let samples = $audio.chan(c);
-            num_samples = samples.len();
-
-            if output_buffer.len() < num_samples {
-                output_buffer.resize(num_samples, 0.);
-            }
-
-            for i in 0..num_samples {
-                output_buffer[i] = samples[i] as f32 / max;
-            }
-        }
-        Ok(Some((sample_rate as usize, num_samples)))
-    }};
+/// Convert every channel to `f32` samples in `[-1.0, 1.0]`. Return `(sample_rate, num_samples)`.
+fn output_to_buffer<S>(audio: &AudioBuffer<S>, sample_buffer: &mut Vec<Vec<f32>>) -> (usize, usize)
+where
+    S: Sample + IntoSample<f32>,
+{
+    let spec = audio.spec();
+    let num_channels = spec.channels.count();
+    sample_buffer.resize_with(num_channels, Vec::new);
+    for (c, output_buffer) in sample_buffer.iter_mut().enumerate() {
+        output_buffer.clear();
+        output_buffer.extend(audio.chan(c).iter().map(|s| (*s).into_sample()));
+    }
+    (spec.rate as usize, audio.frames())
 }
 
 impl AudioData for SymphoniaAudioData {
@@ -56,21 +44,21 @@ impl AudioData for SymphoniaAudioData {
         sample_buffer: &mut Vec<Vec<f32>>,
     ) -> Result<Option<(usize, usize)>, Error> {
         match self.format_reader.next_packet() {
-            Ok(p) => match self.decoder.decode(&p)? {
-                AudioBufferRef::U8(r) => {
-                    output_to_buffer!(r, sample_buffer, u8)
-                }
-                AudioBufferRef::S16(r) => {
-                    output_to_buffer!(r, sample_buffer, i16)
-                }
-                AudioBufferRef::U16(r) => {
-                    output_to_buffer!(r, sample_buffer, u16)
-                }
-                AudioBufferRef::U32(r) => {
-                    output_to_buffer!(r, sample_buffer, u32)
-                }
-                _ => unimplemented!(),
-            },
+            Ok(p) => {
+                let (sample_rate, num_samples) = match self.decoder.decode(&p)? {
+                    AudioBufferRef::U8(r) => output_to_buffer(&r, sample_buffer),
+                    AudioBufferRef::U16(r) => output_to_buffer(&r, sample_buffer),
+                    AudioBufferRef::U24(r) => output_to_buffer(&r, sample_buffer),
+                    AudioBufferRef::U32(r) => output_to_buffer(&r, sample_buffer),
+                    AudioBufferRef::S8(r) => output_to_buffer(&r, sample_buffer),
+                    AudioBufferRef::S16(r) => output_to_buffer(&r, sample_buffer),
+                    AudioBufferRef::S24(r) => output_to_buffer(&r, sample_buffer),
+                    AudioBufferRef::S32(r) => output_to_buffer(&r, sample_buffer),
+                    AudioBufferRef::F32(r) => output_to_buffer(&r, sample_buffer),
+                    AudioBufferRef::F64(r) => output_to_buffer(&r, sample_buffer),
+                };
+                Ok(Some((sample_rate, num_samples)))
+            }
             Err(e) => {
                 if let symphonia_core::errors::Error::IoError(e) = &e {
                     // end of stream

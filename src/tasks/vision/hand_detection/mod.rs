@@ -60,7 +60,7 @@ impl HandDetector {
             self.num_hands(),
             get_type_and_quantization!(self.model_resource, self.location_buf_index),
             get_type_and_quantization!(self.model_resource, self.score_buf_index),
-        );
+        )?;
 
         // config options
         tensors_to_detection.set_anchors_scales(192.0, 192.0, 192.0, 192.0);
@@ -112,14 +112,12 @@ impl<'model> HandDetectorSession<'model> {
         )?;
         self.execution_ctx.compute()?;
 
-        self.execution_ctx.get_output(
-            self.detector.location_buf_index,
-            self.tensors_to_detection.location_buf(),
-        )?;
-        self.execution_ctx.get_output(
-            self.detector.score_buf_index,
-            self.tensors_to_detection.score_buf(),
-        )?;
+        self.tensors_to_detection
+            .location_buf()
+            .fetch(&self.execution_ctx, self.detector.location_buf_index)?;
+        self.tensors_to_detection
+            .score_buf()
+            .fetch(&self.execution_ctx, self.detector.score_buf_index)?;
 
         // generate result
         Ok(self.tensors_to_detection.result(self.detector.num_box))

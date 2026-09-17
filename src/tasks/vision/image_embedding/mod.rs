@@ -38,7 +38,7 @@ impl ImageEmbedder {
             get_type_and_quantization!(self.model_resource, 0),
             output_tensor_shape,
             None,
-        );
+        )?;
 
         let execution_ctx = self.graph.init_execution_context()?;
         Ok(ImageEmbedderSession {
@@ -101,8 +101,9 @@ impl<'model> ImageEmbedderSession<'model> {
         )?;
         self.execution_ctx.compute()?;
 
-        let output_buffer = self.tensor_to_embedding.output_buffer(0);
-        self.execution_ctx.get_output(0, output_buffer)?;
+        self.tensor_to_embedding
+            .output_buffer(0)
+            .fetch(&self.execution_ctx, 0)?;
 
         Ok(self.tensor_to_embedding.result(timestamp_ms))
     }

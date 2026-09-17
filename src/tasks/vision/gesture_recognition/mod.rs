@@ -9,7 +9,7 @@ pub use result::{GestureRecognizerResult, GestureRecognizerResults};
 use super::{HandLandmarker, HandLandmarkerBuilder, HandLandmarkerSession};
 use crate::model::ModelResourceTrait;
 use crate::postprocess::{
-    CategoriesFilter, Category, Landmarks, TensorsToClassification, VideoResultsIter,
+    fetch_output, CategoriesFilter, Category, Landmarks, TensorsToClassification, VideoResultsIter,
 };
 use crate::preprocess::vision::{ImageToTensor, VideoData};
 use crate::{Error, Graph, GraphExecutionContext, TensorType};
@@ -57,7 +57,7 @@ macro_rules! add_tensors_to_classifications {
             $self.build_options.$classify_option_field.max_results,
             get_type_and_quantization!($resource, 0),
             output_tensor_shape,
-        );
+        )?;
     };};
 }
 
@@ -244,8 +244,11 @@ impl<'model> GestureRecognizerSession<'model> {
             )?;
 
             self.gesture_embed_execution_ctx.compute()?;
-            self.gesture_embed_execution_ctx
-                .get_output(0, &mut self.gesture_embed_out_buffer)?;
+            fetch_output(
+                &self.gesture_embed_execution_ctx,
+                0,
+                &mut self.gesture_embed_out_buffer,
+            )?;
 
             self.canned_classify_execution_ctx.set_input(
                 0,
@@ -254,9 +257,9 @@ impl<'model> GestureRecognizerSession<'model> {
                 self.gesture_embed_out_buffer.as_slice(),
             )?;
             self.canned_classify_execution_ctx.compute()?;
-            let output_buffer = self.tensors_to_classification.output_buffer(0);
-            self.canned_classify_execution_ctx
-                .get_output(0, output_buffer)?;
+            self.tensors_to_classification
+                .output_buffer(0)
+                .fetch(&self.canned_classify_execution_ctx, 0)?;
 
             if let Some(ref mut ctx) = self.custom_classify_execution_ctx {
                 ctx.set_input(
@@ -266,8 +269,9 @@ impl<'model> GestureRecognizerSession<'model> {
                     self.gesture_embed_out_buffer.as_slice(),
                 )?;
                 ctx.compute()?;
-                let output_buffer = self.tensors_to_classification.output_buffer(1);
-                ctx.get_output(0, output_buffer)?;
+                self.tensors_to_classification
+                    .output_buffer(1)
+                    .fetch(ctx, 0)?;
             }
 
             let result = GestureRecognizerResult {

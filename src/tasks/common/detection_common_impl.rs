@@ -70,8 +70,12 @@ macro_rules! detection_task_session_impl {
                     )));
                 }
 
-                // todo: support rotation
-                assert_eq!(process_options.rotation, 0.);
+                if process_options.rotation != 0. {
+                    return Err(crate::Error::ArgumentError(format!(
+                        "{} does not support rotation.",
+                        stringify!($SessionName)
+                    )));
+                }
 
                 if let Some(frame) = video_data.next_frame()? {
                     frame.to_tensor(

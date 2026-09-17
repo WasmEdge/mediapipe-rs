@@ -1,6 +1,6 @@
-use super::{HandDetectorBuilder, HandLandmarker, TensorType};
+use super::{HandDetectorBuilder, HandLandmarker};
 
-use crate::model::ZipFiles;
+use crate::model::{check_scalar_f32_output, ZipFiles};
 use crate::tasks::common::{BaseTaskOptions, HandLandmarkOptions};
 
 /// Configure the build options of a new **Hand Landmark** task instance.
@@ -83,18 +83,8 @@ impl HandLandmarkerBuilder {
         let landmarks_buf_index = 0;
         let world_landmarks_buf_index = 3;
         // now only fp32 model
-        check_tensor_type!(
-            model_resource,
-            handedness_buf_index,
-            output_tensor_type,
-            TensorType::F32
-        );
-        check_tensor_type!(
-            model_resource,
-            score_buf_index,
-            output_tensor_type,
-            TensorType::F32
-        );
+        check_scalar_f32_output(model_resource.as_ref(), handedness_buf_index)?;
+        check_scalar_f32_output(model_resource.as_ref(), score_buf_index)?;
 
         let graph = crate::GraphBuilder::new(
             model_resource.model_backend(),

@@ -82,7 +82,7 @@ macro_rules! box_x_max {
 
 macro_rules! check_options_valid {
     ( $self:expr ) => {
-        assert!(
+        debug_assert!(
             $self.num_coords
                 >= $self.box_coord_offset
                     + $self.keypoint_coord_offset
@@ -158,18 +158,18 @@ impl<'a> TensorsToDetection<'a> {
         max_results: i32,
         location_buf: (TensorType, Option<QuantizationParameters>),
         score_buf: (TensorType, Option<QuantizationParameters>),
-    ) -> Self {
+    ) -> Result<Self, crate::Error> {
         let mut options = ToDetectionOptions::default();
         options.min_score_threshold = min_score_threshold;
-        Self {
+        Ok(Self {
             nms: NonMaxSuppression::new(max_results),
             categories_filter,
-            location_buf: empty_output_buffer!(location_buf),
-            score_buf: empty_output_buffer!(score_buf),
+            location_buf: OutputBuffer::new(location_buf, 0)?,
+            score_buf: OutputBuffer::new(score_buf, 0)?,
             anchors: Some(anchors),
             categories_buf: None,
             options,
-        }
+        })
     }
 
     #[inline]
@@ -179,29 +179,62 @@ impl<'a> TensorsToDetection<'a> {
         location_buf: (TensorType, Option<QuantizationParameters>),
         categories_buf: (TensorType, Option<QuantizationParameters>),
         score_buf: (TensorType, Option<QuantizationParameters>),
-    ) -> Self {
-        Self {
+    ) -> Result<Self, crate::Error> {
+        Ok(Self {
             anchors: None,
             nms: NonMaxSuppression::new(max_results),
             categories_filter,
-            location_buf: empty_output_buffer!(location_buf),
-            score_buf: empty_output_buffer!(score_buf),
-            categories_buf: Some(empty_output_buffer!(categories_buf)),
+            location_buf: OutputBuffer::new(location_buf, 0)?,
+            score_buf: OutputBuffer::new(score_buf, 0)?,
+            categories_buf: Some(OutputBuffer::new(categories_buf, 0)?),
             options: Default::default(),
-        }
+        })
     }
 
-    pub(crate) fn set_box_indices(&mut self, bound_box_properties: &[usize; 4]) {
-        let box_indices = [
+    /// The bounding box properties must map the four coordinates to distinct tensor slots.
+    pub(crate) fn check_box_indices(bound_box_properties: &[usize; 4]) -> Result<(), crate::Error> {
+        let used = bound_box_properties
+            .iter()
+            .filter(|i| **i < 4)
+            .fold(0u8, |mask, i| mask | (1 << i));
+        if used != 0b1111 {
+            return Err(crate::Error::ModelInconsistentError(format!(
+                "Bounding box indices must be a permutation of `0,1,2,3`, but got `{:?}`",
+                bound_box_properties
+            )));
+        }
+        Ok(())
+    }
+
+    pub(crate) fn set_box_indices(
+        &mut self,
+        bound_box_properties: &[usize; 4],
+    ) -> Result<(), crate::Error> {
+        Self::check_box_indices(bound_box_properties)?;
+        self.options.box_indices = [
             bound_box_properties[1], // y_min
             bound_box_properties[0], // x_min
             bound_box_properties[3], // y_max
             bound_box_properties[2], // x_max
         ];
-        for i in &box_indices {
-            assert!(*i < 4);
+        Ok(())
+    }
+
+    /// Number of boxes a location tensor with `location_elems` values can hold.
+    pub(crate) fn max_boxes(&self, location_elems: usize) -> usize {
+        location_elems / self.options.num_coords
+    }
+
+    /// The detection count output must be an integer in `0..=max_boxes`.
+    pub(crate) fn detection_count(count: f32, max_boxes: usize) -> Result<usize, crate::Error> {
+        let num_boxes = count as usize;
+        if !(count >= 0. && count.fract() == 0. && num_boxes <= max_boxes) {
+            return Err(crate::Error::ModelInconsistentError(format!(
+                "Detection count `{}` is not an integer in `0..={}`",
+                count, max_boxes
+            )));
         }
-        self.options.box_indices = box_indices;
+        Ok(num_boxes)
     }
 
     #[inline(always)]
@@ -269,35 +302,33 @@ impl<'a> TensorsToDetection<'a> {
     }
 
     #[inline(always)]
-    pub(crate) fn location_buf(&mut self) -> &mut [u8] {
-        self.location_buf.data_buffer.as_mut_slice()
+    pub(crate) fn location_buf(&mut self) -> &mut OutputBuffer {
+        &mut self.location_buf
     }
 
     #[inline(always)]
-    pub(crate) fn categories_buf(&mut self) -> Option<&mut [u8]> {
-        if let Some(ref mut c) = self.categories_buf {
-            return Some(c.data_buffer.as_mut_slice());
-        }
-        None
+    pub(crate) fn categories_buf(&mut self) -> Option<&mut OutputBuffer> {
+        self.categories_buf.as_mut()
     }
 
     #[inline(always)]
-    pub(crate) fn score_buf(&mut self) -> &mut [u8] {
-        self.score_buf.data_buffer.as_mut_slice()
+    pub(crate) fn score_buf(&mut self) -> &mut OutputBuffer {
+        &mut self.score_buf
     }
 
     #[inline(always)]
     pub(crate) fn realloc(&mut self, num_boxes: usize) {
-        realloc_output_buffer!(self.score_buf, num_boxes * self.options.num_classes);
-        if let Some(ref mut c) = self.categories_buf {
-            realloc_output_buffer!(c, num_boxes);
+        self.score_buf.resize(num_boxes * self.options.num_classes);
+        if let Some(c) = &mut self.categories_buf {
+            c.resize(num_boxes);
         }
-        realloc_output_buffer!(self.location_buf, num_boxes * self.options.num_coords);
+        self.location_buf
+            .resize(num_boxes * self.options.num_coords);
     }
 
     pub(crate) fn result(&mut self, num_boxes: usize) -> DetectionResult {
-        let scores = output_buffer_mut_slice!(self.score_buf);
-        let location = output_buffer_mut_slice!(self.location_buf);
+        let scores = self.score_buf.as_f32_mut();
+        let location = self.location_buf.as_f32_mut();
 
         // check buf if is valid
         debug_assert!(location.len() >= num_boxes * self.options.num_coords);
@@ -309,7 +340,7 @@ impl<'a> TensorsToDetection<'a> {
         let mut detections = Vec::with_capacity(num_boxes);
         if let Some(ref mut categories_buf) = self.categories_buf {
             assert_eq!(self.options.num_classes, 1);
-            let categories_buf = output_buffer_mut_slice!(categories_buf);
+            let categories_buf = categories_buf.as_f32_mut();
             let mut index = 0;
             for i in 0..num_boxes {
                 let next_index = index + self.options.num_coords;
@@ -499,6 +530,32 @@ impl<'a> TensorsToDetection<'a> {
                 raw_boxes[index + 1] = keypoint_y / options.y_scale * anchor.h + anchor.y_center;
                 index += options.num_values_per_key_point;
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::TensorsToDetection;
+
+    #[test]
+    fn test_box_indices_must_be_a_permutation() {
+        assert!(TensorsToDetection::check_box_indices(&[0, 1, 2, 3]).is_ok());
+        assert!(TensorsToDetection::check_box_indices(&[1, 0, 3, 2]).is_ok());
+        assert!(TensorsToDetection::check_box_indices(&[0, 0, 2, 3]).is_err());
+        assert!(TensorsToDetection::check_box_indices(&[0, 1, 2, 4]).is_err());
+    }
+
+    #[test]
+    fn test_detection_count_must_be_an_integer_in_range() {
+        assert_eq!(TensorsToDetection::detection_count(0., 4).unwrap(), 0);
+        assert_eq!(TensorsToDetection::detection_count(4., 4).unwrap(), 4);
+        for count in [1.5, -1., 5., f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            assert!(
+                TensorsToDetection::detection_count(count, 4).is_err(),
+                "{}",
+                count
+            );
         }
     }
 }

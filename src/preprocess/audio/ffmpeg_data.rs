@@ -28,8 +28,7 @@ impl std::ops::DerefMut for FFMpegAudioData {
 }
 
 macro_rules! output_to_buffer {
-    ( $self:ident, $num_channels:ident, $num_samples:ident, $sample_buffer:ident, $tp:ty ) => {{
-        let max_value = <$tp>::MAX as f32;
+    ( $self:ident, $num_channels:ident, $num_samples:ident, $sample_buffer:ident, $tp:ty, $conv:expr ) => {{
         for c in 0..$num_channels {
             if $sample_buffer.len() <= c {
                 $sample_buffer.push(Vec::with_capacity($num_samples));
@@ -40,14 +39,14 @@ macro_rules! output_to_buffer {
             }
             let samples = $self.frame.plane::<$tp>(c);
             for i in 0..$num_samples {
-                output[i] = samples[i] as f32 / max_value;
+                output[i] = $conv(samples[i]);
             }
         }
     }};
 }
 
 macro_rules! output_tuple_to_buffer {
-    ( $samples:ident, $channel:tt, $num_samples:ident, $sample_buffer:ident, $max:ident ) => {
+    ( $samples:ident, $channel:tt, $num_samples:ident, $sample_buffer:ident, $conv:expr ) => {
         if $sample_buffer.len() <= $channel {
             $sample_buffer.push(Vec::with_capacity($num_samples));
         }
@@ -56,68 +55,69 @@ macro_rules! output_tuple_to_buffer {
             buffer.resize($num_samples, 0.);
         }
         for i in 0..$num_samples {
-            buffer[i] = $samples[i].$channel as f32 / $max;
+            buffer[i] = $conv($samples[i].$channel);
         }
     };
 }
 
 macro_rules! process_samples {
-    ( $format:ident, $self:ident, $num_channels:ident, $num_samples:ident, $sample_buffer:ident, $tp:ty ) => {
+    ( $format:ident, $self:ident, $num_channels:ident, $num_samples:ident, $sample_buffer:ident, $tp:ty, $conv:expr ) => {
         match $format {
             ffmpeg_next::format::sample::Type::Packed => match $num_channels {
                 1 => {
-                    output_to_buffer!($self, $num_channels, $num_samples, $sample_buffer, $tp);
+                    output_to_buffer!(
+                        $self,
+                        $num_channels,
+                        $num_samples,
+                        $sample_buffer,
+                        $tp,
+                        $conv
+                    );
                 }
                 2 => {
                     let samples = $self.frame.plane::<($tp, $tp)>(0);
-                    let max = <$tp>::MAX as f32;
-                    output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, max);
+                    output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, $conv);
                 }
                 3 => {
                     let samples = $self.frame.plane::<($tp, $tp, $tp)>(0);
-                    let max = <$tp>::MAX as f32;
-                    output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 2, $num_samples, $sample_buffer, max);
+                    output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 2, $num_samples, $sample_buffer, $conv);
                 }
                 4 => {
                     let samples = $self.frame.plane::<($tp, $tp, $tp, $tp)>(0);
-                    let max = <$tp>::MAX as f32;
-                    output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 2, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 3, $num_samples, $sample_buffer, max);
+                    output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 2, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 3, $num_samples, $sample_buffer, $conv);
                 }
                 5 => {
                     let samples = $self.frame.plane::<($tp, $tp, $tp, $tp, $tp)>(0);
-                    let max = <$tp>::MAX as f32;
-                    output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 2, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 3, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 4, $num_samples, $sample_buffer, max);
+                    output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 2, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 3, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 4, $num_samples, $sample_buffer, $conv);
                 }
                 6 => {
                     let samples = $self.frame.plane::<($tp, $tp, $tp, $tp, $tp, $tp)>(0);
-                    let max = <$tp>::MAX as f32;
-                    output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 2, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 3, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 4, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 5, $num_samples, $sample_buffer, max);
+                    output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 2, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 3, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 4, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 5, $num_samples, $sample_buffer, $conv);
                 }
                 7 => {
                     let samples = $self.frame.plane::<($tp, $tp, $tp, $tp, $tp, $tp, $tp)>(0);
-                    let max = <$tp>::MAX as f32;
-                    output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 2, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 3, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 4, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 5, $num_samples, $sample_buffer, max);
-                    output_tuple_to_buffer!(samples, 6, $num_samples, $sample_buffer, max);
+                    output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 2, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 3, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 4, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 5, $num_samples, $sample_buffer, $conv);
+                    output_tuple_to_buffer!(samples, 6, $num_samples, $sample_buffer, $conv);
                 }
                 _ => {
                     return Err(Error::ArgumentError(format!(
@@ -127,7 +127,14 @@ macro_rules! process_samples {
                 }
             },
             ffmpeg_next::format::sample::Type::Planar => {
-                output_to_buffer!($self, $num_channels, $num_samples, $sample_buffer, $tp);
+                output_to_buffer!(
+                    $self,
+                    $num_channels,
+                    $num_samples,
+                    $sample_buffer,
+                    $tp,
+                    $conv
+                );
             }
         }
     };
@@ -147,30 +154,69 @@ impl AudioData for FFMpegAudioData {
         let sample_rate = self.frame.rate() as usize;
         let num_channels = self.frame.channels() as usize;
         let num_samples = self.frame.samples();
+        sample_buffer.truncate(num_channels);
 
         match self.frame.format() {
             ffmpeg_next::format::Sample::U8(tp) => {
-                process_samples!(tp, self, num_channels, num_samples, sample_buffer, u8);
+                process_samples!(
+                    tp,
+                    self,
+                    num_channels,
+                    num_samples,
+                    sample_buffer,
+                    u8,
+                    |s: u8| { (s as f32 - 128.) / 128. }
+                );
             }
             ffmpeg_next::format::Sample::I16(tp) => {
-                process_samples!(tp, self, num_channels, num_samples, sample_buffer, i16);
+                process_samples!(
+                    tp,
+                    self,
+                    num_channels,
+                    num_samples,
+                    sample_buffer,
+                    i16,
+                    |s: i16| { s as f32 / 32_768. }
+                );
             }
             ffmpeg_next::format::Sample::I32(tp) => {
-                process_samples!(tp, self, num_channels, num_samples, sample_buffer, i32);
+                process_samples!(
+                    tp,
+                    self,
+                    num_channels,
+                    num_samples,
+                    sample_buffer,
+                    i32,
+                    |s: i32| { (s as f64 / 2_147_483_648.) as f32 }
+                );
             }
-            ffmpeg_next::format::Sample::I64(_) => {
-                unimplemented!()
+            ffmpeg_next::format::Sample::F32(tp) => {
+                process_samples!(
+                    tp,
+                    self,
+                    num_channels,
+                    num_samples,
+                    sample_buffer,
+                    f32,
+                    |s: f32| s
+                );
             }
-            ffmpeg_next::format::Sample::F32(_) => {
-                unimplemented!()
+            ffmpeg_next::format::Sample::F64(tp) => {
+                process_samples!(
+                    tp,
+                    self,
+                    num_channels,
+                    num_samples,
+                    sample_buffer,
+                    f64,
+                    |s: f64| { s as f32 }
+                );
             }
-            ffmpeg_next::format::Sample::F64(_) => {
-                unimplemented!()
-            }
-            ffmpeg_next::format::Sample::None => {
-                return Err(Error::ArgumentError(
-                    "Unsupported ffmpeg sample format `None`".into(),
-                ));
+            format @ (ffmpeg_next::format::Sample::I64(_) | ffmpeg_next::format::Sample::None) => {
+                return Err(Error::ArgumentError(format!(
+                    "Unsupported ffmpeg sample format `{:?}`",
+                    format
+                )));
             }
         }
         return Ok(Some((sample_rate, num_samples)));

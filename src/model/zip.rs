@@ -151,12 +151,15 @@ impl<'buf> EndOfCentralDirectoryRecord<'buf> {
             ));
         }
         let central_directory = res.offset_of_start_of_central_directory() as usize;
+        let central_directory_end =
+            central_directory.checked_add(res.size_of_central_directory() as usize);
         if central_directory >= start_pos
-            || central_directory + res.size_of_central_directory() as usize > buf.len()
+            || central_directory_end.map_or(true, |end| end > start_pos)
         {
-            return Err(Error::ZipFileParseError(
-                "Central directory information error".into(),
-            ));
+            return Err(Error::ZipFileParseError(format!(
+                "Central directory `{}..{:?}` must end before the end of central directory record at `{}`",
+                central_directory, central_directory_end, start_pos
+            )));
         }
         if start_pos + Self::COMMENT_POS + res.comment_length() as usize > buf.len() {
             return Err(Error::ZipFileParseError(
@@ -378,7 +381,7 @@ impl<'buf> CentralDirectory<'buf> {
         let start = Self::FILE_NAME_POS
             + self.file_name_length() as usize
             + self.extra_field_length() as usize;
-        &self.buf[start..start + self.file_name_length() as usize]
+        &self.buf[start..start + self.file_comment_length() as usize]
     }
 
     fn size(&self) -> usize {
@@ -411,7 +414,7 @@ struct LocalFileHeader<'buf> {
 
 impl<'buf> LocalFileHeader<'buf> {
     const HEAD_MAGIC: &'static [u8] = &[0x50, 0x4b, 0x03, 0x04];
-    const MIN_SIZE: usize = 28;
+    const MIN_SIZE: usize = 30;
     const VERSION_NEEDED_TO_EXTRACT_POS: usize = 4;
     const GENERAL_PURPOSE_BIT_FLAG_POS: usize = 6;
     const COMPRESSION_METHOD_POS: usize = 8;
@@ -551,20 +554,42 @@ impl<'buf> ZipFiles<'buf> {
     fn new_with_start_pos(buf: &'buf [u8], start_pos: usize) -> Result<Self, Error> {
         let r = EndOfCentralDirectoryRecord::new_with_start_pos(buf, start_pos)?;
         let num = r.total_number_of_central_directory_records();
-        let mut start = r.offset_of_start_of_central_directory() as usize;
+        let central_directory_start = r.offset_of_start_of_central_directory() as usize;
+        let mut start = central_directory_start;
         let end = r.size_of_central_directory() as usize + start;
 
         let mut files = HashMap::new();
         for _ in 0..num {
+            if start > end {
+                return Err(Error::ZipFileParseError(format!(
+                    "Central directory entries exceed the central directory size `{}`",
+                    r.size_of_central_directory()
+                )));
+            }
             let c = CentralDirectory::new(&buf[start..end])?;
             let filename = String::from_utf8_lossy(c.file_name());
+            // local headers and file data precede the central directory
             let local_file_head_offset = c.relative_offset_of_local_header() as usize;
-            let local_file_head = LocalFileHeader::new(&buf[local_file_head_offset..])?;
+            if local_file_head_offset >= central_directory_start {
+                return Err(Error::ZipFileParseError(format!(
+                    "Local file header offset `{}` of `{}` is not before the central directory at `{}`",
+                    local_file_head_offset, filename, central_directory_start
+                )));
+            }
+            let local_file_head =
+                LocalFileHeader::new(&buf[local_file_head_offset..central_directory_start])?;
             let file_offset = local_file_head_offset + local_file_head.size();
-            files.insert(
-                filename,
-                file_offset..(file_offset + c.uncompressed_size() as usize),
-            );
+            let file_end = file_offset.checked_add(c.uncompressed_size() as usize);
+            let Some(file_end) = file_end.filter(|end| *end <= central_directory_start) else {
+                return Err(Error::ZipFileParseError(format!(
+                    "File `{}` at offset `{}` with size `{}` overlaps the central directory at `{}`",
+                    filename,
+                    file_offset,
+                    c.uncompressed_size(),
+                    central_directory_start
+                )));
+            };
+            files.insert(filename, file_offset..file_end);
 
             start += c.size();
         }
@@ -630,7 +655,8 @@ mod test {
         let buf = std::fs::read(ZIP_PATH).unwrap();
         let r = EndOfCentralDirectoryRecord::new(buf.as_slice()).unwrap();
         let num = r.total_number_of_central_directory_records();
-        let mut start = r.offset_of_start_of_central_directory() as usize;
+        let central_directory_start = r.offset_of_start_of_central_directory() as usize;
+        let mut start = central_directory_start;
         let end = r.size_of_central_directory() as usize + start;
 
         let c = CentralDirectory::new(&buf[start..end]).unwrap();
@@ -662,5 +688,41 @@ mod test {
         assert_eq!(zip_file.files.len(), 2);
         assert_eq!(zip_file.get_file("1.txt").unwrap(), &[49, 10]);
         assert_eq!(zip_file.get_file("2.txt").unwrap(), &[50, 10]);
+    }
+
+    #[test]
+    fn test_corrupted_zip_is_rejected() {
+        let buf = std::fs::read(ZIP_PATH).unwrap();
+        let eocd = EndOfCentralDirectoryRecord::try_find_start_pos(&buf);
+        let cd_start = read_le_u32!(buf, eocd + 16) as usize;
+
+        // point the first local header past the buffer
+        let mut bad_offset = buf.clone();
+        bad_offset[cd_start + 42..cd_start + 46].copy_from_slice(&u32::MAX.to_le_bytes());
+        assert!(ZipFiles::new(&bad_offset).is_err());
+
+        // claim an uncompressed size beyond the buffer
+        let mut bad_size = buf.clone();
+        bad_size[cd_start + 24..cd_start + 28].copy_from_slice(&u32::MAX.to_le_bytes());
+        bad_size[cd_start + 20..cd_start + 24].copy_from_slice(&u32::MAX.to_le_bytes());
+        assert!(ZipFiles::new(&bad_size).is_err());
+
+        // file data that runs into the central directory while staying inside the buffer
+        let mut bad_overlap = buf.clone();
+        let overlap = (cd_start as u32 - 30).to_le_bytes();
+        bad_overlap[cd_start + 20..cd_start + 24].copy_from_slice(&overlap);
+        bad_overlap[cd_start + 24..cd_start + 28].copy_from_slice(&overlap);
+        assert!(ZipFiles::new(&bad_overlap).is_err());
+
+        // central directory size that runs into the end of central directory record
+        let mut bad_cd_size = buf.clone();
+        let cd_size = read_le_u32!(buf, eocd + 12);
+        bad_cd_size[eocd + 12..eocd + 16].copy_from_slice(&(cd_size + 1).to_le_bytes());
+        assert!(ZipFiles::new(&bad_cd_size).is_err());
+
+        // local header with fewer than 30 bytes available
+        let mut header = LocalFileHeader::HEAD_MAGIC.to_vec();
+        header.resize(29, 0);
+        assert!(LocalFileHeader::new(&header).is_err());
     }
 }

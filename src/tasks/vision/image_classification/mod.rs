@@ -51,7 +51,7 @@ impl ImageClassifier {
             self.build_options.classification_options.max_results,
             get_type_and_quantization!(self.model_resource, 0),
             output_tensor_shape,
-        );
+        )?;
 
         let execution_ctx = self.graph.init_execution_context()?;
         Ok(ImageClassifierSession {
@@ -126,15 +126,9 @@ impl<'model> ImageClassifierSession<'model> {
 
         self.execution_ctx.compute()?;
 
-        let output_buffer = self.tensors_to_classification.output_buffer(0);
-        let output_size = self.execution_ctx.get_output(0, output_buffer)?;
-        if output_size != output_buffer.len() {
-            return Err(Error::ModelInconsistentError(format!(
-                "Model output bytes size is `{}`, but got `{}`",
-                output_buffer.len(),
-                output_size
-            )));
-        }
+        self.tensors_to_classification
+            .output_buffer(0)
+            .fetch(&self.execution_ctx, 0)?;
 
         Ok(self.tensors_to_classification.result(timestamp_ms))
     }

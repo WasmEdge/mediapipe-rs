@@ -124,12 +124,12 @@ impl<'a> ImageToTensor for FFMpegFrame<'a> {
             filter_graph.validate()?;
             filter_graph
                 .get(IN_NODE)
-                .unwrap()
+                .ok_or(ffmpeg_next::Error::FilterNotFound)?
                 .source()
                 .add(&self.0.source.frame)?;
             filter_graph
                 .get(format!("{}{}", OUT_NODE_PREFIX, num_node).as_str())
-                .unwrap()
+                .ok_or(ffmpeg_next::Error::FilterNotFound)?
                 .sink()
                 .frame(&mut scale_frame_buffer)?;
             scale_frame_buffer.data(0)
@@ -144,7 +144,7 @@ impl<'a> ImageToTensor for FFMpegFrame<'a> {
             };
             let src_format = self.0.source.frame.format();
             let mut scales_cache = self.0.scales.borrow_mut();
-            if let Some(scale_ctx) = cached_scale_ctx(&mut scales_cache, src_format, scale_key) {
+            if let Some(scale_ctx) = cached_scale_ctx(&mut scales_cache, src_format, scale_key)? {
                 // scale frame
                 scale_ctx.run(&self.0.source.frame, &mut scale_frame_buffer)?;
                 scale_frame_buffer.data(0)
@@ -160,12 +160,17 @@ impl<'a> ImageToTensor for FFMpegFrame<'a> {
                     to_tensor_info.height(),
                     data,
                 )
-                .unwrap();
+                .ok_or_else(|| {
+                    Error::ArgumentError(format!(
+                        "FFmpeg frame has `{}` bytes, less than a `{}x{}` RGB24 image",
+                        data.len(),
+                        to_tensor_info.width(),
+                        to_tensor_info.height()
+                    ))
+                })?;
                 image::rgb8_image_buffer_to_tensor(&img, to_tensor_info, output_buffer)?;
             }
-            ImageColorSpaceType::GRAYSCALE => {
-                todo!("gray image")
-            }
+            ImageColorSpaceType::GRAYSCALE => return Err(image::grayscale_unsupported()),
         }
 
         Ok(())
@@ -203,7 +208,7 @@ fn cached_scale_ctx(
     scales: &mut HashMap<ScaleKey, ffmpeg_next::software::scaling::Context>,
     src_format: ffmpeg_next::format::Pixel,
     key: ScaleKey,
-) -> Option<&mut ffmpeg_next::software::scaling::Context> {
+) -> Result<Option<&mut ffmpeg_next::software::scaling::Context>, Error> {
     // do not need to scale
     if key.src_w == key.dst_w
         && key.src_h == key.dst_h
@@ -214,10 +219,10 @@ fn cached_scale_ctx(
             ImageColorSpaceType::GRAYSCALE => src_format == ffmpeg_next::format::Pixel::GRAY8,
         }
     {
-        return None;
+        return Ok(None);
     }
 
-    Some(match scales.entry(key) {
+    Ok(Some(match scales.entry(key) {
         Entry::Occupied(s) => s.into_mut(),
         Entry::Vacant(v) => {
             // new scale context
@@ -237,9 +242,8 @@ fn cached_scale_ctx(
                 key.dst_h,
                 ffmpeg_next::software::scaling::Flags::BITEXACT
                     | ffmpeg_next::software::scaling::Flags::SPLINE,
-            )
-            .unwrap();
+            )?;
             v.insert(scale)
         }
-    })
+    }))
 }
