@@ -2,6 +2,7 @@
 name = "mediapipe-rs"
 version = "0.1.0-dev"
 edition = "2021"
+rust-version = "1.89"
 authors = ["bo.yang@smail.nju.edu.cn"]
 categories = ["wasm", "computer-vision", "multimedia"]
 keywords = ["wasm", "webassembly", "mediapipe", "neural-network", "inference"]
