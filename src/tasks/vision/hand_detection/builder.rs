@@ -80,6 +80,15 @@ impl HandDetectorBuilder {
             .aspect_ratios(vec![1.0])
             .fixed_anchor_size(true)
             .generate();
+        if anchors.len() != num_box {
+            return Err(crate::Error::ModelInconsistentError(format!(
+                "Expect `{}` anchors for the hand detector, but the `{}x{}` model input generates `{}`",
+                num_box,
+                width,
+                height,
+                anchors.len()
+            )));
+        }
 
         let graph = crate::GraphBuilder::new(
             model_resource.model_backend(),
@@ -100,5 +109,24 @@ impl HandDetectorBuilder {
             num_box,
             input_tensor_type,
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::tasks::vision::HandDetectorBuilder;
+    use crate::Error;
+
+    const FACE_DETECTOR: &str = "assets/models/face_detection/face_detection_short_range.tflite";
+
+    #[test]
+    fn test_anchor_count_mismatch() {
+        // the face detector takes a 128x128 input, which generates 896 anchors instead of 2016
+        let face_detector = std::fs::read(FACE_DETECTOR).unwrap();
+        match HandDetectorBuilder::new().build_from_buffer(face_detector) {
+            Err(Error::ModelInconsistentError(msg)) => assert!(msg.contains("anchors"), "{}", msg),
+            Err(e) => panic!("expected an anchor count error, got {:?}", e),
+            Ok(_) => panic!("expected an anchor count error"),
+        }
     }
 }
