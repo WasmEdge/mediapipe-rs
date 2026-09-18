@@ -14,7 +14,7 @@ pub(crate) struct TfLiteModelResource {
     output_label_files: Vec<Option<(String, HashMap<String, String>)>>,
     output_name_map: HashMap<String, usize>,
     associated_files: HashMap<String, Vec<u8>>,
-    // now it only used for image segmentation
+    #[cfg(feature = "vision")]
     output_activation: Activation,
 
     #[cfg(feature = "vision")]
@@ -47,6 +47,7 @@ impl TfLiteModelResource {
             output_label_files: Vec::new(),
             output_name_map: Default::default(),
             associated_files,
+            #[cfg(feature = "vision")]
             output_activation: Default::default(),
             #[cfg(feature = "vision")]
             output_bound_box_indices: Vec::new(),
@@ -226,6 +227,7 @@ impl TfLiteModelResource {
                 return Ok(());
             }
         };
+        #[cfg(any(feature = "vision", feature = "audio"))]
         if let Some(input_tensors) = subgraph.input_tensor_metadata() {
             let len = input_tensors.len();
             for i in 0..len {
@@ -637,6 +639,7 @@ impl TfLiteModelResource {
         Ok(res as u32)
     }
 
+    #[cfg(any(feature = "vision", feature = "audio"))]
     fn input_tensor_type_for_metadata(&self, i: usize) -> Result<TensorType, Error> {
         self.input_types.get(i).copied().ok_or_else(|| {
             Error::ModelParseError(format!(
@@ -701,6 +704,7 @@ impl ModelResourceTrait for TfLiteModelResource {
         self.output_shape.get(index).map(|v| v.as_slice())
     }
 
+    #[cfg(feature = "vision")]
     fn output_tensor_name_to_index(&self, name: &str) -> Option<usize> {
         self.output_name_map.get(name).cloned()
     }
@@ -747,6 +751,7 @@ impl ModelResourceTrait for TfLiteModelResource {
         self.to_tensor_info.get(input_index)
     }
 
+    #[cfg(feature = "vision")]
     fn output_activation(&self) -> Activation {
         self.output_activation
     }
@@ -865,6 +870,7 @@ mod test {
             output_label_files: Vec::new(),
             output_name_map: Default::default(),
             associated_files: Default::default(),
+            #[cfg(feature = "vision")]
             output_activation: Default::default(),
             #[cfg(feature = "vision")]
             output_bound_box_indices: Vec::new(),

@@ -16,6 +16,7 @@ pub(crate) struct CategoriesFilter<'a> {
 
 impl<'a> CategoriesFilter<'a> {
     /// no allow or deny list
+    #[cfg(feature = "vision")]
     #[inline(always)]
     pub(crate) fn new_full(
         score_threshold: f32,

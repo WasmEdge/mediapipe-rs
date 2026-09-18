@@ -15,8 +15,6 @@ pub enum DetectionBoxFormat {
     YXHW,
     /// bbox [x_center, y_center, width, height], keypoint [x, y]
     XYWH,
-    /// bbox [xmin, ymin, xmax, ymax], keypoint [x, y]
-    XYXY,
 }
 
 struct ToDetectionOptions {
@@ -478,12 +476,6 @@ impl<'a> TensorsToDetection<'a> {
                 w = raw_boxes[box_offset + 2];
                 h = raw_boxes[box_offset + 3];
             }
-            DetectionBoxFormat::XYXY => {
-                x_center = (-raw_boxes[box_offset] + raw_boxes[box_offset + 2]) / 2.;
-                y_center = (-raw_boxes[box_offset + 1] + raw_boxes[box_offset + 3]) / 2.;
-                w = raw_boxes[box_offset + 2] + raw_boxes[box_offset];
-                h = raw_boxes[box_offset + 3] + raw_boxes[box_offset + 1];
-            }
         }
 
         x_center = x_center / options.x_scale * anchor.w + anchor.x_center;
@@ -518,7 +510,7 @@ impl<'a> TensorsToDetection<'a> {
                         keypoint_y = raw_boxes[index];
                         keypoint_x = raw_boxes[index + 1];
                     }
-                    _ => {
+                    DetectionBoxFormat::XYWH => {
                         keypoint_x = raw_boxes[index];
                         keypoint_y = raw_boxes[index + 1];
                     }

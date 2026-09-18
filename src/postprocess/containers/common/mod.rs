@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 #[macro_use]
 #[cfg(any(feature = "audio", feature = "vision"))]
 mod results_iter_impl;

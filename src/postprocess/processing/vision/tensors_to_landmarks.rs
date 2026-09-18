@@ -8,8 +8,6 @@ use super::*;
 struct ToLandmarksOptions {
     img_size: Option<(f32, f32)>,   // [default = None];
     normalize_z: f32,               // [default = 1.0];
-    flip_vertically: bool,          // [default = false];
-    flip_horizontally: bool,        // [default = false];
     visibility_score_sigmoid: bool, // [default = false];
     presence_score_sigmoid: bool,   // [default = false];
 }
@@ -20,8 +18,6 @@ impl Default for ToLandmarksOptions {
         Self {
             img_size: None,
             normalize_z: 1.0,
-            flip_vertically: false,
-            flip_horizontally: false,
             visibility_score_sigmoid: false,
             presence_score_sigmoid: false,
         }
@@ -72,18 +68,6 @@ impl TensorsToLandmarks {
     }
 
     #[inline(always)]
-    pub(crate) fn set_flip_vertically(&mut self, flip_vertically: bool) {
-        self.options.flip_vertically = flip_vertically;
-        assert!(self.options.img_size.is_some());
-    }
-
-    #[inline(always)]
-    pub(crate) fn set_flip_horizontally(&mut self, flip_horizontally: bool) {
-        self.options.flip_horizontally = flip_horizontally;
-        assert!(self.options.img_size.is_some());
-    }
-
-    #[inline(always)]
     pub(crate) fn landmark_buffer(&mut self) -> &mut OutputBuffer {
         &mut self.landmark_buffer
     }
@@ -104,19 +88,11 @@ impl TensorsToLandmarks {
                 name: None,
             };
 
-            if self.options.flip_horizontally {
-                landmark.x = self.options.img_size.unwrap().0 - landmark_buf[index];
-            } else {
-                landmark.x = landmark_buf[index];
-            }
+            landmark.x = landmark_buf[index];
             index += 1;
 
             if num_dimensions > 1 {
-                if self.options.flip_vertically {
-                    landmark.y = self.options.img_size.unwrap().1 - landmark_buf[index];
-                } else {
-                    landmark.y = landmark_buf[index];
-                }
+                landmark.y = landmark_buf[index];
                 index += 1;
             }
 

@@ -1,11 +1,11 @@
-#![allow(unused)]
-
 use std::collections::HashMap;
 
 pub(crate) use memory_text_file::MemoryTextFile;
 pub(crate) use zip::ZipFiles;
 
-use crate::postprocess::{Activation, QuantizationParameters};
+#[cfg(feature = "vision")]
+use crate::postprocess::Activation;
+use crate::postprocess::QuantizationParameters;
 #[cfg(feature = "audio")]
 use crate::preprocess::audio::AudioToTensorInfo;
 #[cfg(feature = "text")]
@@ -33,6 +33,7 @@ pub(crate) trait ModelResourceTrait {
 
     fn output_tensor_shape(&self, index: usize) -> Option<&[usize]>;
 
+    #[cfg(feature = "vision")]
     fn output_tensor_name_to_index(&self, name: &str) -> Option<usize>;
 
     fn output_tensor_quantization_parameters(&self, index: usize)
@@ -49,6 +50,7 @@ pub(crate) trait ModelResourceTrait {
 
     fn to_tensor_info(&self, input_index: usize) -> Option<&ToTensorInfo>;
 
+    #[cfg(feature = "vision")]
     fn output_activation(&self) -> Activation;
 
     // Result-returning accessors and checks shared by the task builders and sessions.
@@ -72,6 +74,7 @@ pub(crate) trait ModelResourceTrait {
             .ok_or_else(|| missing_info("output_tensor_shape", index))
     }
 
+    #[cfg(feature = "vision")]
     fn expect_output_tensor_index(&self, name: &str) -> Result<usize, Error> {
         self.output_tensor_name_to_index(name)
             .ok_or_else(|| missing_info("output_tensor_name_to_index", name))
@@ -122,6 +125,7 @@ pub(crate) trait ModelResourceTrait {
         Ok(())
     }
 
+    #[cfg(feature = "vision")]
     fn check_input_tensor_type(&self, index: usize, expect: TensorType) -> Result<(), Error> {
         check_tensor_type(
             "input",
@@ -131,6 +135,7 @@ pub(crate) trait ModelResourceTrait {
         )
     }
 
+    #[cfg(feature = "vision")]
     fn check_output_tensor_type(&self, index: usize, expect: TensorType) -> Result<(), Error> {
         check_tensor_type(
             "output",
@@ -141,6 +146,7 @@ pub(crate) trait ModelResourceTrait {
     }
 
     /// Check that output tensor `index` holds one `F32` value.
+    #[cfg(feature = "vision")]
     fn check_scalar_f32_output(&self, index: usize) -> Result<(), Error> {
         self.check_output_tensor_type(index, TensorType::F32)?;
         let shape = self.expect_output_tensor_shape(index)?;
@@ -181,6 +187,7 @@ fn missing_info(name: &str, index: impl std::fmt::Display) -> Error {
     ))
 }
 
+#[cfg(feature = "vision")]
 fn check_tensor_type(
     kind: &str,
     index: usize,
@@ -196,6 +203,7 @@ fn check_tensor_type(
     Ok(())
 }
 
+#[cfg(any(feature = "vision", feature = "audio"))]
 pub(crate) fn tensor_byte_size(tensor_type: TensorType) -> usize {
     match tensor_type {
         TensorType::F32 | TensorType::I32 => 4,
@@ -204,11 +212,13 @@ pub(crate) fn tensor_byte_size(tensor_type: TensorType) -> usize {
     }
 }
 
+#[cfg(any(feature = "vision", feature = "audio"))]
 pub(crate) fn tensor_bytes(tensor_type: TensorType, shape: &[usize]) -> usize {
     tensor_byte_size(tensor_type) * shape.iter().product::<usize>()
 }
 
 /// Find the first file in `zip_files` whose name is in `candidates`.
+#[cfg(feature = "vision")]
 pub(crate) fn search_file_in_zip<'buf>(
     zip_files: &ZipFiles<'buf>,
     candidates: &[&str],

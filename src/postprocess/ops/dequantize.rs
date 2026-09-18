@@ -6,8 +6,6 @@ pub struct QuantizationParameters {
 }
 
 pub(crate) trait Dequantize {
-    fn dequantize(&self, quantization_parameters: QuantizationParameters) -> Vec<f32>;
-
     fn dequantize_to_buf(
         &self,
         quantization_parameters: QuantizationParameters,
@@ -16,13 +14,6 @@ pub(crate) trait Dequantize {
 }
 
 impl Dequantize for &[u8] {
-    #[inline(always)]
-    fn dequantize(&self, quantization_parameters: QuantizationParameters) -> Vec<f32> {
-        let mut res = Vec::with_capacity(self.len());
-        self.dequantize_to_buf(quantization_parameters, res.as_mut_slice());
-        res
-    }
-
     #[inline(always)]
     fn dequantize_to_buf(
         &self,

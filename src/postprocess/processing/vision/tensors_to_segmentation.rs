@@ -85,7 +85,7 @@ impl TensorsToSegmentation {
         };
 
         let mut res = Vec::with_capacity(channels);
-        for c in 0..channels {
+        for _ in 0..channels {
             res.push(ImageConfidenceMask::new(
                 self.tensor_shape.width as u32,
                 self.tensor_shape.height as u32,

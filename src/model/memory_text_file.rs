@@ -6,6 +6,7 @@ pub(crate) struct MemoryTextFile<'buf> {
 
 impl<'buf> MemoryTextFile<'buf> {
     const NEW_LINE: u8 = 0x0A_u8;
+    #[cfg(feature = "text")]
     const WHITE_SPACE: u8 = b' ';
 
     #[inline(always)]
@@ -39,6 +40,7 @@ impl<'buf> MemoryTextFile<'buf> {
 
     // assert all chars are ascii after ` ` in this line
     // if no white space, return the first string
+    #[cfg(feature = "text")]
     #[inline(always)]
     pub(crate) fn next_line_with_split_white_space(
         &mut self,

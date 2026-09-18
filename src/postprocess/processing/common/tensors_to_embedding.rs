@@ -98,7 +98,6 @@ impl TensorsToEmbedding {
     fn get_inverse_l2_norm(values: &[f32]) -> f32 {
         let mut squared_l2_norm = 0.0;
         for v in values {
-            let value = *v;
             squared_l2_norm += v * v;
         }
 

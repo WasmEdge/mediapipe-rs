@@ -6,7 +6,6 @@ use crate::postprocess::{Detection, DetectionResult, Rect};
 #[derive(Debug, Copy, Clone)]
 pub enum NonMaxSuppressionOverlapType {
     Jaccard,
-    ModifiedJaccard,
     IntersectionOverUnion,
 }
 
@@ -46,35 +45,13 @@ impl NonMaxSuppression {
     }
 
     #[inline(always)]
-    pub fn overlap_type(mut self, overlap_type: NonMaxSuppressionOverlapType) -> Self {
-        self.overlap_type = overlap_type;
-        self
-    }
-
-    #[inline(always)]
     pub fn set_algorithm(&mut self, algorithm: NonMaxSuppressionAlgorithm) {
         self.algorithm = algorithm;
     }
 
     #[inline(always)]
-    pub fn algorithm(mut self, algorithm: NonMaxSuppressionAlgorithm) -> Self {
-        self.algorithm = algorithm;
-        self
-    }
-
-    #[inline(always)]
     pub fn set_min_suppression_threshold(&mut self, min_suppression_threshold: f32) {
         self.min_suppression_threshold = min_suppression_threshold;
-    }
-
-    #[inline(always)]
-    pub fn max_results(mut self, max_results: i32) -> Self {
-        self.max_results = if max_results < 0 {
-            usize::MAX
-        } else {
-            max_results as usize
-        };
-        self
     }
 
     #[inline]
@@ -112,7 +89,7 @@ impl NonMaxSuppression {
     ) {
         let mut retains = vec![false; detections.len()];
         let mut retained_locations: Vec<&Rect<f32>> = Vec::new();
-        for (index, score) in indexed_scores {
+        for (index, _) in indexed_scores {
             let location = &detections[index].bounding_box;
             let mut suppressed = false;
 
@@ -222,7 +199,6 @@ impl NonMaxSuppression {
             let intersection_area = intersection.area();
             let normalization = match self.overlap_type {
                 NonMaxSuppressionOverlapType::Jaccard => rect_1.union(rect_2).area(),
-                NonMaxSuppressionOverlapType::ModifiedJaccard => rect_2.area(),
                 NonMaxSuppressionOverlapType::IntersectionOverUnion => {
                     rect_1.area() + rect_2.area() - intersection_area
                 }

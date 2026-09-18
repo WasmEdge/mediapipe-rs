@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use crate::postprocess::ops::*;
 use crate::{Error, GraphExecutionContext, TensorType};
 
@@ -62,6 +60,7 @@ impl OutputBuffer {
     }
 
     /// Set the number of elements expected from the next `fetch`.
+    #[cfg(feature = "vision")]
     pub(crate) fn resize(&mut self, elem_count: usize) {
         match &mut self.storage {
             OutputStorage::F32(v) => v.resize(elem_count, 0.),
@@ -71,13 +70,6 @@ impl OutputBuffer {
                 bytes.resize(elem_count, 0);
                 dequantized.resize(elem_count, 0.);
             }
-        }
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        match &self.storage {
-            OutputStorage::F32(v) => v.len(),
-            OutputStorage::U8 { bytes, .. } => bytes.len(),
         }
     }
 
