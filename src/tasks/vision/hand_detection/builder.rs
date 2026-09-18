@@ -8,7 +8,7 @@ use crate::tasks::common::BaseTaskOptions;
 pub struct HandDetectorBuilder {
     pub(super) base_task_options: BaseTaskOptions,
     /// The maximum number of hands output by the detector.
-    pub(super) num_hands: i32,
+    pub(super) num_hands: Option<usize>,
     /// Minimum confidence value ([0.0, 1.0]) for confidence score to be considered
     /// successfully detecting a hand in the image.
     pub(super) min_detection_confidence: f32,
@@ -27,7 +27,7 @@ impl HandDetectorBuilder {
     pub fn new() -> Self {
         Self {
             base_task_options: Default::default(),
-            num_hands: -1,
+            num_hands: None,
             min_detection_confidence: 0.5,
         }
     }
@@ -35,10 +35,10 @@ impl HandDetectorBuilder {
     base_task_options_impl!(HandDetector);
 
     /// Set the maximum number of hands can be detected by the HandDetector.
-    /// Default is -1, (no limits)
+    /// By default there is no limit.
     #[inline(always)]
-    pub fn num_hands(mut self, num_hands: i32) -> Self {
-        self.num_hands = num_hands;
+    pub fn num_hands(mut self, num_hands: usize) -> Self {
+        self.num_hands = Some(num_hands);
         self
     }
 
@@ -53,7 +53,7 @@ impl HandDetectorBuilder {
     /// Use the current build options and use the buffer as model data to create a new task instance.
     #[inline]
     pub fn build_from_buffer(self, buffer: impl AsRef<[u8]>) -> Result<HandDetector, crate::Error> {
-        if self.num_hands == 0 {
+        if self.num_hands == Some(0) {
             return Err(crate::Error::ArgumentError(
                 "The number of max hands cannot be zero".into(),
             ));

@@ -25,12 +25,8 @@ pub struct NonMaxSuppression {
 
 impl NonMaxSuppression {
     #[inline(always)]
-    pub fn new(max_results: i32) -> Self {
-        let max_results = if max_results < 0 {
-            usize::MAX
-        } else {
-            max_results as usize
-        };
+    pub fn new(max_results: Option<usize>) -> Self {
+        let max_results = max_results.unwrap_or(usize::MAX);
         Self {
             overlap_type: NonMaxSuppressionOverlapType::Jaccard,
             algorithm: NonMaxSuppressionAlgorithm::DEFAULT,

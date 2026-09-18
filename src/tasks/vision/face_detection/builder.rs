@@ -8,7 +8,7 @@ use crate::tasks::common::BaseTaskOptions;
 pub struct FaceDetectorBuilder {
     pub(super) base_task_options: BaseTaskOptions,
     /// The maximum number of faces output by the detector.
-    pub(super) num_faces: i32,
+    pub(super) num_faces: Option<usize>,
     /// The minimum confidence score for the face detection to be considered successful.
     pub(super) min_detection_confidence: f32,
     /// The minimum non-maximum-suppression threshold for face detection to be considered overlapped.
@@ -28,7 +28,7 @@ impl FaceDetectorBuilder {
     pub fn new() -> Self {
         Self {
             base_task_options: Default::default(),
-            num_faces: -1,
+            num_faces: None,
             min_detection_confidence: 0.5,
             min_suppression_threshold: 0.3,
         }
@@ -36,11 +36,11 @@ impl FaceDetectorBuilder {
 
     base_task_options_impl!(FaceDetector);
 
-    /// Set the maximum number of faces can be detected by the HandDetector.
-    /// Default is -1, (no limits)
+    /// Set the maximum number of faces can be detected by the FaceDetector.
+    /// By default there is no limit.
     #[inline(always)]
-    pub fn num_faces(mut self, num_faces: i32) -> Self {
-        self.num_faces = num_faces;
+    pub fn num_faces(mut self, num_faces: usize) -> Self {
+        self.num_faces = Some(num_faces);
         self
     }
 
@@ -63,7 +63,7 @@ impl FaceDetectorBuilder {
     /// Use the current build options and use the buffer as model data to create a new task instance.
     #[inline]
     pub fn build_from_buffer(self, buffer: impl AsRef<[u8]>) -> Result<FaceDetector, crate::Error> {
-        if self.num_faces == 0 {
+        if self.num_faces == Some(0) {
             return Err(crate::Error::ArgumentError(
                 "The number of max faces cannot be zero".into(),
             ));

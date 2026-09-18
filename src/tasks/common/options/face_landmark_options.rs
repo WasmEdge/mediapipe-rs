@@ -3,7 +3,7 @@ use super::check_confidence;
 #[derive(Clone)]
 pub(crate) struct FaceLandmarkOptions {
     /// The maximum number of faces can be detected by the FaceLandmarker.
-    pub num_faces: i32,
+    pub num_faces: usize,
 
     /// The minimum confidence score for the face detection to be considered successful.
     pub min_face_detection_confidence: f32,
@@ -42,7 +42,7 @@ macro_rules! face_landmark_options_impl {
     () => {
         /// Set the maximum number of faces can be detected by the FaceLandmarker.
         #[inline(always)]
-        pub fn num_faces(mut self, num_faces: i32) -> Self {
+        pub fn num_faces(mut self, num_faces: usize) -> Self {
             self.face_landmark_options.num_faces = num_faces;
             self
         }
@@ -109,7 +109,7 @@ macro_rules! face_landmark_options_get_impl {
     () => {
         /// Get the maximum number of faces can be detected by the FaceLandmarker.
         #[inline(always)]
-        pub fn num_faces(&self) -> i32 {
+        pub fn num_faces(&self) -> usize {
             self.build_options.face_landmark_options.num_faces
         }
 

@@ -27,9 +27,9 @@ pub struct HandDetector {
 impl HandDetector {
     detector_impl!(HandDetectorSession, DetectionResult);
 
-    /// Get the maximum number of hands can be detected by the HandDetector.
+    /// Get the maximum number of hands can be detected by the HandDetector. `None` means no limit.
     #[inline(always)]
-    pub fn num_hands(&self) -> i32 {
+    pub fn num_hands(&self) -> Option<usize> {
         self.build_options.num_hands
     }
 

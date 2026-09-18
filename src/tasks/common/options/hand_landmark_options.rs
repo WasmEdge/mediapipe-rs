@@ -3,7 +3,7 @@ use super::check_confidence;
 #[derive(Clone)]
 pub(crate) struct HandLandmarkOptions {
     /// The maximum number of hands can be detected by the HandLandmarker.
-    pub num_hands: i32,
+    pub num_hands: usize,
 
     /// The minimum confidence score for the hand detection to be considered successful.
     pub min_hand_detection_confidence: f32,
@@ -31,7 +31,7 @@ macro_rules! hand_landmark_options_impl {
     () => {
         /// Set the maximum number of hands can be detected by the HandLandmarker.
         #[inline(always)]
-        pub fn num_hands(mut self, num_hands: i32) -> Self {
+        pub fn num_hands(mut self, num_hands: usize) -> Self {
             self.hand_landmark_options.num_hands = num_hands;
             self
         }
@@ -82,7 +82,7 @@ macro_rules! hand_landmark_options_get_impl {
     () => {
         /// Get the maximum number of hands can be detected by the HandLandmarker.
         #[inline(always)]
-        pub fn num_hands(&self) -> i32 {
+        pub fn num_hands(&self) -> usize {
             self.build_options.hand_landmark_options.num_hands
         }
 

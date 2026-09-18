@@ -39,11 +39,10 @@ impl GestureRecognizerBuilder {
     /// **Set options for custom classification model! (if custom model exists)**
     ///
     /// Set the maximum number of top-scored classification results to return.
-    /// If < 0, all available results will be returned.
-    /// If 0, an invalid argument error is returned.
+    /// By default all available results are returned. `0` is an invalid argument.
     #[inline(always)]
-    pub fn custom_classifier_max_results(mut self, max_results: i32) -> Self {
-        self.custom_classification_options.max_results = max_results;
+    pub fn custom_classifier_max_results(mut self, max_results: usize) -> Self {
+        self.custom_classification_options.max_results = Some(max_results);
         self
     }
 

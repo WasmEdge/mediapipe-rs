@@ -117,7 +117,7 @@ impl<'a> TensorsToDetection<'a> {
         categories_filter: CategoriesFilter<'a>,
         anchors: &'a Vec<Anchor>,
         min_score_threshold: f32,
-        max_results: i32,
+        max_results: Option<usize>,
         location_buf: (TensorType, Option<QuantizationParameters>),
         score_buf: (TensorType, Option<QuantizationParameters>),
     ) -> Result<Self, crate::Error> {
@@ -139,7 +139,7 @@ impl<'a> TensorsToDetection<'a> {
     #[inline]
     pub(crate) fn new(
         categories_filter: CategoriesFilter<'a>,
-        max_results: i32,
+        max_results: Option<usize>,
         location_buf: (TensorType, Option<QuantizationParameters>),
         categories_buf: (TensorType, Option<QuantizationParameters>),
         score_buf: (TensorType, Option<QuantizationParameters>),
