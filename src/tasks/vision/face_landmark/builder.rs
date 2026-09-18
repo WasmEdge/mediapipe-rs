@@ -85,3 +85,22 @@ impl FaceLandmarkerBuilder {
         })
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::tasks::vision::FaceLandmarkerBuilder;
+    use crate::Error;
+
+    #[test]
+    fn test_nan_confidence_is_rejected() {
+        for builder in [
+            FaceLandmarkerBuilder::new().min_face_detection_confidence(f32::NAN),
+            FaceLandmarkerBuilder::new().min_face_presence_confidence(f32::NAN),
+        ] {
+            assert!(matches!(
+                builder.build_from_buffer(Vec::<u8>::new()),
+                Err(Error::ArgumentError(_))
+            ));
+        }
+    }
+}

@@ -65,17 +65,13 @@ macro_rules! hand_landmark_options_check {
                 "The number of max hands cannot be zero".into(),
             ));
         }
-        if $self.hand_landmark_options.min_hand_presence_confidence < 0.
-            || $self.hand_landmark_options.min_hand_presence_confidence > 1.
-        {
+        if !(0.0..=1.0).contains(&$self.hand_landmark_options.min_hand_presence_confidence) {
             return Err(crate::Error::ArgumentError(format!(
                 "The min_hand_presence_confidence must in range [0.0, 1.0], but got `{}`",
                 $self.hand_landmark_options.min_hand_presence_confidence
             )));
         }
-        if $self.hand_landmark_options.min_hand_detection_confidence < 0.
-            || $self.hand_landmark_options.min_hand_detection_confidence > 1.
-        {
+        if !(0.0..=1.0).contains(&$self.hand_landmark_options.min_hand_detection_confidence) {
             return Err(crate::Error::ArgumentError(format!(
                 "The min_hand_detection_confidence must in range [0.0, 1.0], but got `{}`",
                 $self.hand_landmark_options.min_hand_detection_confidence

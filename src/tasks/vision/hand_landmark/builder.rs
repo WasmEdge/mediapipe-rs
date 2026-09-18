@@ -90,3 +90,22 @@ impl HandLandmarkerBuilder {
         })
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::tasks::vision::HandLandmarkerBuilder;
+    use crate::Error;
+
+    #[test]
+    fn test_nan_confidence_is_rejected() {
+        for builder in [
+            HandLandmarkerBuilder::new().min_hand_detection_confidence(f32::NAN),
+            HandLandmarkerBuilder::new().min_hand_presence_confidence(f32::NAN),
+        ] {
+            assert!(matches!(
+                builder.build_from_buffer(Vec::<u8>::new()),
+                Err(Error::ArgumentError(_))
+            ));
+        }
+    }
+}

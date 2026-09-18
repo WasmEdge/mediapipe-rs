@@ -92,17 +92,13 @@ macro_rules! face_landmark_options_check {
                 "The number of max faces cannot be zero".into(),
             ));
         }
-        if $self.face_landmark_options.min_face_presence_confidence < 0.
-            || $self.face_landmark_options.min_face_presence_confidence > 1.
-        {
+        if !(0.0..=1.0).contains(&$self.face_landmark_options.min_face_presence_confidence) {
             return Err(crate::Error::ArgumentError(format!(
                 "The min_face_presence_confidence must in range [0.0, 1.0], but got `{}`",
                 $self.face_landmark_options.min_face_presence_confidence
             )));
         }
-        if $self.face_landmark_options.min_face_detection_confidence < 0.
-            || $self.face_landmark_options.min_face_detection_confidence > 1.
-        {
+        if !(0.0..=1.0).contains(&$self.face_landmark_options.min_face_detection_confidence) {
             return Err(crate::Error::ArgumentError(format!(
                 "The min_face_detection_confidence must in range [0.0, 1.0], but got `{}`",
                 $self.face_landmark_options.min_face_detection_confidence
