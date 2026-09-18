@@ -1,7 +1,7 @@
+use crate::postprocess::impl_result_list;
 use crate::postprocess::utils::{draw_landmarks_with_options, DefaultPixel, DrawLandmarksOptions};
 use crate::postprocess::NormalizedLandmarks;
 use std::fmt::{Display, Formatter};
-use std::ops::{Deref, DerefMut};
 
 /// A single face landmark detection result.
 #[derive(Debug)]
@@ -39,31 +39,7 @@ impl FaceLandmarkResult {
 #[derive(Debug)]
 pub struct FaceLandmarkResults(pub Vec<FaceLandmarkResult>);
 
-impl Deref for FaceLandmarkResults {
-    type Target = Vec<FaceLandmarkResult>;
-
-    #[inline(always)]
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for FaceLandmarkResults {
-    #[inline(always)]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl IntoIterator for FaceLandmarkResults {
-    type Item = FaceLandmarkResult;
-    type IntoIter = std::vec::IntoIter<FaceLandmarkResult>;
-
-    #[inline(always)]
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
+impl_result_list!(FaceLandmarkResults, FaceLandmarkResult);
 
 impl Display for FaceLandmarkResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

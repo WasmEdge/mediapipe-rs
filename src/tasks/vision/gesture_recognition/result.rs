@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
-use std::ops::{Deref, DerefMut};
 
+use crate::postprocess::impl_result_list;
 use crate::postprocess::ClassificationResult;
 use crate::tasks::vision::results::HandLandmarkResult;
 
@@ -17,43 +17,7 @@ pub struct GestureRecognizerResult {
 #[derive(Debug)]
 pub struct GestureRecognizerResults(pub Vec<GestureRecognizerResult>);
 
-impl Deref for GestureRecognizerResults {
-    type Target = Vec<GestureRecognizerResult>;
-
-    #[inline(always)]
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for GestureRecognizerResults {
-    #[inline(always)]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl IntoIterator for GestureRecognizerResults {
-    type Item = GestureRecognizerResult;
-    type IntoIter = std::vec::IntoIter<GestureRecognizerResult>;
-
-    #[inline(always)]
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
-impl From<Vec<GestureRecognizerResult>> for GestureRecognizerResults {
-    fn from(value: Vec<GestureRecognizerResult>) -> Self {
-        GestureRecognizerResults(value)
-    }
-}
-
-impl From<GestureRecognizerResults> for Vec<GestureRecognizerResult> {
-    fn from(value: GestureRecognizerResults) -> Self {
-        value.0
-    }
-}
+impl_result_list!(GestureRecognizerResults, GestureRecognizerResult);
 
 impl Display for GestureRecognizerResults {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
