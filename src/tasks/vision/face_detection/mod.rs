@@ -52,11 +52,11 @@ impl FaceDetector {
     /// Create a new task session that contains processing buffers and can do inference.
     #[inline(always)]
     pub fn new_session(&self) -> Result<FaceDetectorSession<'_>, Error> {
-        let image_to_tensor_info =
-            model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
-                .try_to_image()?;
-        let input_tensor_shape =
-            model_resource_check_and_get_impl!(self.model_resource, input_tensor_shape, 0);
+        let image_to_tensor_info = self
+            .model_resource
+            .expect_to_tensor_info(0)?
+            .try_to_image()?;
+        let input_tensor_shape = self.model_resource.expect_input_tensor_shape(0)?;
         let min_detection_confidence = self.min_detection_confidence();
         let categories_filter =
             CategoriesFilter::new_full(min_detection_confidence, Self::FACE_LABELS, None);
@@ -65,8 +65,10 @@ impl FaceDetector {
             &self.anchors,
             min_detection_confidence,
             self.num_faces(),
-            get_type_and_quantization!(self.model_resource, self.location_buf_index),
-            get_type_and_quantization!(self.model_resource, self.score_buf_index),
+            self.model_resource
+                .output_type_and_quantization(self.location_buf_index)?,
+            self.model_resource
+                .output_type_and_quantization(self.score_buf_index)?,
         )?;
 
         // config options
@@ -89,7 +91,13 @@ impl FaceDetector {
             tensors_to_detection,
             image_to_tensor_info,
             input_tensor_shape,
-            input_buffer: vec![0; tensor_bytes!(self.input_tensor_type, input_tensor_shape)],
+            input_buffer: vec![
+                0;
+                crate::model::tensor_bytes(
+                    self.input_tensor_type,
+                    input_tensor_shape
+                )
+            ],
         })
     }
 }

@@ -23,19 +23,18 @@ impl ImageEmbedder {
     /// Create a new task session that contains processing buffers and can do inference.
     #[inline(always)]
     pub fn new_session(&self) -> Result<ImageEmbedderSession<'_>, Error> {
-        let input_to_tensor_info =
-            model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
-                .try_to_image()?;
-        let input_tensor_shape =
-            model_resource_check_and_get_impl!(self.model_resource, input_tensor_shape, 0);
-        let output_tensor_shape =
-            model_resource_check_and_get_impl!(self.model_resource, output_tensor_shape, 0);
+        let input_to_tensor_info = self
+            .model_resource
+            .expect_to_tensor_info(0)?
+            .try_to_image()?;
+        let input_tensor_shape = self.model_resource.expect_input_tensor_shape(0)?;
+        let output_tensor_shape = self.model_resource.expect_output_tensor_shape(0)?;
         let mut tensor_to_embedding = TensorsToEmbedding::new(
             self.build_options.embedding_options.quantize,
             self.build_options.embedding_options.l2_normalize,
         );
         tensor_to_embedding.add_output_cfg(
-            get_type_and_quantization!(self.model_resource, 0),
+            self.model_resource.output_type_and_quantization(0)?,
             output_tensor_shape,
             None,
         )?;
@@ -46,7 +45,13 @@ impl ImageEmbedder {
             tensor_to_embedding,
             input_to_tensor_info,
             input_tensor_shape,
-            input_tensor_buf: vec![0; tensor_bytes!(self.input_tensor_type, input_tensor_shape)],
+            input_tensor_buf: vec![
+                0;
+                crate::model::tensor_bytes(
+                    self.input_tensor_type,
+                    input_tensor_shape
+                )
+            ],
             input_tensor_type: self.input_tensor_type,
         })
     }

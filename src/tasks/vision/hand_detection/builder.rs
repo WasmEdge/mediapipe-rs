@@ -64,9 +64,8 @@ impl HandDetectorBuilder {
         let model_resource = crate::model::parse_model(buf)?;
 
         // check model
-        model_base_check_impl!(model_resource, 1, 2);
-        let img_info =
-            model_resource_check_and_get_impl!(model_resource, to_tensor_info, 0).try_to_image()?;
+        model_resource.check_tensor_counts(Some(1), 2)?;
+        let img_info = model_resource.expect_to_tensor_info(0)?.try_to_image()?;
 
         // generate anchors
         // todo: read info from metadata
@@ -90,14 +89,13 @@ impl HandDetectorBuilder {
             )));
         }
 
-        let graph = crate::GraphBuilder::new(
-            model_resource.model_backend(),
+        let graph = crate::tasks::common::build_graph(
+            model_resource.as_ref(),
             self.base_task_options.device,
-        )
-        .build_from_bytes([buf])?;
+            buf,
+        )?;
 
-        let input_tensor_type =
-            model_resource_check_and_get_impl!(model_resource, input_tensor_type, 0);
+        let input_tensor_type = model_resource.expect_input_tensor_type(0)?;
 
         Ok(HandDetector {
             build_options: self,

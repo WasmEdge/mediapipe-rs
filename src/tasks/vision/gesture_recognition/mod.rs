@@ -21,47 +21,95 @@ pub struct GestureRecognizer {
     gesture_embed_model_resources: Box<dyn ModelResourceTrait>,
     gesture_embed_graph: Graph,
 
-    canned_classify_model_resources: Box<dyn ModelResourceTrait>,
-    canned_classify_graph: Graph,
-
-    custom_classify_resources: Option<Box<dyn ModelResourceTrait>>,
-    custom_classify_graph: Option<Graph>,
+    canned_classifier: GestureClassifier,
+    custom_classifier: Option<GestureClassifier>,
 
     hand_landmarker: HandLandmarker,
 
-    gesture_embed_hand_landmarks_input_index: usize,
-    gesture_embed_handedness_input_index: usize,
-    gesture_embed_hand_world_landmarks_input_index: usize,
     gesture_embed_out_size: usize,
 }
 
-macro_rules! add_tensors_to_classifications {
-    ( $tensors_to_classification:ident, $self:ident, $resource:expr, $classify_option_field:ident, ) => {{
-        let output_tensor_shape =
-            model_resource_check_and_get_impl!($resource, output_tensor_shape, 0);
-        let labels = $resource.output_tensor_labels_locale(
-            0,
-            $self
-                .build_options
-                .$classify_option_field
-                .display_names_locale
-                .as_ref(),
-        )?;
-        let categories_filter = CategoriesFilter::new(
-            &$self.build_options.$classify_option_field,
-            labels.0,
-            labels.1,
-        );
-        $tensors_to_classification.add_classification_options(
+/// A gesture classifier model that consumes the gesture embedding.
+pub(super) struct GestureClassifier {
+    model_resource: Box<dyn ModelResourceTrait>,
+    graph: Graph,
+}
+
+impl GestureClassifier {
+    pub(super) fn build(
+        file: &[u8],
+        device: crate::Device,
+        embed_out_size: usize,
+    ) -> Result<Self, Error> {
+        let model_resource = crate::model::parse_model(file)?;
+        model_resource.check_tensor_counts(Some(1), 1)?;
+        model_resource.check_input_tensor_type(0, TensorType::F32)?;
+        let input_size = model_resource
+            .expect_input_tensor_shape(0)?
+            .iter()
+            .product::<usize>();
+        if input_size != embed_out_size {
+            return Err(Error::ModelInconsistentError(format!(
+                "Expect gesture classifier input elements is `{}`, but got `{}`",
+                embed_out_size, input_size
+            )));
+        }
+        let graph = crate::tasks::common::build_graph(model_resource.as_ref(), device, file)?;
+        Ok(Self {
+            model_resource,
+            graph,
+        })
+    }
+
+    fn add_to<'a>(
+        &'a self,
+        tensors_to_classification: &mut TensorsToClassification<'a>,
+        options: &crate::tasks::common::ClassificationOptions,
+    ) -> Result<(), Error> {
+        let output_tensor_shape = self.model_resource.expect_output_tensor_shape(0)?;
+        let labels = self
+            .model_resource
+            .output_tensor_labels_locale(0, options.display_names_locale.as_ref())?;
+        let categories_filter = CategoriesFilter::new(options, labels.0, labels.1);
+        tensors_to_classification.add_classification_options(
             categories_filter,
-            $self.build_options.$classify_option_field.max_results,
-            get_type_and_quantization!($resource, 0),
+            options.max_results,
+            self.model_resource.output_type_and_quantization(0)?,
             output_tensor_shape,
-        )?;
-    };};
+        )
+    }
+
+    fn new_session(&self) -> Result<GestureClassifierSession<'_>, Error> {
+        Ok(GestureClassifierSession {
+            execution_ctx: self.graph.init_execution_context()?,
+            input_shape: self.model_resource.expect_input_tensor_shape(0)?,
+        })
+    }
+}
+
+struct GestureClassifierSession<'model> {
+    execution_ctx: GraphExecutionContext<'model>,
+    input_shape: &'model [usize],
+}
+
+impl GestureClassifierSession<'_> {
+    fn classify(
+        &mut self,
+        embedding: &[f32],
+        output: &mut crate::postprocess::OutputBuffer,
+    ) -> Result<(), Error> {
+        self.execution_ctx
+            .set_input(0, TensorType::F32, self.input_shape, embedding)?;
+        self.execution_ctx.compute()?;
+        output.fetch(&self.execution_ctx, 0)
+    }
 }
 
 impl GestureRecognizer {
+    const HAND_LANDMARKS_INPUT_INDEX: usize = 0;
+    const HANDEDNESS_INPUT_INDEX: usize = 1;
+    const HAND_WORLD_LANDMARKS_INPUT_INDEX: usize = 2;
+
     base_task_options_get_impl!();
 
     classification_options_get_impl!();
@@ -71,83 +119,50 @@ impl GestureRecognizer {
     /// Create a new task session that contains processing buffers and can do inference.
     #[inline(always)]
     pub fn new_session(&self) -> Result<GestureRecognizerSession<'_>, Error> {
-        // get input shapes
-        let gesture_embed_hand_landmarks_input_shape = model_resource_check_and_get_impl!(
-            self.gesture_embed_model_resources,
-            input_tensor_shape,
-            self.gesture_embed_hand_landmarks_input_index
-        );
-        let gesture_embed_handedness_input_shape = model_resource_check_and_get_impl!(
-            self.gesture_embed_model_resources,
-            input_tensor_shape,
-            self.gesture_embed_handedness_input_index
-        );
-        let gesture_embed_hand_world_landmarks_input_shape = model_resource_check_and_get_impl!(
-            self.gesture_embed_model_resources,
-            input_tensor_shape,
-            self.gesture_embed_hand_world_landmarks_input_index
-        );
-        let canned_classify_input_shape = model_resource_check_and_get_impl!(
-            self.canned_classify_model_resources,
-            input_tensor_shape,
-            0
-        );
-        let custom_classify_input_shape = if let Some(ref r) = self.custom_classify_resources {
-            Some(model_resource_check_and_get_impl!(r, input_tensor_shape, 0))
-        } else {
-            None
-        };
-        let gesture_embed_hand_landmarks_input_size = gesture_embed_hand_landmarks_input_shape
-            .iter()
-            .product::<usize>();
-        let gesture_embed_hand_world_landmarks_input_size =
-            gesture_embed_hand_world_landmarks_input_shape
-                .iter()
-                .product::<usize>();
+        let embed = &self.gesture_embed_model_resources;
+        let gesture_embed_hand_landmarks_input_shape =
+            embed.expect_input_tensor_shape(Self::HAND_LANDMARKS_INPUT_INDEX)?;
+        let gesture_embed_handedness_input_shape =
+            embed.expect_input_tensor_shape(Self::HANDEDNESS_INPUT_INDEX)?;
+        let gesture_embed_hand_world_landmarks_input_shape =
+            embed.expect_input_tensor_shape(Self::HAND_WORLD_LANDMARKS_INPUT_INDEX)?;
 
-        // tensors to classifications
         let mut tensors_to_classification = TensorsToClassification::new();
-        add_tensors_to_classifications!(
-            tensors_to_classification,
-            self,
-            self.canned_classify_model_resources,
-            classification_options,
-        );
-        if let Some(ref r) = self.custom_classify_resources {
-            add_tensors_to_classifications!(
-                tensors_to_classification,
-                self,
-                r,
-                custom_classification_options,
-            );
-        }
-
-        // init contexts
-        let gesture_embed_execution_ctx = self.gesture_embed_graph.init_execution_context()?;
-        let canned_classify_execution_ctx = self.canned_classify_graph.init_execution_context()?;
-        let custom_classify_execution_ctx = if let Some(ref g) = self.custom_classify_graph {
-            Some(g.init_execution_context()?)
-        } else {
-            None
+        self.canned_classifier.add_to(
+            &mut tensors_to_classification,
+            &self.build_options.classification_options,
+        )?;
+        let custom_classifier_session = match &self.custom_classifier {
+            Some(custom) => {
+                custom.add_to(
+                    &mut tensors_to_classification,
+                    &self.build_options.custom_classification_options,
+                )?;
+                Some(custom.new_session()?)
+            }
+            None => None,
         };
-        let hand_landmarker_session = self.hand_landmarker.new_session()?;
+
         Ok(GestureRecognizerSession {
-            gesture_recognizer: self,
-            gesture_embed_execution_ctx,
-            canned_classify_execution_ctx,
-            custom_classify_execution_ctx,
-            hand_landmarker_session,
+            gesture_embed_execution_ctx: self.gesture_embed_graph.init_execution_context()?,
+            canned_classifier_session: self.canned_classifier.new_session()?,
+            custom_classifier_session,
+            hand_landmarker_session: self.hand_landmarker.new_session()?,
             gesture_embed_hand_landmarks_input_shape,
             gesture_embed_handedness_input_shape,
             gesture_embed_hand_world_landmarks_input_shape,
-            canned_classify_input_shape,
-            custom_classify_input_shape,
             gesture_embed_hand_landmarks_input_buffer: vec![
                 0.;
-                gesture_embed_hand_landmarks_input_size
+                gesture_embed_hand_landmarks_input_shape
+                    .iter()
+                    .product()
             ],
-            gesture_embed_hand_world_landmarks_input_buffer:
-                vec![0.; gesture_embed_hand_world_landmarks_input_size],
+            gesture_embed_hand_world_landmarks_input_buffer: vec![
+                0.;
+                gesture_embed_hand_world_landmarks_input_shape
+                    .iter()
+                    .product()
+            ],
             gesture_embed_handedness_input_buffer: [0.],
             gesture_embed_out_buffer: vec![0.; self.gesture_embed_out_size],
             tensors_to_classification,
@@ -175,18 +190,15 @@ impl GestureRecognizer {
 /// Session to run inference.
 /// If process multiple images or videos, reuse it can get better performance.
 pub struct GestureRecognizerSession<'model> {
-    gesture_recognizer: &'model GestureRecognizer,
     gesture_embed_execution_ctx: GraphExecutionContext<'model>,
-    canned_classify_execution_ctx: GraphExecutionContext<'model>,
-    custom_classify_execution_ctx: Option<GraphExecutionContext<'model>>,
+    canned_classifier_session: GestureClassifierSession<'model>,
+    custom_classifier_session: Option<GestureClassifierSession<'model>>,
 
     hand_landmarker_session: HandLandmarkerSession<'model>,
 
     gesture_embed_hand_landmarks_input_shape: &'model [usize],
     gesture_embed_handedness_input_shape: &'model [usize],
     gesture_embed_hand_world_landmarks_input_shape: &'model [usize],
-    canned_classify_input_shape: &'model [usize],
-    custom_classify_input_shape: Option<&'model [usize]>,
     gesture_embed_hand_landmarks_input_buffer: Vec<f32>,
     gesture_embed_hand_world_landmarks_input_buffer: Vec<f32>,
     gesture_embed_handedness_input_buffer: [f32; 1],
@@ -222,21 +234,19 @@ impl<'model> GestureRecognizerSession<'model> {
                 &mut self.gesture_embed_hand_world_landmarks_input_buffer,
             );
             self.gesture_embed_execution_ctx.set_input(
-                self.gesture_recognizer.gesture_embed_handedness_input_index,
+                GestureRecognizer::HANDEDNESS_INPUT_INDEX,
                 TensorType::F32,
                 self.gesture_embed_handedness_input_shape,
                 self.gesture_embed_handedness_input_buffer,
             )?;
             self.gesture_embed_execution_ctx.set_input(
-                self.gesture_recognizer
-                    .gesture_embed_hand_landmarks_input_index,
+                GestureRecognizer::HAND_LANDMARKS_INPUT_INDEX,
                 TensorType::F32,
                 self.gesture_embed_hand_landmarks_input_shape,
                 self.gesture_embed_hand_landmarks_input_buffer.as_slice(),
             )?;
             self.gesture_embed_execution_ctx.set_input(
-                self.gesture_recognizer
-                    .gesture_embed_hand_world_landmarks_input_index,
+                GestureRecognizer::HAND_WORLD_LANDMARKS_INPUT_INDEX,
                 TensorType::F32,
                 self.gesture_embed_hand_world_landmarks_input_shape,
                 self.gesture_embed_hand_world_landmarks_input_buffer
@@ -250,28 +260,15 @@ impl<'model> GestureRecognizerSession<'model> {
                 &mut self.gesture_embed_out_buffer,
             )?;
 
-            self.canned_classify_execution_ctx.set_input(
-                0,
-                TensorType::F32,
-                self.canned_classify_input_shape,
-                self.gesture_embed_out_buffer.as_slice(),
+            self.canned_classifier_session.classify(
+                &self.gesture_embed_out_buffer,
+                self.tensors_to_classification.output_buffer(0),
             )?;
-            self.canned_classify_execution_ctx.compute()?;
-            self.tensors_to_classification
-                .output_buffer(0)
-                .fetch(&self.canned_classify_execution_ctx, 0)?;
-
-            if let Some(ref mut ctx) = self.custom_classify_execution_ctx {
-                ctx.set_input(
-                    0,
-                    TensorType::F32,
-                    self.custom_classify_input_shape.unwrap(),
-                    self.gesture_embed_out_buffer.as_slice(),
+            if let Some(custom) = &mut self.custom_classifier_session {
+                custom.classify(
+                    &self.gesture_embed_out_buffer,
+                    self.tensors_to_classification.output_buffer(1),
                 )?;
-                ctx.compute()?;
-                self.tensors_to_classification
-                    .output_buffer(1)
-                    .fetch(ctx, 0)?;
             }
 
             let result = GestureRecognizerResult {

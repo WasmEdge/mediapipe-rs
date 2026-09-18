@@ -34,16 +34,15 @@ impl ImageClassifierBuilder {
         let model_resource = crate::model::parse_model(buf)?;
 
         // check model
-        model_base_check_impl!(model_resource, 1, 1);
-        model_resource_check_and_get_impl!(model_resource, to_tensor_info, 0).try_to_image()?;
-        let input_tensor_type =
-            model_resource_check_and_get_impl!(model_resource, input_tensor_type, 0);
+        model_resource.check_tensor_counts(Some(1), 1)?;
+        model_resource.expect_to_tensor_info(0)?.try_to_image()?;
+        let input_tensor_type = model_resource.expect_input_tensor_type(0)?;
 
-        let graph = crate::GraphBuilder::new(
-            model_resource.model_backend(),
+        let graph = crate::tasks::common::build_graph(
+            model_resource.as_ref(),
             self.base_task_options.device,
-        )
-        .build_from_bytes([buf])?;
+            buf,
+        )?;
 
         Ok(ImageClassifier {
             build_options: self,

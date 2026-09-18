@@ -142,7 +142,7 @@ where
     let res = output_buffer.as_mut();
     let bytes = img.as_bytes();
     let hw = (img.width() * img.height()) as usize;
-    let expected_len = shape.elem_size() * tensor_byte_size!(info.tensor_type);
+    let expected_len = shape.elem_size() * crate::model::tensor_byte_size(info.tensor_type);
     if res.len() < expected_len {
         return Err(Error::ArgumentError(format!(
             "Expect output buffer at least `{}` bytes, but got `{}`",

@@ -45,19 +45,18 @@ impl FaceLandmarker {
     /// Create a new task session that contains processing buffers and can do inference.
     #[inline(always)]
     pub fn new_session(&self) -> Result<FaceLandmarkerSession<'_>, Error> {
-        let image_to_tensor_info =
-            model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
-                .try_to_image()?;
-        let input_tensor_shape =
-            model_resource_check_and_get_impl!(self.model_resource, input_tensor_shape, 0);
+        let image_to_tensor_info = self
+            .model_resource
+            .expect_to_tensor_info(0)?
+            .try_to_image()?;
+        let input_tensor_shape = self.model_resource.expect_input_tensor_shape(0)?;
 
-        let landmarks_out =
-            get_type_and_quantization!(self.model_resource, self.landmarks_buf_index);
-        let landmarks_shape = model_resource_check_and_get_impl!(
-            self.model_resource,
-            output_tensor_shape,
-            self.landmarks_buf_index
-        );
+        let landmarks_out = self
+            .model_resource
+            .output_type_and_quantization(self.landmarks_buf_index)?;
+        let landmarks_shape = self
+            .model_resource
+            .expect_output_tensor_shape(self.landmarks_buf_index)?;
 
         // 468 is the standard number of facial landmarks used in MediaPipe's Face Mesh model (kMeshLandmarksNum).
         // For models including the iris, this number increases to 478.
@@ -77,7 +76,13 @@ impl FaceLandmarker {
             face_detector_session,
             image_to_tensor_info,
             input_tensor_shape,
-            input_buffer: vec![0; tensor_bytes!(self.input_tensor_type, input_tensor_shape)],
+            input_buffer: vec![
+                0;
+                crate::model::tensor_bytes(
+                    self.input_tensor_type,
+                    input_tensor_shape
+                )
+            ],
             score_of_face_presence: [0.],
             tensors_to_landmarks,
         })
