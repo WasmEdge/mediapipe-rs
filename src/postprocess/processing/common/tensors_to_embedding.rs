@@ -30,7 +30,7 @@ impl TensorsToEmbedding {
         tensor_shape: &[usize],
         head_name: Option<String>,
     ) -> Result<(), crate::Error> {
-        let elem_size = tensor_shape.iter().fold(1, |a, b| a * b);
+        let elem_size = tensor_shape.iter().product::<usize>();
         self.outputs.push(OutputBuffer::new(tensor_buf, elem_size)?);
         self.head_names.push(head_name);
         Ok(())
@@ -106,7 +106,7 @@ impl TensorsToEmbedding {
         if squared_l2_norm > 0.0 {
             inv_l2_norm = 1.0 / squared_l2_norm.sqrt();
         }
-        return inv_l2_norm;
+        inv_l2_norm
     }
 }
 

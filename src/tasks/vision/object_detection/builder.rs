@@ -6,29 +6,17 @@ use crate::tasks::common::{BaseTaskOptions, ClassificationOptions};
 /// Configure the build options of a new **Object Detection** task instance.
 ///
 /// Methods can be chained on it in order to configure it.
+#[derive(Default)]
 pub struct ObjectDetectorBuilder {
     pub(super) base_task_options: BaseTaskOptions,
     pub(super) classification_options: ClassificationOptions,
-}
-
-impl Default for ObjectDetectorBuilder {
-    #[inline(always)]
-    fn default() -> Self {
-        Self {
-            base_task_options: Default::default(),
-            classification_options: Default::default(),
-        }
-    }
 }
 
 impl ObjectDetectorBuilder {
     /// Create a new builder with default options.
     #[inline(always)]
     pub fn new() -> Self {
-        Self {
-            base_task_options: Default::default(),
-            classification_options: Default::default(),
-        }
+        Self::default()
     }
 
     base_task_options_impl!(ObjectDetector);
@@ -96,7 +84,7 @@ impl ObjectDetectorBuilder {
                 ))
             })?;
         check_scalar_f32_output(model_resource.as_ref(), num_box_buf_index)?;
-        return Ok(ObjectDetector {
+        Ok(ObjectDetector {
             build_options: self,
             model_resource,
             graph,
@@ -106,6 +94,6 @@ impl ObjectDetectorBuilder {
             score_buf_index,
             num_box_buf_index,
             input_tensor_type,
-        });
+        })
     }
 }

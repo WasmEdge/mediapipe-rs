@@ -24,10 +24,12 @@ macro_rules! impl_new_func {
                 let input_stream = input
                     .streams()
                     .best(ffmpeg_next::media::Type::$stream_type)
-                    .ok_or(Error::ArgumentError(format!(
-                        "Input Has no stream: `{:?}`.",
-                        ffmpeg_next::media::Type::$stream_type
-                    )))?;
+                    .ok_or_else(|| {
+                        Error::ArgumentError(format!(
+                            "Input has no stream: `{:?}`.",
+                            ffmpeg_next::media::Type::$stream_type
+                        ))
+                    })?;
                 let input_stream_index = input_stream.index();
                 let context = Context::from_parameters(input_stream.parameters())?;
                 let mut decoder = context.decoder().$decode_func()?;

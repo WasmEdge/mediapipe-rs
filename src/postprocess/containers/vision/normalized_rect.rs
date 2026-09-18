@@ -55,10 +55,10 @@ impl NormalizedRect {
                 bottom: f32::MIN,
             };
             for k in detection.key_points.as_ref().unwrap() {
-                rect.left = min_f32!(k.x, rect.left);
-                rect.top = min_f32!(k.y, rect.top);
-                rect.right = max_f32!(k.x, rect.right);
-                rect.bottom = max_f32!(k.y, rect.bottom);
+                rect.left = k.x.min(rect.left);
+                rect.top = k.y.min(rect.top);
+                rect.right = k.x.max(rect.right);
+                rect.bottom = k.y.max(rect.bottom);
             }
             Self::init_from_rect(&rect)
         } else {
@@ -81,22 +81,19 @@ impl NormalizedRect {
     /// geometric transformation
     ///
     /// rotation is counter-clockwise in radians
-    /// to_square_long: None:not to square, Some(true): use long, Some(false): use short
+    /// to_square_long: true: use long side, false: use short side
     pub(crate) fn transform(
         &self,
-        img_w: u32,
-        img_h: u32,
-        scale_x: f32,
-        scale_y: f32,
-        shift_x: f32,
-        shift_y: f32,
+        (img_w, img_h): (u32, u32),
+        (scale_x, scale_y): (f32, f32),
+        (shift_x, shift_y): (f32, f32),
         rotation: Option<f32>,
         to_square_long: bool,
     ) -> Self {
         let img_w = img_w as f32;
         let img_h = img_h as f32;
 
-        let self_r = if let Some(r) = self.rotation { r } else { 0. };
+        let self_r = self.rotation.unwrap_or(0.);
         let rotation = if let Some(r) = rotation {
             Self::normalize_radians(self_r + r)
         } else {
@@ -104,11 +101,11 @@ impl NormalizedRect {
         };
         let mut width = self.width;
         let mut height = self.height;
-        let x_center;
-        let y_center;
-        if rotation == 0. {
-            x_center = self.x_center + width * shift_x;
-            y_center = self.y_center + height * shift_y;
+        let (x_center, y_center) = if rotation == 0. {
+            (
+                self.x_center + width * shift_x,
+                self.y_center + height * shift_y,
+            )
         } else {
             let cos_r = rotation.cos();
             let sin_r = rotation.sin();
@@ -116,18 +113,17 @@ impl NormalizedRect {
                 (img_w * width * shift_x * cos_r - img_h * height * shift_y * sin_r) / img_w;
             let y_shift =
                 (img_w * width * shift_x * sin_r + img_h * height * shift_y * cos_r) / img_h;
-            x_center = self.x_center + x_shift;
-            y_center = self.y_center + y_shift;
-        }
+            (self.x_center + x_shift, self.y_center + y_shift)
+        };
 
         if to_square_long {
             // long
-            let long_side = max_f32!(width * img_w, height * img_h);
+            let long_side = (width * img_w).max(height * img_h);
             width = long_side / img_w;
             height = long_side / img_h;
         } else {
             // short
-            let short_side = min_f32!(width * img_w, height * img_h);
+            let short_side = (width * img_w).min(height * img_h);
             width = short_side / img_w;
             height = short_side / img_h;
         }

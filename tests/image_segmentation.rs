@@ -1,9 +1,9 @@
 use mediapipe_rs::postprocess::ImageCategoryMask;
 use mediapipe_rs::tasks::vision::ImageSegmenterBuilder;
 
-const MODEL_1: &'static str = "assets/models/image_segmentation/deeplabv3.tflite";
-const MODEL_2: &'static str = "assets/models/image_segmentation/selfie_segm_128_128_3.tflite";
-const IMG_1: &'static str = "/assets/testdata/img/cat_and_dog.jpg";
+const MODEL_1: &str = "assets/models/image_segmentation/deeplabv3.tflite";
+const MODEL_2: &str = "assets/models/image_segmentation/selfie_segm_128_128_3.tflite";
+const IMG_1: &str = "/assets/testdata/img/cat_and_dog.jpg";
 
 #[test]
 fn test_image_segmentation_model_1() {
@@ -11,9 +11,9 @@ fn test_image_segmentation_model_1() {
 }
 
 #[test]
+#[ignore = "needs MediaPipe custom ops in the WasmEdge TFLite backend"]
 fn test_image_segmentation_model_2() {
-    // todo: custom ops support in WasmEdge master branch
-    // test_image_segmentation_tasks(MODEL_2)
+    test_image_segmentation_tasks(MODEL_2)
 }
 
 fn test_image_segmentation_tasks(model_asset: &str) {
@@ -49,7 +49,7 @@ fn draw_mask(img: image::RgbImage, mask: &ImageCategoryMask, path: &str) {
     for x in 0..mask.width() {
         for y in 0..mask.height() {
             if mask.get_pixel(x, y).0[0] > 0 {
-                out_img.put_pixel(x, y, img.get_pixel(x, y).clone());
+                out_img.put_pixel(x, y, *img.get_pixel(x, y));
             }
         }
     }

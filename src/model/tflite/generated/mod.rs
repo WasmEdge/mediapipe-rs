@@ -3,8 +3,11 @@
 // The schema files are licensed under Apache 2.0, and originally developed by Google for Mediapipe and TensorFlow.
 // `Content::run_verifier` in `metadata_schema_generated.rs` is hand-patched, see the comment there.
 
+// @generated
 #![allow(non_snake_case)]
 #![allow(unused_imports)]
+#![allow(mismatched_lifetime_syntaxes)]
+#![allow(clippy::all)]
 
 mod metadata_schema_generated;
 mod schema_generated;

@@ -44,7 +44,7 @@ impl FaceLandmarker {
 
     /// Create a new task session that contains processing buffers and can do inference.
     #[inline(always)]
-    pub fn new_session(&self) -> Result<FaceLandmarkerSession, Error> {
+    pub fn new_session(&self) -> Result<FaceLandmarkerSession<'_>, Error> {
         let image_to_tensor_info =
             model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
                 .try_to_image()?;
@@ -112,13 +112,13 @@ impl<'model> FaceLandmarkerSession<'model> {
         for d in face_detection_result.detections.iter() {
             // get roi
             let face_rect = NormalizedRect::from_detection(
-                &d,
+                d,
                 Self::DETECTION_TO_RECT_ROTATION_OPTION,
                 img_w,
                 img_h,
                 false,
             )
-            .transform(img_w, img_h, 1.5, 1.5, 0.0, 0.0, None, false);
+            .transform((img_w, img_h), (1.5, 1.5), (0.0, 0.0), None, false);
 
             // image to tensor
             input.to_tensor(
@@ -173,7 +173,7 @@ impl<'model> FaceLandmarkerSession<'model> {
     pub fn detect_for_video<InputVideoData: VideoData>(
         &mut self,
         video_data: InputVideoData,
-    ) -> Result<VideoResultsIter<Self, InputVideoData>, Error> {
+    ) -> Result<VideoResultsIter<'_, '_, Self, InputVideoData>, Error> {
         Ok(VideoResultsIter::new(self, video_data))
     }
 }
@@ -189,7 +189,7 @@ impl<'model> super::TaskSession for FaceLandmarkerSession<'model> {
     ) -> Result<Option<Self::Result>, Error> {
         // todo: video track optimize
         if let Some(frame) = video_data.next_frame()? {
-            return self.detect(&frame).map(|r| Some(r));
+            return self.detect(&frame).map(Some);
         }
         Ok(None)
     }

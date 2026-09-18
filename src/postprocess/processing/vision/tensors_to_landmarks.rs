@@ -93,7 +93,7 @@ impl TensorsToLandmarks {
         let mut landmarks = Vec::with_capacity(self.num_landmarks);
 
         let mut index = 0;
-        let num_dimensions = self.num_dimensions as usize;
+        let num_dimensions = self.num_dimensions;
         for _ in 0..self.num_landmarks {
             let mut landmark = Landmark {
                 x: 0.0,

@@ -32,7 +32,7 @@ impl<'a> TensorsToClassification<'a> {
         self.categories_filters.push(categories_filter);
         self.max_results.push(max_results);
 
-        let elem_size = buffer_shape.iter().fold(1, |a, b| a * b);
+        let elem_size = buffer_shape.iter().product::<usize>();
         self.outputs
             .push(OutputBuffer::new(buffer_config, elem_size)?);
         Ok(())
@@ -58,8 +58,8 @@ impl<'a> TensorsToClassification<'a> {
 
             let scores = self.outputs[id].as_f32_mut();
             let mut categories = Vec::new();
-            for i in 0..scores.len() {
-                if let Some(category) = categories_filter.create_category(i, scores[i]) {
+            for (i, &score) in scores.iter().enumerate() {
+                if let Some(category) = categories_filter.create_category(i, score) {
                     categories.push(category);
                 }
             }

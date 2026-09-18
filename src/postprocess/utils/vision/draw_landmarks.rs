@@ -29,7 +29,7 @@ impl<'a, P: Pixel> DrawLandmarksOptions<'a, P> {
     }
 
     #[inline(always)]
-    pub fn connections(self, connections: &[(usize, usize)]) -> DrawLandmarksOptions<P> {
+    pub fn connections(self, connections: &[(usize, usize)]) -> DrawLandmarksOptions<'_, P> {
         DrawLandmarksOptions {
             line_colors: self.line_colors,
             landmark_colors: self.landmark_colors,

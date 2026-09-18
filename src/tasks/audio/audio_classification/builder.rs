@@ -5,29 +5,17 @@ use crate::Error;
 /// Configure the build options of a new **Audio Classification** task instance.
 ///
 /// Methods can be chained on it in order to configure it.
+#[derive(Default)]
 pub struct AudioClassifierBuilder {
     pub(super) base_task_options: BaseTaskOptions,
     pub(super) classification_options: ClassificationOptions,
-}
-
-impl Default for AudioClassifierBuilder {
-    #[inline(always)]
-    fn default() -> Self {
-        Self {
-            base_task_options: Default::default(),
-            classification_options: Default::default(),
-        }
-    }
 }
 
 impl AudioClassifierBuilder {
     /// Create a new builder with default options.
     #[inline(always)]
     pub fn new() -> Self {
-        Self {
-            base_task_options: Default::default(),
-            classification_options: Default::default(),
-        }
+        Self::default()
     }
 
     base_task_options_impl!(AudioClassifier);
@@ -55,11 +43,11 @@ impl AudioClassifierBuilder {
         )
         .build_from_bytes([buf])?;
 
-        return Ok(AudioClassifier {
+        Ok(AudioClassifier {
             build_options: self,
             model_resource,
             graph,
             input_tensor_type,
-        });
+        })
     }
 }

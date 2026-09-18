@@ -86,13 +86,13 @@ where
             return Err(Error::ArgumentError("Num channels cannot be `0`".into()));
         }
         let len = channels[0].as_ref().len();
-        for i in 1..num_channels {
-            if len != channels[i].as_ref().len() {
+        for (i, channel) in channels.iter().enumerate().skip(1) {
+            if len != channel.as_ref().len() {
                 return Err(Error::ArgumentError(format!(
                     "Data is not a matrix, expect channel[`{}`] len is `{}`, but got `{}",
                     i,
                     len,
-                    channels[i].as_ref().len()
+                    channel.as_ref().len()
                 )));
             }
         }
@@ -153,16 +153,13 @@ where
 
         let num_samples = std::cmp::min(self.sample_rate, max_samples - self.now_index);
         let data_end = self.now_index + num_samples;
-        for c in 0..num_channels {
-            if sample_buffer.len() <= c {
-                sample_buffer.push(Vec::new());
-            }
-            let output_buffer = sample_buffer.get_mut(c).unwrap();
+        sample_buffer.resize_with(sample_buffer.len().max(num_channels), Vec::new);
+        for (channel, output_buffer) in buf.iter().zip(sample_buffer.iter_mut()) {
             if output_buffer.len() < num_samples {
                 output_buffer.resize(num_samples, 0.);
             }
             output_buffer[..num_samples]
-                .copy_from_slice(&buf[c].as_ref()[self.now_index..data_end]);
+                .copy_from_slice(&channel.as_ref()[self.now_index..data_end]);
         }
         self.now_index = data_end;
 

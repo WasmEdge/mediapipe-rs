@@ -78,8 +78,8 @@ macro_rules! face_landmark_options_impl {
             mut self,
             output_facial_transformation_matrixes: bool,
         ) -> Self {
-            self.face_landmark_options.output_facial_transformation_matrixes =
-                output_facial_transformation_matrixes;
+            self.face_landmark_options
+                .output_facial_transformation_matrixes = output_facial_transformation_matrixes;
             self
         }
     };
@@ -145,7 +145,9 @@ macro_rules! face_landmark_options_get_impl {
 
         /// Get whether FaceLandmarker outputs face blendshapes.
         pub fn output_face_blendshapes(&self) -> bool {
-            self.build_options.face_landmark_options.output_face_blendshapes
+            self.build_options
+                .face_landmark_options
+                .output_face_blendshapes
         }
 
         /// Get whether FaceLandmarker outputs the facial transformation matrix.

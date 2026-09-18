@@ -37,7 +37,7 @@ impl TfLiteModelResource {
         };
 
         let model = tflite_model::root_as_model(buf)?;
-        let mut _self = Self {
+        let mut resource = Self {
             input_shape: Vec::new(),
             output_shape: Vec::new(),
             input_types: Vec::new(),
@@ -51,25 +51,24 @@ impl TfLiteModelResource {
             #[cfg(feature = "vision")]
             output_bound_box_indices: Vec::new(),
         };
-        _self.parse_subgraph(&model)?;
-        let metadata = Self::parse_model_metadata(&model)?;
-        if let Some(metadata) = metadata {
-            _self.parse_model_metadata_content(&metadata)?;
+        resource.parse_subgraph(&model)?;
+        if let Some(metadata) = Self::parse_model_metadata(&model)? {
+            resource.parse_model_metadata_content(&metadata)?;
         }
-        Ok(_self)
+        Ok(resource)
     }
 
     #[inline]
     fn parse_subgraph(&mut self, model: &tflite_model::Model) -> Result<(), Error> {
         let subgraph = match model.subgraphs() {
             Some(s) => {
-                if s.len() < 1 {
+                if s.is_empty() {
                     return Err(Error::ModelParseError("Model subgraph is empty".into()));
                 }
                 s.get(0)
             }
             None => {
-                return Err(Error::ModelParseError(format!("Model has no subgraph")));
+                return Err(Error::ModelParseError("Model has no subgraph".to_string()));
             }
         };
 
@@ -125,10 +124,8 @@ impl TfLiteModelResource {
 
                 if let Some(q) = t.quantization() {
                     if let (Some(z), Some(s)) = (q.zero_point(), q.scale()) {
-                        if z.len() > 0 && s.len() > 0 {
-                            while self.output_quantization_parameters.len() < i {
-                                self.output_quantization_parameters.push(None);
-                            }
+                        if !z.is_empty() && !s.is_empty() {
+                            self.output_quantization_parameters.resize_with(i, || None);
                             self.output_quantization_parameters.push(Some(
                                 QuantizationParameters {
                                     scale: s.get(0),
@@ -220,7 +217,7 @@ impl TfLiteModelResource {
     ) -> Result<(), Error> {
         let subgraph = match metadata.subgraph_metadata() {
             Some(s) => {
-                if s.len() < 1 {
+                if s.is_empty() {
                     return Ok(());
                 }
                 s.get(0)
@@ -270,9 +267,9 @@ impl TfLiteModelResource {
                         let file_name = match f.name() {
                             Some(n) => n,
                             None => {
-                                return Err(Error::ModelParseError(format!(
-                                    "Cannot parse associated file's name"
-                                )))
+                                return Err(Error::ModelParseError(
+                                    "Cannot parse associated file's name".to_string(),
+                                ))
                             }
                         };
                         let tp = f.type_();
@@ -287,12 +284,9 @@ impl TfLiteModelResource {
                             };
                         }
                     }
-                    if label.is_some() {
-                        while self.output_label_files.len() < i {
-                            self.output_label_files.push(None);
-                        }
-                        self.output_label_files
-                            .push(Some((label.unwrap(), label_locales)));
+                    if let Some(label) = label {
+                        self.output_label_files.resize_with(i, || None);
+                        self.output_label_files.push(Some((label, label_locales)));
                     }
                 }
 
@@ -303,12 +297,10 @@ impl TfLiteModelResource {
                         if let Some(indices) = t.index() {
                             if indices.len() == 4 {
                                 let mut s = [0; 4];
-                                for j in 0..4 {
-                                    s[j] = indices.get(j) as usize;
+                                for (slot, index) in s.iter_mut().zip(indices.iter()) {
+                                    *slot = index as usize;
                                 }
-                                while self.output_bound_box_indices.len() < i {
-                                    self.output_bound_box_indices.push(None);
-                                }
+                                self.output_bound_box_indices.resize_with(i, || None);
                                 self.output_bound_box_indices.push(Some(s));
                             }
                         }
@@ -425,9 +417,7 @@ impl TfLiteModelResource {
             normalization_options,
         };
 
-        while self.to_tensor_info.len() < i {
-            self.to_tensor_info.push(ToTensorInfo::new_none());
-        }
+        self.to_tensor_info.resize_with(i, ToTensorInfo::new_none);
         self.to_tensor_info.push(ToTensorInfo::new_image(img_info));
 
         Ok(())
@@ -453,7 +443,7 @@ impl TfLiteModelResource {
                 i
             )));
         }
-        let input_buffer_size = input_shape.iter().fold(1, |mul, &val| mul * val);
+        let input_buffer_size = input_shape.iter().product::<usize>();
         if input_buffer_size % num_channels != 0 {
             return Err(Error::ModelParseError(format!(
                 "Input tensor size `{}` should be a multiplier of the number of channels `{}`",
@@ -469,9 +459,7 @@ impl TfLiteModelResource {
             tensor_type: self.input_tensor_type_for_metadata(i)?,
         };
 
-        while self.to_tensor_info.len() < i {
-            self.to_tensor_info.push(ToTensorInfo::new_none());
-        }
+        self.to_tensor_info.resize_with(i, ToTensorInfo::new_none);
         self.to_tensor_info
             .push(ToTensorInfo::new_audio(audio_info));
         Ok(())
@@ -588,8 +576,8 @@ impl TfLiteModelResource {
                 flatbuffers::ForwardsUOffset<tflite_metadata::AssociatedFile<'buf>>,
             >,
         >,
-    ) -> Result<(&'buf str, MemoryTextFile), Error> {
-        if files.is_none() || files.unwrap().len() == 0 {
+    ) -> Result<(&'buf str, MemoryTextFile<'_>), Error> {
+        if files.is_none() || files.unwrap().is_empty() {
             return Err(Error::ModelParseError(
                 "No vocab files have been found".into(),
             ));
@@ -618,11 +606,11 @@ impl TfLiteModelResource {
     // for bert and regex model.
     #[cfg(feature = "text")]
     #[inline(always)]
-    fn get_max_seq_len(input_shape: &Vec<Vec<usize>>) -> Result<u32, Error> {
+    fn get_max_seq_len(input_shape: &[Vec<usize>]) -> Result<u32, Error> {
         if input_shape.is_empty() {
-            return Err(Error::ModelParseError(format!(
-                "Input tensor shape is empty!"
-            )));
+            return Err(Error::ModelParseError(
+                "Input tensor shape is empty!".to_string(),
+            ));
         }
         for shape in input_shape.iter() {
             if shape.len() != 2 {
@@ -641,9 +629,9 @@ impl TfLiteModelResource {
         let res = input_shape[0][1];
         for shape in input_shape.iter() {
             if res != shape[1] {
-                return Err(Error::ModelParseError(format!(
-                    "Model input tensors don't have the same shape."
-                )));
+                return Err(Error::ModelParseError(
+                    "Model input tensors don't have the same shape.".to_string(),
+                ));
             }
         }
         Ok(res as u32)
@@ -662,12 +650,10 @@ impl TfLiteModelResource {
     fn get_file_content(&self, filename: &str) -> Result<&[u8], Error> {
         match self.associated_files.get(filename) {
             Some(c) => Ok(c.as_slice()),
-            None => {
-                return Err(Error::ModelParseError(format!(
-                    "Cannot find associated file `{}`",
-                    filename
-                )))
-            }
+            None => Err(Error::ModelParseError(format!(
+                "Cannot find associated file `{}`",
+                filename
+            ))),
         }
     }
 
@@ -688,7 +674,7 @@ impl TfLiteModelResource {
 
 impl ModelResourceTrait for TfLiteModelResource {
     fn model_backend(&self) -> GraphEncoding {
-        return GraphEncoding::TensorflowLite;
+        GraphEncoding::TensorflowLite
     }
 
     fn input_tensor_count(&self) -> usize {
@@ -724,7 +710,7 @@ impl ModelResourceTrait for TfLiteModelResource {
         index: usize,
     ) -> Option<QuantizationParameters> {
         if let Some(i) = self.output_quantization_parameters.get(index) {
-            i.clone()
+            *i
         } else {
             None
         }
@@ -735,29 +721,24 @@ impl ModelResourceTrait for TfLiteModelResource {
         index: usize,
         locale_name: &str,
     ) -> Result<(&[u8], Option<&[u8]>), Error> {
-        if let Some(o) = self.output_label_files.get(index) {
-            if let Some((label_file, locales)) = o {
-                let content = self.get_file_content(label_file)?;
-                let locale_content = if let Some(file) = locales.get(locale_name) {
-                    Some(self.get_file_content(file)?)
-                } else {
-                    None
-                };
-                return Ok((content, locale_content));
-            }
+        if let Some(Some((label_file, locales))) = self.output_label_files.get(index) {
+            let content = self.get_file_content(label_file)?;
+            let locale_content = match locales.get(locale_name) {
+                Some(file) => Some(self.get_file_content(file)?),
+                None => None,
+            };
+            return Ok((content, locale_content));
         }
-        return Err(Error::ModelInconsistentError(
+        Err(Error::ModelInconsistentError(
             "Missing model label file information.".into(),
-        ));
+        ))
     }
 
     #[cfg(feature = "vision")]
     fn output_bounding_box_properties(&self, index: usize, slice: &mut [usize]) -> bool {
-        if let Some(o) = self.output_bound_box_indices.get(index) {
-            if let Some(s) = o {
-                slice.copy_from_slice(s);
-                return true;
-            }
+        if let Some(Some(s)) = self.output_bound_box_indices.get(index) {
+            slice.copy_from_slice(s);
+            return true;
         }
         false
     }

@@ -78,10 +78,10 @@ impl Rect<f32> {
             || other.bottom < self.top)
         {
             Some(Rect {
-                left: max_f32!(self.left, other.left),
-                right: min_f32!(self.right, other.right),
-                top: max_f32!(self.top, other.top),
-                bottom: min_f32!(self.bottom, other.bottom),
+                left: self.left.max(other.left),
+                right: self.right.min(other.right),
+                top: self.top.max(other.top),
+                bottom: self.bottom.min(other.bottom),
             })
         } else {
             None
@@ -91,10 +91,10 @@ impl Rect<f32> {
     #[inline(always)]
     pub fn union(&self, other: &Rect<f32>) -> Rect<f32> {
         Rect {
-            left: min_f32!(self.left, other.left),
-            top: min_f32!(self.top, other.top),
-            right: max_f32!(self.right, other.right),
-            bottom: max_f32!(self.bottom, other.bottom),
+            left: self.left.min(other.left),
+            top: self.top.min(other.top),
+            right: self.right.max(other.right),
+            bottom: self.bottom.max(other.bottom),
         }
     }
 

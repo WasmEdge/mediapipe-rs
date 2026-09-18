@@ -3,8 +3,8 @@ use mediapipe_rs::tasks::vision::results::FaceLandmarkResults;
 use mediapipe_rs::tasks::vision::FaceLandmarkConnections;
 use mediapipe_rs::tasks::vision::FaceLandmarkerBuilder;
 
-const MODEL_PATH: &'static str = "assets/models/face_landmark/face_landmarker.task";
-const FACE_1: &'static str = "assets/testdata/img/face.jpg";
+const MODEL_PATH: &str = "assets/models/face_landmark/face_landmarker.task";
+const FACE_1: &str = "assets/testdata/img/face.jpg";
 
 #[test]
 fn test_face_detection() {

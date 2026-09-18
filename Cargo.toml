@@ -2,6 +2,7 @@
 name = "mediapipe-rs"
 version = "0.1.0-dev"
 edition = "2021"
+rust-version = "1.89"
 authors = ["bo.yang@smail.nju.edu.cn"]
 categories = ["wasm", "computer-vision", "multimedia"]
 keywords = ["wasm", "webassembly", "mediapipe", "neural-network", "inference"]
@@ -37,7 +38,6 @@ image = { version = "0.25", default-features = false, optional = true }
 imageproc = { version = "0.27", default-features = false, optional = true }
 ab_glyph = { version = "0.2", optional = true }
 regex = { version = "1", optional = true }
-lazy_static = { version = "1", optional = true }
 symphonia-core = { version = "0.5", optional = true }
 
 [dependencies.ffmpeg-next]
@@ -53,8 +53,8 @@ branch = "wasm32-wasi"
 default = ["audio", "vision", "text"]
 
 audio = ["symphonia-core"]
-vision = ["image", "imageproc", "imageproc/text", "lazy_static", "ab_glyph"]
-text = ["regex", "lazy_static"]
+vision = ["image", "imageproc", "imageproc/text", "ab_glyph"]
+text = ["regex"]
 
 ffmpeg = ["ffmpeg-next"]
 

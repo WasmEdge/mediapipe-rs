@@ -1,8 +1,8 @@
 use mediapipe_rs::tasks::vision::FaceDetectorBuilder;
 
-const MODEL_1: &'static str = "assets/models/face_detection/face_detection_short_range.tflite";
+const MODEL_1: &str = "assets/models/face_detection/face_detection_short_range.tflite";
 
-const FACE_IMG_1: &'static str = "assets/testdata/img/face.jpg";
+const FACE_IMG_1: &str = "assets/testdata/img/face.jpg";
 
 #[test]
 fn test_face_detection_model_1() {

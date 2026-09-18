@@ -8,7 +8,7 @@ impl<'a, Source: AudioData> AudioDataToTensorIter<'a, Source> {
     ) -> Result<Option<u64>, Error> {
         // todo: num_overlapping_samples, fft if need
         let timestamp_ms = self.processed_timestamp_ms;
-        while self.process_buffer.len() == 0
+        while self.process_buffer.is_empty()
             || self.process_buffer[0].len() < self.audio_to_tensor_info.num_samples
         {
             if let Some((sample_rate, num_samples)) =
@@ -30,7 +30,7 @@ impl<'a, Source: AudioData> AudioDataToTensorIter<'a, Source> {
         }
 
         // stream end
-        if self.process_buffer.len() == 0 || self.process_buffer[0].len() == 0 {
+        if self.process_buffer.is_empty() || self.process_buffer[0].is_empty() {
             return Ok(None);
         }
 
@@ -67,7 +67,6 @@ impl<'a, Source: AudioData> AudioDataToTensorIter<'a, Source> {
         sample_rate: usize,
         num_samples: usize,
     ) -> Result<usize, Error> {
-        let num_samples = num_samples as usize;
         let num_channels = self.input_buffer.len();
         if num_channels == 0 {
             return Err(Error::ArgumentError("Num channels cannot be `0`".into()));
@@ -123,7 +122,7 @@ impl<'a, Source: AudioData> AudioDataToTensorIter<'a, Source> {
             )));
         }
 
-        return Ok(num_samples);
+        Ok(num_samples)
     }
 
     fn output_to_tensor(&mut self, output_buffer: &mut [u8]) -> Result<(), Error> {
@@ -145,7 +144,7 @@ impl<'a, Source: AudioData> AudioDataToTensorIter<'a, Source> {
         {
             let buffer = &mut self.process_buffer[c];
             let process_len = std::cmp::min(buffer.len(), num_samples);
-            let padding = std::iter::repeat(0f32).take(num_samples - process_len);
+            let padding = std::iter::repeat_n(0f32, num_samples - process_len);
             write_ne_bytes(out, buffer.drain(..process_len).chain(padding));
             if c == 0 {
                 self.processed_timestamp_ms +=
@@ -177,8 +176,10 @@ mod test {
         let mut buffers = [vec![0u8; info.num_channels * info.num_samples * 4]];
         iter.poll_next_tensors(&mut buffers)?;
         Ok(buffers[0]
-            .chunks_exact(4)
-            .map(|b| f32::from_ne_bytes(b.try_into().unwrap()))
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|b| f32::from_ne_bytes(*b))
             .collect())
     }
 

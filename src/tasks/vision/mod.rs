@@ -85,7 +85,7 @@ impl ImageProcessingOptions {
                 rotation_degrees
             )));
         }
-        rotation_degrees = rotation_degrees % 360;
+        rotation_degrees %= 360;
         if rotation_degrees < 0 {
             rotation_degrees += 360;
         }

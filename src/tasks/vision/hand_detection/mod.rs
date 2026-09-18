@@ -41,7 +41,7 @@ impl HandDetector {
 
     /// Create a new task session that contains processing buffers and can do inference.
     #[inline(always)]
-    pub fn new_session(&self) -> Result<HandDetectorSession, Error> {
+    pub fn new_session(&self) -> Result<HandDetectorSession<'_>, Error> {
         let image_to_tensor_info =
             model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
                 .try_to_image()?;

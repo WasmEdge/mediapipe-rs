@@ -23,6 +23,11 @@ jobs:
       - name: install curl and rust
         run: ./scripts/rust-init.sh
 
+      - name: check formatting
+        run: |
+          . "$HOME/.cargo/env"
+          cargo fmt --check
+
       - name: init wasmedge environment
         run: ./scripts/wasmedge-init.sh
 
@@ -34,6 +39,9 @@ jobs:
 
       - name: init ffmpeg dependencies
         run: ./scripts/ffmpeg-deps-init.sh
+
+      - name: clippy
+        run: ./scripts/cargo-clippy.sh
 
       - name: test with ffmpeg and default features
         run: ./scripts/cargo-test.sh

@@ -55,9 +55,9 @@ pub(crate) trait ModelResourceTrait {
 #[inline]
 pub(crate) fn parse_model(buf: &[u8]) -> Result<Box<dyn ModelResourceTrait + 'static>, Error> {
     if buf.len() < 8 {
-        return Err(Error::ModelParseError(format!(
-            "Model buffer is tool short!"
-        )));
+        return Err(Error::ModelParseError(
+            "Model buffer is too short!".to_string(),
+        ));
     }
 
     match &buf[4..8] {
@@ -74,13 +74,13 @@ pub(crate) fn parse_model(buf: &[u8]) -> Result<Box<dyn ModelResourceTrait + 'st
 
 macro_rules! model_resource_check_and_get_impl {
     ( $model_resource:expr, $func_name:ident, $index:expr ) => {
-        $model_resource
-            .$func_name($index)
-            .ok_or(crate::Error::ModelInconsistentError(format!(
+        $model_resource.$func_name($index).ok_or_else(|| {
+            crate::Error::ModelInconsistentError(format!(
                 "Model resource has no information for `{}` at index `{}`.",
                 stringify!($func_name),
                 $index
-            )))?
+            ))
+        })?
     };
 }
 

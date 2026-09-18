@@ -141,14 +141,14 @@ impl TextToTensors for &str {
                 ..
             } => {
                 debug_assert_eq!(output_buffers.as_mut().len(), 3);
-                return bert_tensor::to_bert_tensors(
+                bert_tensor::to_bert_tensors(
                     self,
                     token_index_map,
                     output_buffers,
                     *max_seq_len,
                     *classifier_token_id,
                     *separator_token_id,
-                );
+                )
             }
             TextToTensorInfo::RegexModel {
                 delim_regex,
@@ -159,7 +159,7 @@ impl TextToTensors for &str {
                 ..
             } => {
                 debug_assert_eq!(output_buffers.as_mut().len(), 1);
-                return regex_to_tensor::regex_to_tensors(
+                regex_to_tensor::regex_to_tensors(
                     self,
                     delim_regex,
                     token_index_map,
@@ -167,7 +167,7 @@ impl TextToTensors for &str {
                     *max_seq_len,
                     *unknown_id,
                     *pad_id,
-                );
+                )
             }
             TextToTensorInfo::StringModel | TextToTensorInfo::UseModel => {
                 Err(Error::ModelInconsistentError(
@@ -213,8 +213,10 @@ mod test {
     }
 
     fn to_i32(buf: &[u8]) -> Vec<i32> {
-        buf.chunks_exact(4)
-            .map(|b| i32::from_ne_bytes(b.try_into().unwrap()))
+        buf.as_chunks::<4>()
+            .0
+            .iter()
+            .map(|b| i32::from_ne_bytes(*b))
             .collect()
     }
 

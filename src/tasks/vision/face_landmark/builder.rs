@@ -6,29 +6,17 @@ use crate::tasks::common::{BaseTaskOptions, FaceLandmarkOptions};
 /// Configure the build options of a new **Face Landmark** task instance.
 ///
 /// Methods can be chained on it in order to configure it.
+#[derive(Default)]
 pub struct FaceLandmarkerBuilder {
     pub(in super::super) base_task_options: BaseTaskOptions,
     pub(in super::super) face_landmark_options: FaceLandmarkOptions,
-}
-
-impl Default for FaceLandmarkerBuilder {
-    #[inline(always)]
-    fn default() -> Self {
-        Self {
-            base_task_options: Default::default(),
-            face_landmark_options: Default::default(),
-        }
-    }
 }
 
 impl FaceLandmarkerBuilder {
     /// Create a new builder with default options.
     #[inline(always)]
     pub fn new() -> Self {
-        Self {
-            base_task_options: Default::default(),
-            face_landmark_options: Default::default(),
-        }
+        Self::default()
     }
 
     base_task_options_impl!(FaceLandmarker);
@@ -69,7 +57,7 @@ impl FaceLandmarkerBuilder {
             .build_from_buffer(face_detection_file)?;
 
         // parse model and get model resources.
-        let model_resource = crate::model::parse_model(landmark_file.as_ref())?;
+        let model_resource = crate::model::parse_model(landmark_file)?;
 
         // check model
         model_base_check_impl!(model_resource, 1, 2);

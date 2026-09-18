@@ -20,13 +20,13 @@ pub trait ImageToTensor {
         output_buffers: &mut T,
     ) -> Result<(), Error>;
 
-    /// return image size: (weight, height)
+    /// return image size: (width, height)
     fn image_size(&self) -> (u32, u32);
 
     /// return the current timestamp (ms)
     /// video frame must return a valid timestamp
     fn timestamp_ms(&self) -> Option<u64> {
-        return None;
+        None
     }
 }
 

@@ -1,11 +1,11 @@
 use mediapipe_rs::tasks::vision::{ImageClassifierBuilder, ImageProcessingOptions};
 
-const MODEL_1: &'static str = "assets/models/image_classification/efficientnet_lite0_fp32.tflite";
-const MODEL_2: &'static str = "assets/models/image_classification/efficientnet_lite0_uint8.tflite";
-const MODEL_3: &'static str = "assets/models/image_classification/efficientnet_lite2_fp32.tflite";
-const MODEL_4: &'static str = "assets/models/image_classification/efficientnet_lite2_uint8.tflite";
-const IMG: &'static str = "assets/testdata/img/burger.jpg";
-const CAT_AND_DOG_IMG: &'static str = "assets/testdata/img/cat_and_dog.jpg";
+const MODEL_1: &str = "assets/models/image_classification/efficientnet_lite0_fp32.tflite";
+const MODEL_2: &str = "assets/models/image_classification/efficientnet_lite0_uint8.tflite";
+const MODEL_3: &str = "assets/models/image_classification/efficientnet_lite2_fp32.tflite";
+const MODEL_4: &str = "assets/models/image_classification/efficientnet_lite2_uint8.tflite";
+const IMG: &str = "assets/testdata/img/burger.jpg";
+const CAT_AND_DOG_IMG: &str = "assets/testdata/img/cat_and_dog.jpg";
 
 #[test]
 fn test_image_classification_model_1() {
@@ -41,10 +41,10 @@ fn image_classification_task_run(model_asset_path: &str) {
     // cheeseburger: 933
     let top = res
         .classifications
-        .get(0)
+        .first()
         .unwrap()
         .categories
-        .get(0)
+        .first()
         .unwrap();
     assert_eq!(top.index, 933);
     assert_eq!(top.category_name.as_ref().unwrap().as_str(), "cheeseburger");
@@ -52,9 +52,9 @@ fn image_classification_task_run(model_asset_path: &str) {
 
 #[test]
 fn test_bird_from_tf_hub() {
-    const MODEL: &'static str =
+    const MODEL: &str =
         "assets/models/image_classification/lite-model_aiy_vision_classifier_birds_V1_3.tflite";
-    const IMAGE: &'static str = "assets/testdata/img/bird.jpg";
+    const IMAGE: &str = "assets/testdata/img/bird.jpg";
 
     let res = ImageClassifierBuilder::new()
         .max_results(2)

@@ -1,9 +1,9 @@
 use mediapipe_rs::tasks::text::TextClassifierBuilder;
 
-const MODEL_1: &'static str = "assets/models/text_classification/average_word_embedding.tflite";
-const MODEL_2: &'static str = "assets/models/text_classification/bert_text_classifier.tflite";
+const MODEL_1: &str = "assets/models/text_classification/average_word_embedding.tflite";
+const MODEL_2: &str = "assets/models/text_classification/bert_text_classifier.tflite";
 
-const TEXT_1: &'static str = "an imperfect but overall entertaining mystery";
+const TEXT_1: &str = "an imperfect but overall entertaining mystery";
 
 #[test]
 fn test_model_1() {

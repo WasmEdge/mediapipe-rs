@@ -23,7 +23,7 @@ impl AudioClassifier {
 
     /// Create a new task session that contains processing buffers and can do inference.
     #[inline(always)]
-    pub fn new_session(&self) -> Result<AudioClassifierSession, Error> {
+    pub fn new_session(&self) -> Result<AudioClassifierSession<'_>, Error> {
         let input_to_tensor_info =
             model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
                 .try_to_audio()?;
@@ -90,7 +90,10 @@ impl<'model> AudioClassifierSession<'model> {
     /// Classify audio stream use this session.
     /// Return a iterator for results, process input stream when poll next result.
     #[inline(always)]
-    pub fn classify<T>(&mut self, input_stream: T) -> Result<AudioResultsIter<Self, T>, Error>
+    pub fn classify<T>(
+        &mut self,
+        input_stream: T,
+    ) -> Result<AudioResultsIter<'_, '_, Self, T>, Error>
     where
         T: AudioData,
     {

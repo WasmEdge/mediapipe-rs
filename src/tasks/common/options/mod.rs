@@ -20,6 +20,6 @@ pub(crate) use base_task_options::BaseTaskOptions;
 pub(crate) use classification_options::ClassificationOptions;
 pub(crate) use embedding_options::EmbeddingOptions;
 #[cfg(feature = "vision")]
-pub(crate) use hand_landmark_options::HandLandmarkOptions;
-#[cfg(feature = "vision")]
 pub(crate) use face_landmark_options::FaceLandmarkOptions;
+#[cfg(feature = "vision")]
+pub(crate) use hand_landmark_options::HandLandmarkOptions;

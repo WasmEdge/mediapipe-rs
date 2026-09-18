@@ -4,29 +4,17 @@ use crate::tasks::common::{BaseTaskOptions, ClassificationOptions};
 /// Configure the build options of a new **Image Classification** task instance.
 ///
 /// Methods can be chained on it in order to configure it.
+#[derive(Default)]
 pub struct ImageClassifierBuilder {
     pub(super) base_task_options: BaseTaskOptions,
     pub(super) classification_options: ClassificationOptions,
-}
-
-impl Default for ImageClassifierBuilder {
-    #[inline(always)]
-    fn default() -> Self {
-        Self {
-            base_task_options: Default::default(),
-            classification_options: Default::default(),
-        }
-    }
 }
 
 impl ImageClassifierBuilder {
     /// Create a new builder with default options.
     #[inline(always)]
     pub fn new() -> Self {
-        Self {
-            base_task_options: Default::default(),
-            classification_options: Default::default(),
-        }
+        Self::default()
     }
 
     base_task_options_impl!(ImageClassifier);
@@ -57,12 +45,12 @@ impl ImageClassifierBuilder {
         )
         .build_from_bytes([buf])?;
 
-        return Ok(ImageClassifier {
+        Ok(ImageClassifier {
             build_options: self,
             model_resource,
             graph,
             input_tensor_type,
-        });
+        })
     }
 }
 

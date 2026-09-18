@@ -1,14 +1,14 @@
 #[cfg(feature = "ffmpeg")]
 mod ffmpeg_dep_libs {
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
-    const WASI_SDK: &'static str = "WASI_SDK";
-    const WASI_SYSROOT: &'static str = "WASI_SYSROOT";
-    const CLANG_RT: &'static str = "CLANG_RT";
+    const WASI_SDK: &str = "WASI_SDK";
+    const WASI_SYSROOT: &str = "WASI_SYSROOT";
+    const CLANG_RT: &str = "CLANG_RT";
 
-    const DEFAULT_WASI_SDK: &'static str = "/opt/wasi-sdk";
-    const CLANG_RT_LIB_NAME: &'static str = "clang_rt.builtins";
-    const WASI_CLOCK_LIB_NAME: &'static str = "wasi-emulated-process-clocks";
+    const DEFAULT_WASI_SDK: &str = "/opt/wasi-sdk";
+    const CLANG_RT_LIB_NAME: &str = "clang_rt.builtins";
+    const WASI_CLOCK_LIB_NAME: &str = "wasi-emulated-process-clocks";
 
     fn check_lib_exists(mut dir: PathBuf, lib: &str) -> bool {
         let filename = if cfg!(windows) {
@@ -56,15 +56,15 @@ mod ffmpeg_dep_libs {
                 return Some(dir);
             }
         }
-        return None;
+        None
     }
 
     fn find_wasi_library_in_wasi_sdk(
         mut wasi_sdk: PathBuf,
-        subdir: &PathBuf,
+        subdir: &Path,
         libname: &str,
     ) -> Option<PathBuf> {
-        wasi_sdk.push(&subdir);
+        wasi_sdk.push(subdir);
         check_wasi_lib_path(wasi_sdk, libname)
     }
 

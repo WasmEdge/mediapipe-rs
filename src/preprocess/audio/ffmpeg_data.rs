@@ -10,7 +10,7 @@ impl FFMpegAudioData {
     /// Create a new instance from FFMpeg input.
     #[inline(always)]
     pub fn new(input: ffmpeg_next::format::context::Input) -> Result<Self, Error> {
-        FFMpegAudioDataInner::new(input).map(|i| Self(i))
+        FFMpegAudioDataInner::new(input).map(Self)
     }
 }
 
@@ -219,6 +219,6 @@ impl AudioData for FFMpegAudioData {
                 )));
             }
         }
-        return Ok(Some((sample_rate, num_samples)));
+        Ok(Some((sample_rate, num_samples)))
     }
 }

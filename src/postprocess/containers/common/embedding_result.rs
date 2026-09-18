@@ -96,9 +96,9 @@ impl Embedding {
         }
 
         if norm_u <= 0f64 || norm_v <= 0f64 {
-            return Err(crate::Error::ArgumentError(format!(
-                "Cannot compute cosine similarity on embedding with 0 norm"
-            )));
+            return Err(crate::Error::ArgumentError(
+                "Cannot compute cosine similarity on embedding with 0 norm".to_string(),
+            ));
         }
 
         Ok(dot_product / (norm_u * norm_v).sqrt())

@@ -114,13 +114,13 @@ impl SsdAnchorsBuilder {
 
     #[inline(always)]
     fn calculate_scale(&self, stride_index: usize, num_strides: usize) -> f32 {
-        return if num_strides == 1 {
+        if num_strides == 1 {
             (self.min_scale + self.max_scale) * 0.5f32
         } else {
             self.min_scale
                 + (self.max_scale - self.min_scale) * (stride_index as f32)
                     / ((num_strides as f32) - 1.0f32)
-        };
+        }
     }
 
     /// reference: https://github.com/google/mediapipe/blob/master/mediapipe/calculators/tflite/ssd_anchors_calculator.cc
@@ -172,16 +172,19 @@ impl SsdAnchorsBuilder {
                 anchor_width.push(scales[i] * ratio_sqrt);
             }
 
-            let feature_map_height;
-            let feature_map_width;
-            if !self.feature_map_height.is_empty() && !self.feature_map_width.is_empty() {
-                feature_map_height = self.feature_map_height[layer_id];
-                feature_map_width = self.feature_map_width[layer_id];
-            } else {
-                let stride = self.strides[layer_id];
-                feature_map_height = (self.input_size_height as f32 / stride as f32).ceil() as u32;
-                feature_map_width = (self.input_size_width as f32 / stride as f32).ceil() as u32;
-            }
+            let (feature_map_height, feature_map_width) =
+                if !self.feature_map_height.is_empty() && !self.feature_map_width.is_empty() {
+                    (
+                        self.feature_map_height[layer_id],
+                        self.feature_map_width[layer_id],
+                    )
+                } else {
+                    let stride = self.strides[layer_id] as f32;
+                    (
+                        (self.input_size_height as f32 / stride).ceil() as u32,
+                        (self.input_size_width as f32 / stride).ceil() as u32,
+                    )
+                };
 
             for y in 0..feature_map_height {
                 for x in 0..feature_map_width {

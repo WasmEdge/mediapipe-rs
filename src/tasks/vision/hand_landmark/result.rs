@@ -24,8 +24,10 @@ impl HandLandmarkResult {
         I::Pixel: 'static + DefaultPixel,
         <I::Pixel as image::Pixel>::Subpixel: Into<f32> + imageproc::definitions::Clamp<f32>,
     {
-        let mut options = DrawLandmarksOptions::default();
-        options.connections = HandLandmark::CONNECTIONS;
+        let options = DrawLandmarksOptions {
+            connections: HandLandmark::CONNECTIONS,
+            ..Default::default()
+        };
         draw_landmarks_with_options(img, &self.hand_landmarks, &options);
     }
 
