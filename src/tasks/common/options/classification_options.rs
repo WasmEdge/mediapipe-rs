@@ -84,21 +84,20 @@ macro_rules! classification_options_impl {
     };
 }
 
-macro_rules! classification_options_check {
-    ( $self:ident, $field_name:ident ) => {{
-        if $self.$field_name.max_results == 0 {
+impl ClassificationOptions {
+    pub(crate) fn check(&self) -> Result<(), crate::Error> {
+        if self.max_results == 0 {
             return Err(crate::Error::ArgumentError(
                 "The number of max results cannot be zero".into(),
             ));
         }
-        if !$self.$field_name.category_allow_list.is_empty()
-            && !$self.$field_name.category_deny_list.is_empty()
-        {
+        if !self.category_allow_list.is_empty() && !self.category_deny_list.is_empty() {
             return Err(crate::Error::ArgumentError(
                 "Cannot use both `category_allow_list` and `category_deny_list`".into(),
             ));
         }
-    }};
+        Ok(())
+    }
 }
 
 macro_rules! classification_options_get_impl {

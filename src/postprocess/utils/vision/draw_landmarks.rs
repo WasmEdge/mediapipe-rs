@@ -1,5 +1,5 @@
 use super::DefaultPixel;
-use crate::postprocess::NormalizedLandmarks;
+use crate::postprocess::{Landmark, NormalizedLandmarks};
 use image::{GenericImage, Pixel};
 use imageproc::drawing;
 
@@ -83,19 +83,13 @@ where
     draw_landmarks_with_options::<I>(img, normalized_landmarks, &Default::default())
 }
 
-macro_rules! check_threshold {
-    ( $l:ident, $options:ident ) => {
-        if let Some(v) = $l.visibility {
-            if v < $options.visibility_threshold {
-                continue;
-            }
-        }
-        if let Some(p) = $l.presence {
-            if p < $options.presence_threshold {
-                continue;
-            }
-        }
-    };
+fn passes_threshold<P: Pixel>(landmark: &Landmark, options: &DrawLandmarksOptions<P>) -> bool {
+    landmark
+        .visibility
+        .is_none_or(|v| v >= options.visibility_threshold)
+        && landmark
+            .presence
+            .is_none_or(|p| p >= options.presence_threshold)
 }
 
 /// draw landmarks to image with options
@@ -121,8 +115,9 @@ pub fn draw_landmarks_with_options<I>(
     for (c_id, (id_start, id_end)) in options.connections.iter().enumerate() {
         let l_start = normalized_landmarks.get(*id_start).unwrap();
         let l_end = normalized_landmarks.get(*id_end).unwrap();
-        check_threshold!(l_start, options);
-        check_threshold!(l_end, options);
+        if !passes_threshold(l_start, options) || !passes_threshold(l_end, options) {
+            continue;
+        }
         let color = match options.line_colors.get(c_id) {
             Some(c) => *c,
             None => default_color,
@@ -136,7 +131,9 @@ pub fn draw_landmarks_with_options<I>(
     }
 
     for (l_id, normalized_landmark) in normalized_landmarks.iter().rev().enumerate() {
-        check_threshold!(normalized_landmark, options);
+        if !passes_threshold(normalized_landmark, options) {
+            continue;
+        }
         let color = match options.landmark_colors.get(l_id) {
             Some(c) => *c,
             None => default_color,

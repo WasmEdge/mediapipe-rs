@@ -1,3 +1,5 @@
+use super::check_confidence;
+
 #[derive(Clone)]
 pub(crate) struct FaceLandmarkOptions {
     /// The maximum number of faces can be detected by the FaceLandmarker.
@@ -85,26 +87,22 @@ macro_rules! face_landmark_options_impl {
     };
 }
 
-macro_rules! face_landmark_options_check {
-    ( $self:ident ) => {{
-        if $self.face_landmark_options.num_faces == 0 {
+impl FaceLandmarkOptions {
+    pub(crate) fn check(&self) -> Result<(), crate::Error> {
+        if self.num_faces == 0 {
             return Err(crate::Error::ArgumentError(
                 "The number of max faces cannot be zero".into(),
             ));
         }
-        if !(0.0..=1.0).contains(&$self.face_landmark_options.min_face_presence_confidence) {
-            return Err(crate::Error::ArgumentError(format!(
-                "The min_face_presence_confidence must in range [0.0, 1.0], but got `{}`",
-                $self.face_landmark_options.min_face_presence_confidence
-            )));
-        }
-        if !(0.0..=1.0).contains(&$self.face_landmark_options.min_face_detection_confidence) {
-            return Err(crate::Error::ArgumentError(format!(
-                "The min_face_detection_confidence must in range [0.0, 1.0], but got `{}`",
-                $self.face_landmark_options.min_face_detection_confidence
-            )));
-        }
-    }};
+        check_confidence(
+            "min_face_presence_confidence",
+            self.min_face_presence_confidence,
+        )?;
+        check_confidence(
+            "min_face_detection_confidence",
+            self.min_face_detection_confidence,
+        )
+    }
 }
 
 macro_rules! face_landmark_options_get_impl {

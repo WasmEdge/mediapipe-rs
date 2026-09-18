@@ -60,18 +60,10 @@ fn token_ids_bytes(max_seq_len: u32) -> Result<usize, Error> {
         })
 }
 
-macro_rules! check_map {
-    ( $token_index_map:ident, $val:expr ) => {
-        match $token_index_map.get($val) {
-            Some(v) => v.clone(),
-            None => {
-                return Err(Error::ModelInconsistentError(format!(
-                    "Vocabulary file doesn't have `{}` token.",
-                    $val
-                )));
-            }
-        }
-    };
+fn token_id(token_index_map: &HashMap<String, i32>, token: &str) -> Result<i32, Error> {
+    token_index_map.get(token).copied().ok_or_else(|| {
+        Error::ModelInconsistentError(format!("Vocabulary file doesn't have `{}` token.", token))
+    })
 }
 
 impl TextToTensorInfo {
@@ -95,8 +87,8 @@ impl TextToTensorInfo {
                     e
                 ))
             })?;
-        let pad_id = check_map!(token_index_map, Self::REGEX_PAD_TOKEN);
-        let unknown_id = check_map!(token_index_map, Self::REGEX_UNKNOWN_TOKEN);
+        let pad_id = token_id(&token_index_map, Self::REGEX_PAD_TOKEN)?;
+        let unknown_id = token_id(&token_index_map, Self::REGEX_UNKNOWN_TOKEN)?;
         Ok(Self::RegexModel {
             delim_regex,
             token_index_map,
@@ -115,8 +107,8 @@ impl TextToTensorInfo {
                 "Bert model max seq length must be at least `2`".into(),
             ));
         }
-        let classifier_token_id = check_map!(token_index_map, Self::BERT_CLASSIFIER_TOKEN);
-        let separator_token_id = check_map!(token_index_map, Self::BERT_SEPARATOR_TOKEN);
+        let classifier_token_id = token_id(&token_index_map, Self::BERT_CLASSIFIER_TOKEN)?;
+        let separator_token_id = token_id(&token_index_map, Self::BERT_SEPARATOR_TOKEN)?;
         Ok(Self::BertModel {
             max_seq_len,
             token_index_map,

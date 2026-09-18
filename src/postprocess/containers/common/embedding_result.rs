@@ -34,16 +34,14 @@ pub struct EmbeddingResult {
     pub timestamp_ms: Option<u64>,
 }
 
-macro_rules! check_size_eq {
-    ( $len_1:expr, $len_2:expr ) => {
-        if $len_1 != $len_2 {
-            return Err(crate::Error::ArgumentError(format!(
-                "Cannot compute cosine similarity between embeddings of different sizes ({} vs. {})",
-                $len_1,
-                $len_2
-            )));
-        }
-    };
+fn check_size_eq(len_1: usize, len_2: usize) -> Result<(), crate::Error> {
+    if len_1 != len_2 {
+        return Err(crate::Error::ArgumentError(format!(
+            "Cannot compute cosine similarity between embeddings of different sizes ({} vs. {})",
+            len_1, len_2
+        )));
+    }
+    Ok(())
 }
 
 impl Embedding {
@@ -56,17 +54,17 @@ impl Embedding {
     ///
     pub fn cosine_similarity(&self, other: &Self) -> Result<f64, crate::Error> {
         if !self.float_embedding.is_empty() && !other.float_embedding.is_empty() {
-            check_size_eq!(self.float_embedding.len(), other.float_embedding.len());
+            check_size_eq(self.float_embedding.len(), other.float_embedding.len())?;
             return Self::cosine_similarity_inner(
                 self.float_embedding.as_slice(),
                 other.float_embedding.as_slice(),
             );
         }
         if !self.quantized_embedding.is_empty() && !other.quantized_embedding.is_empty() {
-            check_size_eq!(
+            check_size_eq(
                 self.quantized_embedding.len(),
-                other.quantized_embedding.len()
-            );
+                other.quantized_embedding.len(),
+            )?;
             return Self::cosine_similarity_inner(
                 self.quantized_embedding.as_slice(),
                 other.quantized_embedding.as_slice(),

@@ -27,7 +27,7 @@ impl ImageClassifierBuilder {
         self,
         buffer: impl AsRef<[u8]>,
     ) -> Result<ImageClassifier, crate::Error> {
-        classification_options_check!(self, classification_options);
+        self.classification_options.check()?;
 
         let buf = buffer.as_ref();
         // parse model and get model resources.

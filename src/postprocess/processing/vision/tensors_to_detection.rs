@@ -49,63 +49,32 @@ struct ToDetectionOptions {
     flip_vertically: bool, //[default = false];
 }
 
-macro_rules! box_y_min {
-    ($options:ident, $v:ident) => {
-        $v[$options.box_indices[0] + $options.box_coord_offset]
-    };
-}
+impl ToDetectionOptions {
+    /// Box coordinates in `location`, in {ymin, xmin, ymax, xmax} order of `box_indices`.
+    fn box_coord(&self, location: &[f32], i: usize) -> f32 {
+        location[self.box_indices[i] + self.box_coord_offset]
+    }
 
-macro_rules! box_x_min {
-    ($options:ident, $v:ident) => {
-        $v[$options.box_indices[1] + $options.box_coord_offset]
-    };
-}
-
-macro_rules! box_y_max {
-    ($options:ident, $v:ident) => {
-        $v[$options.box_indices[2] + $options.box_coord_offset]
-    };
-}
-
-macro_rules! box_x_max {
-    ($options:ident, $v:ident) => {
-        $v[$options.box_indices[3] + $options.box_coord_offset]
-    };
-}
-
-macro_rules! check_options_valid {
-    ( $self:expr ) => {
+    fn check_valid(&self) {
         debug_assert!(
-            $self.num_coords
-                >= $self.box_coord_offset
-                    + $self.keypoint_coord_offset
-                    + $self.num_key_points * $self.num_values_per_key_point
+            self.num_coords
+                >= self.box_coord_offset
+                    + self.keypoint_coord_offset
+                    + self.num_key_points * self.num_values_per_key_point
         );
-    };
-}
+    }
 
-macro_rules! process_scores {
-    ( $self:ident, $score:expr ) => {
-        if $self.options.sigmoid_score {
-            if let Some(t) = $self.options.score_clipping_thresh {
-                let mut s = $score;
-                if s < -t {
-                    s = -t;
-                }
-                if s > t {
-                    s = t;
-                }
-                s.sigmoid_inplace();
-                s
-            } else {
-                let mut s = $score;
-                s.sigmoid_inplace();
-                s
-            }
-        } else {
-            $score
+    fn process_score(&self, score: f32) -> f32 {
+        if !self.sigmoid_score {
+            return score;
         }
-    };
+        let mut s = match self.score_clipping_thresh {
+            Some(t) => score.clamp(-t, t),
+            None => score,
+        };
+        s.sigmoid_inplace();
+        s
+    }
 }
 
 impl Default for ToDetectionOptions {
@@ -235,7 +204,7 @@ impl<'a> TensorsToDetection<'a> {
     #[inline(always)]
     pub(crate) fn set_num_coords(&mut self, num_coords: usize) {
         self.options.num_coords = num_coords;
-        check_options_valid!(self.options);
+        self.options.check_valid();
     }
 
     #[inline(always)]
@@ -248,7 +217,7 @@ impl<'a> TensorsToDetection<'a> {
         self.options.num_key_points = num_key_points;
         self.options.num_values_per_key_point = num_values_per_key_point;
         self.options.keypoint_coord_offset = keypoint_coord_offset;
-        check_options_valid!(self.options);
+        self.options.check_valid();
     }
 
     #[inline(always)]
@@ -358,12 +327,12 @@ impl<'a> TensorsToDetection<'a> {
             let mut index = 0;
             let mut score_index = 0;
             for anchor in anchors.iter().take(num_boxes) {
-                let mut max_score = process_scores!(self, scores[score_index]);
+                let mut max_score = self.options.process_score(scores[score_index]);
                 let mut class_index = 0;
                 let num_classes = self.options.num_classes;
                 if num_classes != 1 {
                     for i in 1..num_classes {
-                        let s = process_scores!(self, scores[score_index + i]);
+                        let s = self.options.process_score(scores[score_index + i]);
                         if s > max_score {
                             max_score = s;
                             class_index = i;
@@ -406,10 +375,10 @@ impl<'a> TensorsToDetection<'a> {
         location: &[f32],
     ) -> Option<Detection> {
         let mut rect = Rect {
-            left: box_x_min!(options, location),
-            top: box_y_min!(options, location),
-            right: box_x_max!(options, location),
-            bottom: box_y_max!(options, location),
+            left: options.box_coord(location, 1),
+            top: options.box_coord(location, 0),
+            right: options.box_coord(location, 3),
+            bottom: options.box_coord(location, 2),
         };
         if options.flip_vertically {
             let bottom = 1. - rect.top;

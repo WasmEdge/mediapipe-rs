@@ -33,7 +33,7 @@ impl FaceLandmarkerBuilder {
         self,
         buffer: impl AsRef<[u8]>,
     ) -> Result<FaceLandmarker, crate::Error> {
-        face_landmark_options_check!(self);
+        self.face_landmark_options.check()?;
         let buf = buffer.as_ref();
 
         let zip_file = ZipFiles::new(buf)?;

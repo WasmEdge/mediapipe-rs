@@ -4,26 +4,17 @@ use crate::Error;
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-macro_rules! read_le_u16 {
-    ( $buf:expr, $offset:expr ) => {{
-        let start = $offset;
-        let low = $buf[start] as u16;
-        let high = $buf[start + 1] as u16;
-        (high << 8) | low
-    }};
+fn read_le_u16(buf: &[u8], offset: usize) -> u16 {
+    u16::from_le_bytes([buf[offset], buf[offset + 1]])
 }
 
-macro_rules! read_le_u32 {
-    ( $buf:expr, $offset:expr ) => {{
-        let start = $offset;
-        let arr = [
-            $buf[start],
-            $buf[start + 1],
-            $buf[start + 2],
-            $buf[start + 3],
-        ];
-        u32::from_le_bytes(arr)
-    }};
+fn read_le_u32(buf: &[u8], offset: usize) -> u32 {
+    u32::from_le_bytes([
+        buf[offset],
+        buf[offset + 1],
+        buf[offset + 2],
+        buf[offset + 3],
+    ])
 }
 
 // todo: support zip64
@@ -64,43 +55,43 @@ impl<'buf> EndOfCentralDirectoryRecord<'buf> {
 
     #[inline(always)]
     fn number_of_this_disk(&self) -> u16 {
-        read_le_u16!(self.buf, Self::NUMBER_OF_THIS_DISK_POS)
+        read_le_u16(self.buf, Self::NUMBER_OF_THIS_DISK_POS)
     }
 
     #[inline(always)]
     fn disk_where_central_directory_starts(&self) -> u16 {
-        read_le_u16!(self.buf, Self::DISK_WHERE_CENTRAL_DIRECTORY_STARTS_POS)
+        read_le_u16(self.buf, Self::DISK_WHERE_CENTRAL_DIRECTORY_STARTS_POS)
     }
 
     #[inline(always)]
     fn number_of_central_directory_records_on_this_disk(&self) -> u16 {
-        read_le_u16!(
+        read_le_u16(
             self.buf,
-            Self::NUMBER_OF_CENTRAL_DIRECTORY_RECORDS_ON_THIS_DISK_POS
+            Self::NUMBER_OF_CENTRAL_DIRECTORY_RECORDS_ON_THIS_DISK_POS,
         )
     }
 
     #[inline(always)]
     fn total_number_of_central_directory_records(&self) -> u16 {
-        read_le_u16!(
+        read_le_u16(
             self.buf,
-            Self::TOTAL_NUMBER_OF_CENTRAL_DIRECTORY_RECORDS_POS
+            Self::TOTAL_NUMBER_OF_CENTRAL_DIRECTORY_RECORDS_POS,
         )
     }
 
     #[inline(always)]
     fn size_of_central_directory(&self) -> u32 {
-        read_le_u32!(self.buf, Self::SIZE_OF_CENTRAL_DIRECTORY_POS)
+        read_le_u32(self.buf, Self::SIZE_OF_CENTRAL_DIRECTORY_POS)
     }
 
     #[inline(always)]
     fn offset_of_start_of_central_directory(&self) -> u32 {
-        read_le_u32!(self.buf, Self::OFFSET_OF_START_OF_CENTRAL_DIRECTORY_POS)
+        read_le_u32(self.buf, Self::OFFSET_OF_START_OF_CENTRAL_DIRECTORY_POS)
     }
 
     #[inline(always)]
     fn comment_length(&self) -> u16 {
-        read_le_u16!(self.buf, Self::COMMENT_LENGTH_POS)
+        read_le_u16(self.buf, Self::COMMENT_LENGTH_POS)
     }
 
     #[cfg(test)]
@@ -278,42 +269,42 @@ impl<'buf> CentralDirectory<'buf> {
 
     #[inline(always)]
     fn compression_method(&self) -> u16 {
-        read_le_u16!(self.buf, Self::COMPRESSION_METHOD_POS)
+        read_le_u16(self.buf, Self::COMPRESSION_METHOD_POS)
     }
 
     #[inline(always)]
     fn compressed_size(&self) -> u32 {
-        read_le_u32!(self.buf, Self::COMPRESSED_SIZE_POS)
+        read_le_u32(self.buf, Self::COMPRESSED_SIZE_POS)
     }
 
     #[inline(always)]
     fn uncompressed_size(&self) -> u32 {
-        read_le_u32!(self.buf, Self::UNCOMPRESSED_SIZE_POS)
+        read_le_u32(self.buf, Self::UNCOMPRESSED_SIZE_POS)
     }
 
     #[inline(always)]
     fn file_name_length(&self) -> u16 {
-        read_le_u16!(self.buf, Self::FILE_NAME_LENGTH_POS)
+        read_le_u16(self.buf, Self::FILE_NAME_LENGTH_POS)
     }
 
     #[inline(always)]
     fn extra_field_length(&self) -> u16 {
-        read_le_u16!(self.buf, Self::EXTRA_FIELD_LENGTH_POS)
+        read_le_u16(self.buf, Self::EXTRA_FIELD_LENGTH_POS)
     }
 
     #[inline(always)]
     fn file_comment_length(&self) -> u16 {
-        read_le_u16!(self.buf, Self::FILE_COMMENT_LENGTH_POS)
+        read_le_u16(self.buf, Self::FILE_COMMENT_LENGTH_POS)
     }
 
     #[inline(always)]
     fn disk_number_start(&self) -> u16 {
-        read_le_u16!(self.buf, Self::DISK_NUMBER_START_POS)
+        read_le_u16(self.buf, Self::DISK_NUMBER_START_POS)
     }
 
     #[inline(always)]
     fn relative_offset_of_local_header(&self) -> u32 {
-        read_le_u32!(self.buf, Self::RELATIVE_OFFSET_OF_LOCAL_HEADER_POS)
+        read_le_u32(self.buf, Self::RELATIVE_OFFSET_OF_LOCAL_HEADER_POS)
     }
 
     #[inline(always)]
@@ -385,12 +376,12 @@ impl<'buf> LocalFileHeader<'buf> {
 
     #[inline(always)]
     fn file_name_length(&self) -> u16 {
-        read_le_u16!(self.buf, Self::FILE_NAME_LENGTH_POS)
+        read_le_u16(self.buf, Self::FILE_NAME_LENGTH_POS)
     }
 
     #[inline(always)]
     fn extra_field_length(&self) -> u16 {
-        read_le_u16!(self.buf, Self::EXTRA_FIELD_LENGTH_POS)
+        read_le_u16(self.buf, Self::EXTRA_FIELD_LENGTH_POS)
     }
 
     #[inline(always)]
@@ -489,9 +480,7 @@ impl<'buf> ZipFiles<'buf> {
 
 #[cfg(test)]
 mod test {
-    use crate::model::zip::{
-        CentralDirectory, EndOfCentralDirectoryRecord, LocalFileHeader, ZipFiles,
-    };
+    use super::*;
 
     const ZIP_PATH: &str = "assets/testdata/test.zip";
 
@@ -557,7 +546,7 @@ mod test {
     fn test_corrupted_zip_is_rejected() {
         let buf = std::fs::read(ZIP_PATH).unwrap();
         let eocd = EndOfCentralDirectoryRecord::try_find_start_pos(&buf);
-        let cd_start = read_le_u32!(buf, eocd + 16) as usize;
+        let cd_start = read_le_u32(&buf, eocd + 16) as usize;
 
         // point the first local header past the buffer
         let mut bad_offset = buf.clone();
@@ -579,7 +568,7 @@ mod test {
 
         // central directory size that runs into the end of central directory record
         let mut bad_cd_size = buf.clone();
-        let cd_size = read_le_u32!(buf, eocd + 12);
+        let cd_size = read_le_u32(&buf, eocd + 12);
         bad_cd_size[eocd + 12..eocd + 16].copy_from_slice(&(cd_size + 1).to_le_bytes());
         assert!(ZipFiles::new(&bad_cd_size).is_err());
 

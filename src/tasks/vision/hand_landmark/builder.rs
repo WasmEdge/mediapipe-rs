@@ -33,7 +33,7 @@ impl HandLandmarkerBuilder {
         self,
         buffer: impl AsRef<[u8]>,
     ) -> Result<HandLandmarker, crate::Error> {
-        hand_landmark_options_check!(self);
+        self.hand_landmark_options.check()?;
         let buf = buffer.as_ref();
 
         let zip_file = ZipFiles::new(buf)?;

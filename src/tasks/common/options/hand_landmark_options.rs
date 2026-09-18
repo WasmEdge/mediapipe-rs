@@ -1,3 +1,5 @@
+use super::check_confidence;
+
 #[derive(Clone)]
 pub(crate) struct HandLandmarkOptions {
     /// The maximum number of hands can be detected by the HandLandmarker.
@@ -58,26 +60,22 @@ macro_rules! hand_landmark_options_impl {
     };
 }
 
-macro_rules! hand_landmark_options_check {
-    ( $self:ident ) => {{
-        if $self.hand_landmark_options.num_hands == 0 {
+impl HandLandmarkOptions {
+    pub(crate) fn check(&self) -> Result<(), crate::Error> {
+        if self.num_hands == 0 {
             return Err(crate::Error::ArgumentError(
                 "The number of max hands cannot be zero".into(),
             ));
         }
-        if !(0.0..=1.0).contains(&$self.hand_landmark_options.min_hand_presence_confidence) {
-            return Err(crate::Error::ArgumentError(format!(
-                "The min_hand_presence_confidence must in range [0.0, 1.0], but got `{}`",
-                $self.hand_landmark_options.min_hand_presence_confidence
-            )));
-        }
-        if !(0.0..=1.0).contains(&$self.hand_landmark_options.min_hand_detection_confidence) {
-            return Err(crate::Error::ArgumentError(format!(
-                "The min_hand_detection_confidence must in range [0.0, 1.0], but got `{}`",
-                $self.hand_landmark_options.min_hand_detection_confidence
-            )));
-        }
-    }};
+        check_confidence(
+            "min_hand_presence_confidence",
+            self.min_hand_presence_confidence,
+        )?;
+        check_confidence(
+            "min_hand_detection_confidence",
+            self.min_hand_detection_confidence,
+        )
+    }
 }
 
 macro_rules! hand_landmark_options_get_impl {

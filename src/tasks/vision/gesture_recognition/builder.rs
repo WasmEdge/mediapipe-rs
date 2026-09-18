@@ -110,9 +110,9 @@ impl GestureRecognizerBuilder {
     /// Use the current build options and use the buffer as model data to create a new task instance.
     #[inline]
     pub fn build_from_buffer(self, buffer: impl AsRef<[u8]>) -> Result<GestureRecognizer, Error> {
-        classification_options_check!(self, classification_options);
-        classification_options_check!(self, custom_classification_options);
-        hand_landmark_options_check!(self);
+        self.classification_options.check()?;
+        self.custom_classification_options.check()?;
+        self.hand_landmark_options.check()?;
         let buf = buffer.as_ref();
 
         let zip_file = ZipFiles::new(buf)?;

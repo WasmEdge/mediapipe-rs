@@ -25,7 +25,7 @@ impl TextClassifierBuilder {
     /// Use the current build options and use the buffer as model data to create a new task instance.
     #[inline]
     pub fn build_from_buffer(self, buffer: impl AsRef<[u8]>) -> Result<TextClassifier, Error> {
-        classification_options_check!(self, classification_options);
+        self.classification_options.check()?;
 
         let buf = buffer.as_ref();
         // parse model and get model resources.
