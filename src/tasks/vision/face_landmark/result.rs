@@ -1,4 +1,5 @@
 use crate::postprocess::impl_result_list;
+#[cfg(feature = "draw")]
 use crate::postprocess::utils::{draw_landmarks_with_options, DefaultPixel, DrawLandmarksOptions};
 use crate::postprocess::NormalizedLandmarks;
 use std::fmt::{Display, Formatter};
@@ -10,6 +11,7 @@ pub struct FaceLandmarkResult {
     pub face_landmarks: NormalizedLandmarks,
 }
 
+#[cfg(feature = "draw")]
 impl FaceLandmarkResult {
     /// Draw this detection result to image with default options
     #[inline(always)]

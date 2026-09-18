@@ -462,6 +462,13 @@ fn inference(
 }
 ```
 
+## Cargo features
+
+* `vision`, `audio`, `text`: the task groups. All three are enabled by default.
+* `draw`: drawing utils for task results (`draw_detection`, `draw_landmarks`, the `draw()` methods)
+  and the bundled font. Enabled by default; disable it to leave `imageproc` and the font out of the wasm binary.
+* `ffmpeg`: video and audio input through FFmpeg, see below.
+
 ## Use the FFMPEG feature to process video and audio.
 
 When building the library with ```ffmpeg``` feature using cargo, users must set the following environment variables:

@@ -50,10 +50,12 @@ branch = "wasm32-wasi"
 
 [features]
 # default is all task types
-default = ["audio", "vision", "text"]
+default = ["audio", "vision", "text", "draw"]
 
 audio = ["symphonia-core"]
-vision = ["image", "imageproc", "imageproc/text", "ab_glyph"]
+vision = ["image"]
+# drawing utils and the bundled font for task results
+draw = ["vision", "imageproc", "imageproc/text", "ab_glyph"]
 text = ["regex"]
 
 ffmpeg = ["ffmpeg-next"]
@@ -69,7 +71,7 @@ required-features = ["audio"]
 
 [[example]]
 name = "face_landmark"
-required-features = ["vision"]
+required-features = ["vision", "draw"]
 
 [[example]]
 name = "gesture_recognition"
@@ -85,7 +87,7 @@ required-features = ["vision"]
 
 [[example]]
 name = "object_detection"
-required-features = ["vision"]
+required-features = ["vision", "draw"]
 
 [[example]]
 name = "text_classification"
@@ -97,11 +99,11 @@ required-features = ["audio"]
 
 [[test]]
 name = "face_detection"
-required-features = ["vision"]
+required-features = ["vision", "draw"]
 
 [[test]]
 name = "face_landmark"
-required-features = ["vision"]
+required-features = ["vision", "draw"]
 
 [[test]]
 name = "ffmpeg_video_input"
@@ -109,11 +111,11 @@ required-features = ["vision", "ffmpeg"]
 
 [[test]]
 name = "gesture_recognition"
-required-features = ["vision"]
+required-features = ["vision", "draw"]
 
 [[test]]
 name = "hand_landmark"
-required-features = ["vision"]
+required-features = ["vision", "draw"]
 
 [[test]]
 name = "image_classification"
