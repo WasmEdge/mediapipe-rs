@@ -15,7 +15,6 @@ pub(crate) struct TensorsToSegmentation {
 }
 
 impl TensorsToSegmentation {
-    #[inline(always)]
     pub(crate) fn new(
         activation: Activation,
         tensor_buf_info: (TensorType, Option<QuantizationParameters>),
@@ -37,7 +36,7 @@ impl TensorsToSegmentation {
         })
     }
 
-    #[inline(always)]
+    #[inline]
     pub(crate) fn tensor_buffer(&mut self) -> &mut OutputBuffer {
         &mut self.tensor_buffer
     }

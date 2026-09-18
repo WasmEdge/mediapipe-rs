@@ -13,7 +13,7 @@ pub struct AudioClassifierBuilder {
 
 impl AudioClassifierBuilder {
     /// Create a new builder with default options.
-    #[inline(always)]
+    #[inline]
     pub fn new() -> Self {
         Self::default()
     }
@@ -23,7 +23,6 @@ impl AudioClassifierBuilder {
     classification_options_impl!();
 
     /// Use the current build options and use the buffer as model data to create a new task instance.
-    #[inline]
     pub fn build_from_buffer(self, buffer: impl AsRef<[u8]>) -> Result<AudioClassifier, Error> {
         self.classification_options.check()?;
 

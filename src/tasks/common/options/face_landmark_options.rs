@@ -25,7 +25,6 @@ pub(crate) struct FaceLandmarkOptions {
 }
 
 impl Default for FaceLandmarkOptions {
-    #[inline(always)]
     fn default() -> Self {
         Self {
             num_faces: 1,
@@ -41,14 +40,14 @@ impl Default for FaceLandmarkOptions {
 macro_rules! face_landmark_options_impl {
     () => {
         /// Set the maximum number of faces can be detected by the FaceLandmarker.
-        #[inline(always)]
+        #[inline]
         pub fn num_faces(mut self, num_faces: usize) -> Self {
             self.face_landmark_options.num_faces = num_faces;
             self
         }
 
         /// Set the minimum confidence score for the face detection to be considered successful.
-        #[inline(always)]
+        #[inline]
         pub fn min_face_detection_confidence(mut self, min_face_detection_confidence: f32) -> Self {
             self.face_landmark_options.min_face_detection_confidence =
                 min_face_detection_confidence;
@@ -56,14 +55,14 @@ macro_rules! face_landmark_options_impl {
         }
 
         /// Set the minimum confidence score of face presence score in the face landmark detection.
-        #[inline(always)]
+        #[inline]
         pub fn min_face_presence_confidence(mut self, min_face_presence_confidence: f32) -> Self {
             self.face_landmark_options.min_face_presence_confidence = min_face_presence_confidence;
             self
         }
 
         /// Set the minimum confidence score for the face tracking to be considered successful.
-        #[inline(always)]
+        #[inline]
         pub fn min_tracking_confidence(mut self, min_tracking_confidence: f32) -> Self {
             self.face_landmark_options.min_tracking_confidence = min_tracking_confidence;
             self
@@ -108,13 +107,13 @@ impl FaceLandmarkOptions {
 macro_rules! face_landmark_options_get_impl {
     () => {
         /// Get the maximum number of faces can be detected by the FaceLandmarker.
-        #[inline(always)]
+        #[inline]
         pub fn num_faces(&self) -> usize {
             self.build_options.face_landmark_options.num_faces
         }
 
         /// Get the minimum confidence score for the face detection to be considered successful.
-        #[inline(always)]
+        #[inline]
         pub fn min_face_detection_confidence(&self) -> f32 {
             self.build_options
                 .face_landmark_options
@@ -122,7 +121,7 @@ macro_rules! face_landmark_options_get_impl {
         }
 
         /// Get the minimum confidence score of face presence score in the face landmark detection.
-        #[inline(always)]
+        #[inline]
         pub fn min_face_presence_confidence(&self) -> f32 {
             self.build_options
                 .face_landmark_options
@@ -130,7 +129,7 @@ macro_rules! face_landmark_options_get_impl {
         }
 
         /// Get the minimum confidence score for the face tracking to be considered successful.
-        #[inline(always)]
+        #[inline]
         pub fn min_tracking_confidence(&self) -> f32 {
             self.build_options
                 .face_landmark_options

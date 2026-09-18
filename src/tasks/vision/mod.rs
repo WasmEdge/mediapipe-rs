@@ -57,7 +57,6 @@ pub struct ImageProcessingOptions {
 }
 
 impl Default for ImageProcessingOptions {
-    #[inline(always)]
     fn default() -> Self {
         Self {
             region_of_interest: None,
@@ -68,7 +67,7 @@ impl Default for ImageProcessingOptions {
 
 impl ImageProcessingOptions {
     /// Create a new instance with default options.
-    #[inline(always)]
+    #[inline]
     pub fn new() -> Self {
         Default::default()
     }
@@ -77,7 +76,6 @@ impl ImageProcessingOptions {
     ///
     /// The rotation must be a multiple (positive or negative) of 90°.
     /// default is 0.
-    #[inline(always)]
     pub fn rotation_degrees(mut self, mut rotation_degrees: i32) -> Result<Self, crate::Error> {
         if rotation_degrees % 90 != 0 {
             return Err(crate::Error::ArgumentError(format!(
@@ -97,7 +95,7 @@ impl ImageProcessingOptions {
     /// If not specified, the full image is used.
     ///
     /// Coordinates must be in \[0,1\] with 'left' < 'right' and 'top' < bottom.
-    #[inline(always)]
+    #[inline]
     pub fn region_of_interest(
         mut self,
         left: f32,
@@ -110,7 +108,6 @@ impl ImageProcessingOptions {
         Ok(self)
     }
 
-    #[inline]
     pub(crate) fn from_normalized_rect(rect: &crate::postprocess::NormalizedRect) -> Self {
         Self {
             region_of_interest: Some(crate::postprocess::CropRect::from(rect)),

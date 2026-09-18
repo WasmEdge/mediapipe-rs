@@ -10,7 +10,6 @@ pub struct CropRect {
 }
 
 impl CropRect {
-    #[inline]
     pub fn new(left: f32, top: f32, right: f32, bottom: f32) -> Result<Self, crate::Error> {
         if !(0. ..=1.).contains(&top) {
             return Err(crate::Error::ArgumentError(format!(
@@ -61,7 +60,6 @@ impl CropRect {
 }
 
 impl<'a> From<&'a NormalizedRect> for CropRect {
-    #[inline]
     fn from(value: &'a NormalizedRect) -> Self {
         let mut width = value.width;
         let mut height = value.height;

@@ -81,12 +81,12 @@ pub struct ImageLikeTensorShape {
 }
 
 impl ImageToTensorInfo {
-    #[inline(always)]
+    #[inline]
     pub fn width(&self) -> u32 {
         self.tensor_shape.width as u32
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn height(&self) -> u32 {
         self.tensor_shape.height as u32
     }
@@ -144,7 +144,7 @@ impl ImageLikeTensorShape {
     }
 
     /// Get the number of tensor elements.
-    #[inline(always)]
+    #[inline]
     pub fn elem_size(&self) -> usize {
         self.batch * self.width * self.height * self.channels
     }

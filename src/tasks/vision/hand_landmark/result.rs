@@ -19,7 +19,6 @@ pub struct HandLandmarkResult {
 #[cfg(feature = "draw")]
 impl HandLandmarkResult {
     /// Draw this detection result to image with default options
-    #[inline(always)]
     pub fn draw<I>(&self, img: &mut I)
     where
         I: image::GenericImage,
@@ -34,7 +33,7 @@ impl HandLandmarkResult {
     }
 
     /// Draw this detection result to image with options
-    #[inline(always)]
+    #[inline]
     pub fn draw_with_options<I>(&self, img: &mut I, options: &DrawLandmarksOptions<I::Pixel>)
     where
         I: image::GenericImage,

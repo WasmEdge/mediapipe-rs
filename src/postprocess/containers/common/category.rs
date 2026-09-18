@@ -25,7 +25,6 @@ pub struct Category {
 }
 
 impl Display for Category {
-    #[inline(always)]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if let Some(ref name) = self.category_name {
             writeln!(f, "      Category name: \"{}\"", name)?;

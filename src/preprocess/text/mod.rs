@@ -172,7 +172,7 @@ impl TextToTensors for str {
 }
 
 impl<S: TextToTensors + ?Sized> TextToTensors for &S {
-    #[inline(always)]
+    #[inline]
     fn to_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
         &self,
         to_tensor_info: &TextToTensorInfo,
@@ -183,7 +183,7 @@ impl<S: TextToTensors + ?Sized> TextToTensors for &S {
 }
 
 impl TextToTensors for String {
-    #[inline(always)]
+    #[inline]
     fn to_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
         &self,
         to_tensor_info: &TextToTensorInfo,
@@ -194,7 +194,7 @@ impl TextToTensors for String {
 }
 
 impl TextToTensors for Cow<'_, str> {
-    #[inline(always)]
+    #[inline]
     fn to_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
         &self,
         to_tensor_info: &TextToTensorInfo,

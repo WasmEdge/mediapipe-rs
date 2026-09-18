@@ -22,7 +22,6 @@ impl ImageClassifier {
     classification_options_get_impl!();
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<ImageClassifierSession<'_>, Error> {
         let input_to_tensor_info = self
             .model_resource
@@ -70,13 +69,13 @@ impl ImageClassifier {
     }
 
     /// Classify one image using a new session.
-    #[inline(always)]
+    #[inline]
     pub fn classify(&self, input: &impl ImageToTensor) -> Result<ClassificationResult, Error> {
         self.new_session()?.classify(input)
     }
 
     /// Classify one image using a new session with options to specify the region of interest.
-    #[inline(always)]
+    #[inline]
     pub fn classify_with_options(
         &self,
         input: &impl ImageToTensor,
@@ -87,7 +86,7 @@ impl ImageClassifier {
     }
 
     /// Classify video stream using a new task session, and collect all results to [`Vec`].
-    #[inline(always)]
+    #[inline]
     pub fn classify_for_video(
         &self,
         video_data: impl VideoData,
@@ -124,7 +123,6 @@ pub struct ImageClassifierSession<'model> {
 }
 
 impl<'model> ImageClassifierSession<'model> {
-    #[inline(always)]
     fn compute(&mut self, timestamp_ms: Option<u64>) -> Result<ClassificationResult, Error> {
         self.execution_ctx.set_input(
             0,
@@ -143,7 +141,6 @@ impl<'model> ImageClassifierSession<'model> {
     }
 
     /// Classify one image, reuse this session data to speedup.
-    #[inline(always)]
     pub fn classify(&mut self, input: &impl ImageToTensor) -> Result<ClassificationResult, Error> {
         input.to_tensor(
             self.input_to_tensor_info,
@@ -154,7 +151,6 @@ impl<'model> ImageClassifierSession<'model> {
     }
 
     /// Classify one image with region-of-interest options, reuse this session data to speedup.
-    #[inline(always)]
     pub fn classify_with_options(
         &mut self,
         input: &impl ImageToTensor,
@@ -170,7 +166,7 @@ impl<'model> ImageClassifierSession<'model> {
 
     /// Classify input video stream use this session.
     /// Return a iterator for results, process input stream when poll next result.
-    #[inline(always)]
+    #[inline]
     pub fn classify_for_video<InputVideoData: VideoData>(
         &mut self,
         video_data: InputVideoData,
@@ -182,7 +178,6 @@ impl<'model> ImageClassifierSession<'model> {
 impl<'model> super::TaskSession for ImageClassifierSession<'model> {
     type Result = ClassificationResult;
 
-    #[inline]
     fn process_next(
         &mut self,
         process_options: &super::ImageProcessingOptions,

@@ -16,7 +16,6 @@ pub(crate) struct HandLandmarkOptions {
 }
 
 impl Default for HandLandmarkOptions {
-    #[inline(always)]
     fn default() -> Self {
         Self {
             num_hands: 1,
@@ -30,14 +29,14 @@ impl Default for HandLandmarkOptions {
 macro_rules! hand_landmark_options_impl {
     () => {
         /// Set the maximum number of hands can be detected by the HandLandmarker.
-        #[inline(always)]
+        #[inline]
         pub fn num_hands(mut self, num_hands: usize) -> Self {
             self.hand_landmark_options.num_hands = num_hands;
             self
         }
 
         /// Set the minimum confidence score for the hand detection to be considered successful.
-        #[inline(always)]
+        #[inline]
         pub fn min_hand_detection_confidence(mut self, min_hand_detection_confidence: f32) -> Self {
             self.hand_landmark_options.min_hand_detection_confidence =
                 min_hand_detection_confidence;
@@ -45,14 +44,14 @@ macro_rules! hand_landmark_options_impl {
         }
 
         /// Set the minimum confidence score of hand presence score in the hand landmark detection.
-        #[inline(always)]
+        #[inline]
         pub fn min_hand_presence_confidence(mut self, min_hand_presence_confidence: f32) -> Self {
             self.hand_landmark_options.min_hand_presence_confidence = min_hand_presence_confidence;
             self
         }
 
         /// Set the minimum confidence score for the hand tracking to be considered successful.
-        #[inline(always)]
+        #[inline]
         pub fn min_tracking_confidence(mut self, min_tracking_confidence: f32) -> Self {
             self.hand_landmark_options.min_tracking_confidence = min_tracking_confidence;
             self
@@ -81,13 +80,13 @@ impl HandLandmarkOptions {
 macro_rules! hand_landmark_options_get_impl {
     () => {
         /// Get the maximum number of hands can be detected by the HandLandmarker.
-        #[inline(always)]
+        #[inline]
         pub fn num_hands(&self) -> usize {
             self.build_options.hand_landmark_options.num_hands
         }
 
         /// Get the minimum confidence score for the hand detection to be considered successful.
-        #[inline(always)]
+        #[inline]
         pub fn min_hand_detection_confidence(&self) -> f32 {
             self.build_options
                 .hand_landmark_options
@@ -95,7 +94,7 @@ macro_rules! hand_landmark_options_get_impl {
         }
 
         /// Get the minimum confidence score of hand presence score in the hand landmark detection.
-        #[inline(always)]
+        #[inline]
         pub fn min_hand_presence_confidence(&self) -> f32 {
             self.build_options
                 .hand_landmark_options
@@ -103,7 +102,7 @@ macro_rules! hand_landmark_options_get_impl {
         }
 
         /// Get the minimum confidence score for the hand tracking to be considered successful.
-        #[inline(always)]
+        #[inline]
         pub fn min_tracking_confidence(&self) -> f32 {
             self.build_options
                 .hand_landmark_options

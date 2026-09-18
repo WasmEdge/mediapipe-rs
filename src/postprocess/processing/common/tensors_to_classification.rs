@@ -8,7 +8,6 @@ pub(crate) struct TensorsToClassification<'a> {
 }
 
 impl<'a> TensorsToClassification<'a> {
-    #[inline(always)]
     pub(crate) fn new() -> Self {
         Self {
             categories_filters: Vec::new(),
@@ -34,12 +33,11 @@ impl<'a> TensorsToClassification<'a> {
     }
 
     /// index must be valid. or panic!
-    #[inline(always)]
+    #[inline]
     pub(crate) fn output_buffer(&mut self, index: usize) -> &mut OutputBuffer {
         &mut self.outputs[index]
     }
 
-    #[inline]
     pub(crate) fn result(&mut self, timestamp_ms: Option<u64>) -> ClassificationResult {
         let classifications_count = self.outputs.len();
         let mut res = ClassificationResult {

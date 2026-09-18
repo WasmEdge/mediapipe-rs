@@ -114,7 +114,7 @@ impl FaceLandmarkBlendshapes {
         "NOSE_SNEER_RIGHT",
     ];
 
-    #[inline(always)]
+    #[inline]
     pub fn name(&self) -> &'static str {
         Self::NAMES[(*self) as u32 as usize]
     }

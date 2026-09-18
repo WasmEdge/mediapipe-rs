@@ -59,7 +59,6 @@ impl TfLiteModelResource {
         Ok(resource)
     }
 
-    #[inline]
     fn parse_subgraph(&mut self, model: &tflite_model::Model) -> Result<(), Error> {
         let subgraph = match model.subgraphs() {
             Some(s) => {
@@ -180,7 +179,6 @@ impl TfLiteModelResource {
         Ok(shape)
     }
 
-    #[inline]
     fn parse_model_metadata<'buf>(
         model: &tflite_model::Model<'buf>,
     ) -> Result<Option<tflite_metadata::ModelMetadata<'buf>>, Error> {
@@ -211,7 +209,6 @@ impl TfLiteModelResource {
         Ok(tflite_metadata::root_as_model_metadata(bytes)?)
     }
 
-    #[inline]
     fn parse_model_metadata_content(
         &mut self,
         metadata: &tflite_metadata::ModelMetadata,
@@ -345,7 +342,6 @@ impl TfLiteModelResource {
     }
 
     #[cfg(feature = "vision")]
-    #[inline]
     fn parse_vision_model_input_info(
         &mut self,
         i: usize,
@@ -421,7 +417,6 @@ impl TfLiteModelResource {
     }
 
     #[cfg(feature = "audio")]
-    #[inline]
     fn parse_audio_model_input_info(
         &mut self,
         i: usize,
@@ -564,7 +559,6 @@ impl TfLiteModelResource {
 
     /// Return the filename and MemoryTextFile.
     #[cfg(feature = "text")]
-    #[inline]
     fn process_vocab_files<'buf>(
         &mut self,
         files: Option<
@@ -602,7 +596,6 @@ impl TfLiteModelResource {
 
     // for bert and regex model.
     #[cfg(feature = "text")]
-    #[inline(always)]
     fn get_max_seq_len(input_shape: &[Vec<usize>]) -> Result<u32, Error> {
         if input_shape.is_empty() {
             return Err(Error::ModelParseError(
@@ -644,7 +637,6 @@ impl TfLiteModelResource {
         })
     }
 
-    #[inline(always)]
     fn get_file_content(&self, filename: &str) -> Result<&[u8], Error> {
         match self.associated_files.get(filename) {
             Some(c) => Ok(c.as_slice()),
@@ -655,7 +647,6 @@ impl TfLiteModelResource {
         }
     }
 
-    #[inline(always)]
     fn tflite_type_parse(tflite_type: tflite_model::TensorType) -> Result<TensorType, Error> {
         match tflite_type {
             tflite_model::TensorType::FLOAT32 => Ok(TensorType::F32),

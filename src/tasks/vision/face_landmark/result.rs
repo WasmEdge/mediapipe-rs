@@ -14,7 +14,7 @@ pub struct FaceLandmarkResult {
 #[cfg(feature = "draw")]
 impl FaceLandmarkResult {
     /// Draw this detection result to image with default options
-    #[inline(always)]
+    #[inline]
     pub fn draw<I>(&self, img: &mut I)
     where
         I: image::GenericImage,
@@ -26,7 +26,7 @@ impl FaceLandmarkResult {
     }
 
     /// Draw this detection result to image with options
-    #[inline(always)]
+    #[inline]
     pub fn draw_with_options<I>(&self, img: &mut I, options: &DrawLandmarksOptions<I::Pixel>)
     where
         I: image::GenericImage,

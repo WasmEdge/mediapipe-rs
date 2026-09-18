@@ -160,7 +160,6 @@ pub(crate) trait ModelResourceTrait {
     }
 }
 
-#[inline]
 pub(crate) fn parse_model(buf: &[u8]) -> Result<Box<dyn ModelResourceTrait + 'static>, Error> {
     if buf.len() < 8 {
         return Err(Error::ModelParseError(

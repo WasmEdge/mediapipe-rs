@@ -21,7 +21,6 @@ fn rgb_mean_std(info: &ImageToTensorInfo) -> Result<([f32; 3], [f32; 3]), Error>
 }
 
 impl ImageToTensor for DynamicImage {
-    #[inline(always)]
     fn to_tensor<T: AsMut<[u8]>>(
         &self,
         info: &ImageToTensorInfo,
@@ -43,14 +42,13 @@ impl ImageToTensor for DynamicImage {
     }
 
     /// return image size: (width, height)
-    #[inline(always)]
+    #[inline]
     fn image_size(&self) -> (u32, u32) {
         self.dimensions()
     }
 }
 
 impl ImageToTensor for RgbImage {
-    #[inline]
     fn to_tensor<T: AsMut<[u8]>>(
         &self,
         info: &ImageToTensorInfo,
@@ -106,13 +104,12 @@ impl ImageToTensor for RgbImage {
     }
 
     /// return image size: (width, height)
-    #[inline(always)]
+    #[inline]
     fn image_size(&self) -> (u32, u32) {
         self.dimensions()
     }
 }
 
-#[inline(always)]
 pub(super) fn rgb8_image_buffer_to_tensor<Container>(
     img: &ImageBuffer<Rgb<u8>, Container>,
     info: &ImageToTensorInfo,
@@ -208,7 +205,6 @@ mod ops_inner {
 
     /// Rotate an image any radians clockwise.
     /// angle is in radians
-    #[inline]
     pub fn rotate_any<I: GenericImageView>(
         image: &I,
         angle: f32,
@@ -228,7 +224,6 @@ mod ops_inner {
         out
     }
 
-    #[inline]
     fn rotate_any_in<I, Container>(
         image: &I,
         destination: &mut ImageBuffer<I::Pixel, Container>,

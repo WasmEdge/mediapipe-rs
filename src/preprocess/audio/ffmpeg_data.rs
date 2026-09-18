@@ -8,7 +8,7 @@ pub struct FFMpegAudioData(FFMpegAudioDataInner);
 
 impl FFMpegAudioData {
     /// Create a new instance from FFMpeg input.
-    #[inline(always)]
+    #[inline]
     pub fn new(input: ffmpeg_next::format::context::Input) -> Result<Self, Error> {
         FFMpegAudioDataInner::new(input).map(Self)
     }

@@ -12,7 +12,7 @@ pub struct TextEmbedderBuilder {
 
 impl TextEmbedderBuilder {
     /// Create a new builder with default options.
-    #[inline(always)]
+    #[inline]
     pub fn new() -> Self {
         Self::default()
     }
@@ -22,7 +22,6 @@ impl TextEmbedderBuilder {
     embedding_options_impl!();
 
     /// Use the current build options and use the buffer as model data to create a new task instance.
-    #[inline]
     pub fn build_from_buffer(self, buffer: impl AsRef<[u8]>) -> Result<TextEmbedder, crate::Error> {
         let buf = buffer.as_ref();
         // parse model and get model resources.

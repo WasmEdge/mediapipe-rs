@@ -25,7 +25,7 @@ macro_rules! impl_to_ne_bytes {
         $(
             impl ToNeBytes for $t {
                 type Bytes = [u8; std::mem::size_of::<$t>()];
-                #[inline(always)]
+                #[inline]
                 fn to_ne_bytes(self) -> Self::Bytes {
                     <$t>::to_ne_bytes(self)
                 }

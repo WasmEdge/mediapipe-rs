@@ -21,7 +21,6 @@ pub struct FFMpegVideoData {
 
 impl FFMpegVideoData {
     /// Create a new instance from a FFMpeg input.
-    #[inline(always)]
     pub fn new(input: ffmpeg_next::format::context::Input) -> Result<Self, Error> {
         let source = FFMpegVideoInput::new(input)?;
         let convert_to_ms = source.decoder.time_base().numerator() as f64
@@ -56,7 +55,6 @@ impl FFMpegVideoData {
 impl VideoData for FFMpegVideoData {
     type Frame<'frame> = FFMpegFrame<'frame>;
 
-    #[inline(always)]
     fn next_frame(&mut self) -> Result<Option<Self::Frame<'_>>, Error> {
         if !self.source.receive_frame()? {
             return Ok(None);

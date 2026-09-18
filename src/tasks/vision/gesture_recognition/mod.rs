@@ -117,7 +117,6 @@ impl GestureRecognizer {
     hand_landmark_options_get_impl!();
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<GestureRecognizerSession<'_>, Error> {
         let embed = &self.gesture_embed_model_resources;
         let gesture_embed_hand_landmarks_input_shape =
@@ -170,13 +169,13 @@ impl GestureRecognizer {
     }
 
     /// Recognize one image using a new task session.
-    #[inline(always)]
+    #[inline]
     pub fn recognize(&self, input: &impl ImageToTensor) -> Result<GestureRecognizerResults, Error> {
         self.new_session()?.recognize(input)
     }
 
     /// Recognize video stream using a new task session, and collect all results to [`Vec`].
-    #[inline(always)]
+    #[inline]
     pub fn recognize_for_video(
         &self,
         video_data: impl VideoData,
@@ -209,7 +208,6 @@ pub struct GestureRecognizerSession<'model> {
 
 impl<'model> GestureRecognizerSession<'model> {
     /// Recognize one image using this session.
-    #[inline(always)]
     pub fn recognize(
         &mut self,
         input: &impl ImageToTensor,
@@ -282,7 +280,7 @@ impl<'model> GestureRecognizerSession<'model> {
 
     /// Recognize input video stream use this session.
     /// Return a iterator for results, process input stream when poll next result.
-    #[inline(always)]
+    #[inline]
     pub fn recognize_for_video<InputVideoData: VideoData>(
         &mut self,
         video_data: InputVideoData,
@@ -294,7 +292,6 @@ impl<'model> GestureRecognizerSession<'model> {
 impl<'model> super::TaskSession for GestureRecognizerSession<'model> {
     type Result = GestureRecognizerResults;
 
-    #[inline]
     fn process_next(
         &mut self,
         _process_options: &super::ImageProcessingOptions,
@@ -308,7 +305,6 @@ impl<'model> super::TaskSession for GestureRecognizerSession<'model> {
     }
 }
 
-#[inline(always)]
 fn handedness_to_tensor(category: &Category) -> f32 {
     if category.index == 0 {
         category.score

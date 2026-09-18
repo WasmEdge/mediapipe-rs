@@ -37,13 +37,12 @@ impl FaceLandmarker {
     face_landmark_options_get_impl!();
 
     /// Get the subtask: face detector.
-    #[inline(always)]
+    #[inline]
     pub fn subtask_face_detector(&self) -> &FaceDetector {
         &self.face_detector
     }
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<FaceLandmarkerSession<'_>, Error> {
         let image_to_tensor_info = self
             .model_resource
@@ -108,7 +107,6 @@ impl<'model> FaceLandmarkerSession<'model> {
     const DETECTION_TO_RECT_ROTATION_OPTION: Option<(f32, usize, usize)> = Some((0.0, 0, 1));
 
     /// Detect one image using this task session.
-    #[inline(always)]
     pub fn detect(&mut self, input: &impl ImageToTensor) -> Result<FaceLandmarkResults, Error> {
         let (img_w, img_h) = input.image_size();
         let face_detection_result = self.face_detector_session.detect(input)?;
@@ -174,7 +172,7 @@ impl<'model> FaceLandmarkerSession<'model> {
 
     /// Detect input video stream use this session.
     /// Return a iterator for results, process input stream when poll next result.
-    #[inline(always)]
+    #[inline]
     pub fn detect_for_video<InputVideoData: VideoData>(
         &mut self,
         video_data: InputVideoData,
@@ -186,7 +184,6 @@ impl<'model> FaceLandmarkerSession<'model> {
 impl<'model> super::TaskSession for FaceLandmarkerSession<'model> {
     type Result = FaceLandmarkResults;
 
-    #[inline]
     fn process_next(
         &mut self,
         _process_options: &super::ImageProcessingOptions,

@@ -29,7 +29,6 @@ pub struct ImageSegmenterBuilder {
 }
 
 impl Default for ImageSegmenterBuilder {
-    #[inline(always)]
     fn default() -> Self {
         Self {
             base_task_options: Default::default(),
@@ -42,7 +41,7 @@ impl Default for ImageSegmenterBuilder {
 
 impl ImageSegmenterBuilder {
     /// Create a new builder with default options.
-    #[inline(always)]
+    #[inline]
     pub fn new() -> Self {
         Default::default()
     }
@@ -51,7 +50,7 @@ impl ImageSegmenterBuilder {
 
     /// The locale to use for display names specified through the TFLite Model
     /// Metadata, if any. Defaults to English.
-    #[inline(always)]
+    #[inline]
     pub fn display_names_locale(mut self, locale: String) -> Self {
         self.display_names_locale = locale;
         self
@@ -59,7 +58,7 @@ impl ImageSegmenterBuilder {
 
     /// Set whether output the category mask.
     /// Segmentation mask will contain a uint8 image, where each pixel value indicates the winning category index.
-    #[inline(always)]
+    #[inline]
     pub fn output_category_mask(mut self, output_category_mask: bool) -> Self {
         self.output_category_mask = output_category_mask;
         self
@@ -67,14 +66,13 @@ impl ImageSegmenterBuilder {
 
     /// Set whether output the confidence masks.
     /// The segmentation masks are float images, where each float image represents the confidence score map of the category.
-    #[inline(always)]
+    #[inline]
     pub fn output_confidence_masks(mut self, output_confidence_masks: bool) -> Self {
         self.output_confidence_masks = output_confidence_masks;
         self
     }
 
     /// Use the current build options and use the buffer as model data to create a new task instance.
-    #[inline]
     pub fn build_from_buffer(
         self,
         buffer: impl AsRef<[u8]>,

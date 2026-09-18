@@ -56,19 +56,18 @@ where
     }
 
     /// Reset the state, will read from start.
-    #[inline(always)]
+    #[inline]
     pub fn reset(&mut self) {
         self.now_index = 0;
     }
 
     /// Get sample rate.
-    #[inline(always)]
+    #[inline]
     pub fn sample_rate(&self) -> usize {
         self.sample_rate
     }
 
     /// Get the number of channels.
-    #[inline(always)]
     pub fn num_channels(&self) -> usize {
         match &self.matrix {
             Matrix::Owned { data, .. } => data.as_ref().len(),
@@ -78,7 +77,6 @@ where
     }
 
     /// Check whether the raw major matrix can be used as Audio Raw Data.
-    #[inline(always)]
     pub fn check(raw_major_matrix: &T) -> Result<(), Error> {
         let channels = raw_major_matrix.as_ref();
         let num_channels = channels.len();

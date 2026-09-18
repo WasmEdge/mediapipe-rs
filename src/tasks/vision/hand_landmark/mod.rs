@@ -39,13 +39,12 @@ impl HandLandmarker {
     hand_landmark_options_get_impl!();
 
     /// Get the subtask: hand detector.
-    #[inline(always)]
+    #[inline]
     pub fn subtask_hand_detector(&self) -> &HandDetector {
         &self.hand_detector
     }
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<HandLandmarkerSession<'_>, Error> {
         let image_to_tensor_info = self
             .model_resource
@@ -130,7 +129,6 @@ impl<'model> HandLandmarkerSession<'model> {
         Some((90. * std::f32::consts::PI / 180.0, 0, 2));
 
     /// Detect one image using this task session.
-    #[inline(always)]
     pub fn detect(&mut self, input: &impl ImageToTensor) -> Result<HandLandmarkResults, Error> {
         let (img_w, img_h) = input.image_size();
         let hand_detection_result = self.hand_detector_session.detect(input)?;
@@ -222,7 +220,7 @@ impl<'model> HandLandmarkerSession<'model> {
 
     /// Detect input video stream use this session.
     /// Return a iterator for results, process input stream when poll next result.
-    #[inline(always)]
+    #[inline]
     pub fn detect_for_video<InputVideoData: VideoData>(
         &mut self,
         video_data: InputVideoData,
@@ -234,7 +232,6 @@ impl<'model> HandLandmarkerSession<'model> {
 impl<'model> super::TaskSession for HandLandmarkerSession<'model> {
     type Result = HandLandmarkResults;
 
-    #[inline]
     fn process_next(
         &mut self,
         _process_options: &super::ImageProcessingOptions,

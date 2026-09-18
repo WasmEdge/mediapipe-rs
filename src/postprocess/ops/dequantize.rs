@@ -14,7 +14,6 @@ pub(crate) trait Dequantize {
 }
 
 impl Dequantize for &[u8] {
-    #[inline(always)]
     fn dequantize_to_buf(
         &self,
         quantization_parameters: QuantizationParameters,

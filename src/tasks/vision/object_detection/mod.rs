@@ -30,7 +30,6 @@ impl ObjectDetector {
     detector_impl!(ObjectDetectorSession, DetectionResult);
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<ObjectDetectorSession<'_>, Error> {
         let image_to_tensor_info = self
             .model_resource
@@ -122,7 +121,6 @@ pub struct ObjectDetectorSession<'model> {
 impl<'model> ObjectDetectorSession<'model> {
     // todo: usage the timestamp
     #[allow(unused)]
-    #[inline(always)]
     fn compute(&mut self, timestamp_ms: Option<u64>) -> Result<DetectionResult, Error> {
         self.execution_ctx.set_input(
             0,

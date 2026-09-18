@@ -23,7 +23,6 @@ pub struct NonMaxSuppression {
 }
 
 impl NonMaxSuppression {
-    #[inline(always)]
     pub fn new(max_results: Option<usize>) -> Self {
         let max_results = max_results.unwrap_or(usize::MAX);
         Self {
@@ -34,22 +33,21 @@ impl NonMaxSuppression {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn set_overlap_type(&mut self, overlap_type: NonMaxSuppressionOverlapType) {
         self.overlap_type = overlap_type;
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn set_algorithm(&mut self, algorithm: NonMaxSuppressionAlgorithm) {
         self.algorithm = algorithm;
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn set_min_suppression_threshold(&mut self, min_suppression_threshold: f32) {
         self.min_suppression_threshold = min_suppression_threshold;
     }
 
-    #[inline]
     pub fn do_nms(&self, detection_result: &mut DetectionResult) {
         // remove all but the maximum scoring label from each input detection.
         detection_result
@@ -188,7 +186,6 @@ impl NonMaxSuppression {
         }
     }
 
-    #[inline]
     fn overlap_similarity(&self, rect_1: &Rect<f32>, rect_2: &Rect<f32>) -> f32 {
         if let Some(intersection) = rect_1.intersect(rect_2) {
             let intersection_area = intersection.area();

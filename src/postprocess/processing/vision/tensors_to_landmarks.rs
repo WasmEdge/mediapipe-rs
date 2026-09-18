@@ -13,7 +13,6 @@ struct ToLandmarksOptions {
 }
 
 impl Default for ToLandmarksOptions {
-    #[inline(always)]
     fn default() -> Self {
         Self {
             img_size: None,
@@ -57,17 +56,17 @@ impl TensorsToLandmarks {
         })
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn set_normalize_z(&mut self, normalize_z: f32) {
         self.options.normalize_z = normalize_z;
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn set_image_size(&mut self, w: u32, h: u32) {
         self.options.img_size = Some((w as f32, h as f32))
     }
 
-    #[inline(always)]
+    #[inline]
     pub(crate) fn landmark_buffer(&mut self) -> &mut OutputBuffer {
         &mut self.landmark_buffer
     }

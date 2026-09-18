@@ -135,7 +135,6 @@ impl<'a> TensorsToDetection<'a> {
         })
     }
 
-    #[inline]
     pub(crate) fn new(
         categories_filter: CategoriesFilter<'a>,
         max_results: Option<usize>,
@@ -184,6 +183,7 @@ impl<'a> TensorsToDetection<'a> {
     }
 
     /// Number of boxes a location tensor with `location_elems` values can hold.
+    #[inline]
     pub(crate) fn max_boxes(&self, location_elems: usize) -> usize {
         location_elems / self.options.num_coords
     }
@@ -200,13 +200,12 @@ impl<'a> TensorsToDetection<'a> {
         Ok(num_boxes)
     }
 
-    #[inline(always)]
+    #[inline]
     pub(crate) fn set_num_coords(&mut self, num_coords: usize) {
         self.options.num_coords = num_coords;
         self.options.check_valid();
     }
 
-    #[inline(always)]
     pub(crate) fn set_key_points(
         &mut self,
         num_key_points: usize,
@@ -219,7 +218,6 @@ impl<'a> TensorsToDetection<'a> {
         self.options.check_valid();
     }
 
-    #[inline(always)]
     pub(crate) fn set_anchors_scales(
         &mut self,
         x_scale: f32,
@@ -233,53 +231,52 @@ impl<'a> TensorsToDetection<'a> {
         self.options.h_scale = h_scale;
     }
 
-    #[inline(always)]
+    #[inline]
     pub(crate) fn set_sigmoid_score(&mut self, sigmoid_score: bool) {
         self.options.sigmoid_score = sigmoid_score;
     }
 
-    #[inline(always)]
+    #[inline]
     pub(crate) fn set_box_format(&mut self, box_format: DetectionBoxFormat) {
         self.options.box_format = box_format;
     }
 
-    #[inline(always)]
+    #[inline]
     pub(crate) fn set_score_clipping_thresh(&mut self, score_clipping_thresh: f32) {
         self.options.score_clipping_thresh = Some(score_clipping_thresh);
     }
 
-    #[inline(always)]
+    #[inline]
     pub(crate) fn set_nms_overlap_type(&mut self, overlap_type: NonMaxSuppressionOverlapType) {
         self.nms.set_overlap_type(overlap_type);
     }
 
-    #[inline(always)]
+    #[inline]
     pub(crate) fn set_nms_algorithm(&mut self, algorithm: NonMaxSuppressionAlgorithm) {
         self.nms.set_algorithm(algorithm);
     }
 
-    #[inline(always)]
+    #[inline]
     pub(crate) fn set_nms_min_suppression_threshold(&mut self, min_suppression_threshold: f32) {
         self.nms
             .set_min_suppression_threshold(min_suppression_threshold);
     }
 
-    #[inline(always)]
+    #[inline]
     pub(crate) fn location_buf(&mut self) -> &mut OutputBuffer {
         &mut self.location_buf
     }
 
-    #[inline(always)]
+    #[inline]
     pub(crate) fn categories_buf(&mut self) -> Option<&mut OutputBuffer> {
         self.categories_buf.as_mut()
     }
 
-    #[inline(always)]
+    #[inline]
     pub(crate) fn score_buf(&mut self) -> &mut OutputBuffer {
         &mut self.score_buf
     }
 
-    #[inline(always)]
     pub(crate) fn realloc(&mut self, num_boxes: usize) {
         self.score_buf.resize(num_boxes * self.options.num_classes);
         if let Some(c) = &mut self.categories_buf {
@@ -367,7 +364,6 @@ impl<'a> TensorsToDetection<'a> {
         result
     }
 
-    #[inline(always)]
     fn generate_detection(
         options: &ToDetectionOptions,
         category: Category,

@@ -28,19 +28,18 @@ impl HandDetector {
     detector_impl!(HandDetectorSession, DetectionResult);
 
     /// Get the maximum number of hands can be detected by the HandDetector. `None` means no limit.
-    #[inline(always)]
+    #[inline]
     pub fn num_hands(&self) -> Option<usize> {
         self.build_options.num_hands
     }
 
     /// Get the minimum confidence score for the hand detection to be considered successful.
-    #[inline(always)]
+    #[inline]
     pub fn min_detection_confidence(&self) -> f32 {
         self.build_options.min_detection_confidence
     }
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<HandDetectorSession<'_>, Error> {
         let image_to_tensor_info = self
             .model_resource
@@ -110,7 +109,6 @@ pub struct HandDetectorSession<'model> {
 impl<'model> HandDetectorSession<'model> {
     // todo: usage the timestamp
     #[allow(unused)]
-    #[inline(always)]
     fn compute(&mut self, timestamp_ms: Option<u64>) -> Result<DetectionResult, Error> {
         self.execution_ctx.set_input(
             0,

@@ -19,7 +19,6 @@ impl TextClassifier {
     classification_options_get_impl!();
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<TextClassifierSession<'_>, Error> {
         let input_to_tensor_info = self
             .model_resource
@@ -69,7 +68,7 @@ impl TextClassifier {
     }
 
     /// Classify the input using a new session.
-    #[inline(always)]
+    #[inline]
     pub fn classify<T: TextToTensors + ?Sized>(
         &self,
         input: &T,

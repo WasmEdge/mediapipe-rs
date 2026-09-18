@@ -53,17 +53,16 @@ impl<'buf> EndOfCentralDirectoryRecord<'buf> {
     const COMMENT_LENGTH_POS: usize = 20;
     const COMMENT_POS: usize = 22;
 
-    #[inline(always)]
+    #[inline]
     fn number_of_this_disk(&self) -> u16 {
         read_le_u16(self.buf, Self::NUMBER_OF_THIS_DISK_POS)
     }
 
-    #[inline(always)]
+    #[inline]
     fn disk_where_central_directory_starts(&self) -> u16 {
         read_le_u16(self.buf, Self::DISK_WHERE_CENTRAL_DIRECTORY_STARTS_POS)
     }
 
-    #[inline(always)]
     fn number_of_central_directory_records_on_this_disk(&self) -> u16 {
         read_le_u16(
             self.buf,
@@ -71,7 +70,6 @@ impl<'buf> EndOfCentralDirectoryRecord<'buf> {
         )
     }
 
-    #[inline(always)]
     fn total_number_of_central_directory_records(&self) -> u16 {
         read_le_u16(
             self.buf,
@@ -79,17 +77,17 @@ impl<'buf> EndOfCentralDirectoryRecord<'buf> {
         )
     }
 
-    #[inline(always)]
+    #[inline]
     fn size_of_central_directory(&self) -> u32 {
         read_le_u32(self.buf, Self::SIZE_OF_CENTRAL_DIRECTORY_POS)
     }
 
-    #[inline(always)]
+    #[inline]
     fn offset_of_start_of_central_directory(&self) -> u32 {
         read_le_u32(self.buf, Self::OFFSET_OF_START_OF_CENTRAL_DIRECTORY_POS)
     }
 
-    #[inline(always)]
+    #[inline]
     fn comment_length(&self) -> u16 {
         read_le_u16(self.buf, Self::COMMENT_LENGTH_POS)
     }
@@ -99,7 +97,6 @@ impl<'buf> EndOfCentralDirectoryRecord<'buf> {
         &self.buf[Self::COMMENT_POS..Self::COMMENT_POS + self.comment_length() as usize]
     }
 
-    #[inline(always)]
     fn try_find_start_pos(buf: &'buf [u8]) -> usize {
         let mut start_pos = match buf.len().checked_sub(Self::MIN_SIZE) {
             None => {
@@ -120,7 +117,6 @@ impl<'buf> EndOfCentralDirectoryRecord<'buf> {
         }
     }
 
-    #[inline(always)]
     fn new_with_start_pos(buf: &'buf [u8], start_pos: usize) -> Result<Self, Error> {
         if start_pos >= buf.len() {
             return Err(Error::ZipFileParseError(format!(
@@ -220,7 +216,6 @@ impl<'buf> CentralDirectory<'buf> {
     const RELATIVE_OFFSET_OF_LOCAL_HEADER_POS: usize = 42;
     const FILE_NAME_POS: usize = 46;
 
-    #[inline]
     fn new(buf: &'buf [u8]) -> Result<Self, Error> {
         let len = buf.len();
         if len < Self::MIN_SIZE {
@@ -267,47 +262,47 @@ impl<'buf> CentralDirectory<'buf> {
         Ok(res)
     }
 
-    #[inline(always)]
+    #[inline]
     fn compression_method(&self) -> u16 {
         read_le_u16(self.buf, Self::COMPRESSION_METHOD_POS)
     }
 
-    #[inline(always)]
+    #[inline]
     fn compressed_size(&self) -> u32 {
         read_le_u32(self.buf, Self::COMPRESSED_SIZE_POS)
     }
 
-    #[inline(always)]
+    #[inline]
     fn uncompressed_size(&self) -> u32 {
         read_le_u32(self.buf, Self::UNCOMPRESSED_SIZE_POS)
     }
 
-    #[inline(always)]
+    #[inline]
     fn file_name_length(&self) -> u16 {
         read_le_u16(self.buf, Self::FILE_NAME_LENGTH_POS)
     }
 
-    #[inline(always)]
+    #[inline]
     fn extra_field_length(&self) -> u16 {
         read_le_u16(self.buf, Self::EXTRA_FIELD_LENGTH_POS)
     }
 
-    #[inline(always)]
+    #[inline]
     fn file_comment_length(&self) -> u16 {
         read_le_u16(self.buf, Self::FILE_COMMENT_LENGTH_POS)
     }
 
-    #[inline(always)]
+    #[inline]
     fn disk_number_start(&self) -> u16 {
         read_le_u16(self.buf, Self::DISK_NUMBER_START_POS)
     }
 
-    #[inline(always)]
+    #[inline]
     fn relative_offset_of_local_header(&self) -> u32 {
         read_le_u32(self.buf, Self::RELATIVE_OFFSET_OF_LOCAL_HEADER_POS)
     }
 
-    #[inline(always)]
+    #[inline]
     fn file_name(&self) -> &'buf [u8] {
         &self.buf[Self::FILE_NAME_POS..Self::FILE_NAME_POS + self.file_name_length() as usize]
     }
@@ -347,7 +342,6 @@ impl<'buf> LocalFileHeader<'buf> {
     const EXTRA_FIELD_LENGTH_POS: usize = 28;
     const FILE_NAME_POS: usize = 30;
 
-    #[inline]
     fn new(buf: &'buf [u8]) -> Result<Self, Error> {
         let res = Self { buf };
         let len = buf.len();
@@ -374,17 +368,17 @@ impl<'buf> LocalFileHeader<'buf> {
         Ok(res)
     }
 
-    #[inline(always)]
+    #[inline]
     fn file_name_length(&self) -> u16 {
         read_le_u16(self.buf, Self::FILE_NAME_LENGTH_POS)
     }
 
-    #[inline(always)]
+    #[inline]
     fn extra_field_length(&self) -> u16 {
         read_le_u16(self.buf, Self::EXTRA_FIELD_LENGTH_POS)
     }
 
-    #[inline(always)]
+    #[inline]
     fn size(&self) -> usize {
         Self::FILE_NAME_POS + self.file_name_length() as usize + self.extra_field_length() as usize
     }
@@ -396,7 +390,6 @@ pub(crate) struct ZipFiles<'buf> {
 }
 
 impl<'buf> ZipFiles<'buf> {
-    #[inline]
     pub fn try_new(buf: &'buf [u8]) -> Result<Option<Self>, Error> {
         let start_pos = EndOfCentralDirectoryRecord::try_find_start_pos(buf);
         if start_pos == buf.len() {
@@ -416,7 +409,6 @@ impl<'buf> ZipFiles<'buf> {
         Self::new_with_start_pos(buf, start_pos)
     }
 
-    #[inline]
     fn new_with_start_pos(buf: &'buf [u8], start_pos: usize) -> Result<Self, Error> {
         let r = EndOfCentralDirectoryRecord::new_with_start_pos(buf, start_pos)?;
         let num = r.total_number_of_central_directory_records();
@@ -462,14 +454,13 @@ impl<'buf> ZipFiles<'buf> {
         Ok(Self { buf, files })
     }
 
-    #[inline(always)]
+    #[inline]
     #[cfg(any(feature = "vision", test))]
     pub fn get_file(&self, name: &str) -> Option<&'buf [u8]> {
         self.files.get(name).map(|r| &self.buf[r.clone()])
     }
 
     /// Copy all file contents to HashMap<filename, file contents>
-    #[inline]
     pub fn copy_contents(&self) -> HashMap<String, Vec<u8>> {
         self.files
             .iter()

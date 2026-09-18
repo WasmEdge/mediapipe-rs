@@ -20,7 +20,6 @@ impl TextEmbedder {
     embedding_options_get_impl!();
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<TextEmbedderSession<'_>, Error> {
         let input_to_tensor_info = self
             .model_resource
@@ -56,7 +55,7 @@ impl TextEmbedder {
     }
 
     /// Embed one text using a new session.
-    #[inline(always)]
+    #[inline]
     pub fn embed<T: TextToTensors + ?Sized>(&self, input: &T) -> Result<EmbeddingResult, Error> {
         self.new_session()?.embed(input)
     }
@@ -75,7 +74,6 @@ pub struct TextEmbedderSession<'a> {
 
 impl<'a> TextEmbedderSession<'a> {
     /// Embed one text use this session.
-    #[inline(always)]
     pub fn embed<T: TextToTensors + ?Sized>(
         &mut self,
         input: &T,

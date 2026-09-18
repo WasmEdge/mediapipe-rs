@@ -77,7 +77,6 @@ pub(crate) struct SsdAnchorsBuilder {
 
 #[allow(unused)]
 impl SsdAnchorsBuilder {
-    #[inline(always)]
     pub fn new(
         input_size_width: u32,
         input_size_height: u32,
@@ -112,7 +111,6 @@ impl SsdAnchorsBuilder {
         }
     }
 
-    #[inline(always)]
     fn calculate_scale(&self, stride_index: usize, num_strides: usize) -> f32 {
         if num_strides == 1 {
             (self.min_scale + self.max_scale) * 0.5f32
@@ -222,7 +220,7 @@ impl SsdAnchorsBuilder {
         self
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn input_size_height(mut self, input_size_height: u32) -> Self {
         self.input_size_height = input_size_height;
         self
@@ -234,7 +232,7 @@ impl SsdAnchorsBuilder {
         self
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn max_scale(mut self, max_scale: f32) -> Self {
         self.max_scale = max_scale;
         self
@@ -242,54 +240,54 @@ impl SsdAnchorsBuilder {
 
     /// The offset for the center of anchors. The value is in the scale of stride.
     /// E.g. 0.5 meaning 0.5 * |current_stride| in pixels.
-    #[inline(always)]
+    #[inline]
     pub fn anchor_offset_x(mut self, anchor_offset_x: f32) -> Self {
         self.anchor_offset_x = anchor_offset_x;
         self
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn anchor_offset_y(mut self, anchor_offset_y: f32) -> Self {
         self.anchor_offset_y = anchor_offset_y;
         self
     }
 
     /// Number of output feature maps to generate the anchors on.
-    #[inline(always)]
+    #[inline]
     pub fn num_layers(mut self, num_layers: usize) -> Self {
         self.num_layers = num_layers;
         self
     }
 
     /// Sizes of output feature maps to create anchors. Either feature_map size or stride should be provided.
-    #[inline(always)]
+    #[inline]
     pub fn feature_map_width(mut self, feature_map_width: Vec<u32>) -> Self {
         self.feature_map_width = feature_map_width;
         self
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn feature_map_height(mut self, feature_map_height: Vec<u32>) -> Self {
         self.feature_map_height = feature_map_height;
         self
     }
 
     /// Strides of each output feature maps.
-    #[inline(always)]
+    #[inline]
     pub fn strides(mut self, strides: Vec<i32>) -> Self {
         self.strides = strides;
         self
     }
 
     /// List of different aspect ratio to generate anchors.
-    #[inline(always)]
+    #[inline]
     pub fn aspect_ratios(mut self, aspect_ratios: Vec<f32>) -> Self {
         self.aspect_ratios = aspect_ratios;
         self
     }
 
     /// A boolean to indicate whether the fixed 3 boxes per location is used in the lowest layer.
-    #[inline(always)]
+    #[inline]
     pub fn reduce_boxes_in_lowest_layer(mut self, reduce_boxes_in_lowest_layer: bool) -> Self {
         self.reduce_boxes_in_lowest_layer = reduce_boxes_in_lowest_layer;
         self
@@ -298,7 +296,7 @@ impl SsdAnchorsBuilder {
     /// An additional anchor is added with this aspect ratio and a scale
     /// interpolated between the scale for a layer and the scale for the next layer
     /// (1.0 for the last layer). This anchor is not included if this value is 0.
-    #[inline(always)]
+    #[inline]
     pub fn interpolated_scale_aspect_ratio(mut self, interpolated_scale_aspect_ratio: f32) -> Self {
         self.interpolated_scale_aspect_ratio = interpolated_scale_aspect_ratio;
         self
@@ -306,7 +304,7 @@ impl SsdAnchorsBuilder {
 
     /// Whether use fixed width and height (e.g. both 1.0f) for each anchor.
     /// This option can be used when the predicted anchor width and height are in pixels.
-    #[inline(always)]
+    #[inline]
     pub fn fixed_anchor_size(mut self, fixed_anchor_size: bool) -> Self {
         self.fixed_anchor_size = fixed_anchor_size;
         self
@@ -316,7 +314,7 @@ impl SsdAnchorsBuilder {
     /// described in:
     /// "Focal Loss for Dense Object Detection" (https://arxiv.org/abs/1708.02002)
     ///  T.-Y. Lin, P. Goyal, R. Girshick, K. He, P. Dollar
-    #[inline(always)]
+    #[inline]
     pub fn multiscale_anchor_generation(mut self, multiscale_anchor_generation: bool) -> Self {
         self.multiscale_anchor_generation = multiscale_anchor_generation;
         self
@@ -324,7 +322,7 @@ impl SsdAnchorsBuilder {
 
     /// minimum level in feature pyramid
     /// for multiscale_anchor_generation only!
-    #[inline(always)]
+    #[inline]
     pub fn min_level(mut self, min_level: i32) -> Self {
         self.min_level = min_level;
         self
@@ -332,7 +330,7 @@ impl SsdAnchorsBuilder {
 
     /// maximum level in feature pyramid
     /// for multiscale_anchor_generation only!
-    #[inline(always)]
+    #[inline]
     pub fn max_level(mut self, max_level: i32) -> Self {
         self.max_level = max_level;
         self
@@ -340,7 +338,7 @@ impl SsdAnchorsBuilder {
 
     /// Scale of anchor to feature stride
     /// for multiscale_anchor_generation only!
-    #[inline(always)]
+    #[inline]
     pub fn anchor_scale(mut self, anchor_scale: f32) -> Self {
         self.anchor_scale = anchor_scale;
         self
@@ -348,7 +346,7 @@ impl SsdAnchorsBuilder {
 
     /// Number of intermediate scale each scale octave
     /// for multiscale_anchor_generation only!
-    #[inline(always)]
+    #[inline]
     pub fn scales_per_octave(mut self, scales_per_octave: i32) -> Self {
         self.scales_per_octave = scales_per_octave;
         self
@@ -356,7 +354,7 @@ impl SsdAnchorsBuilder {
 
     /// Whether to produce anchors in normalized coordinates.
     /// for multiscale_anchor_generation only!
-    #[inline(always)]
+    #[inline]
     pub fn normalize_coordinates(mut self, normalize_coordinates: bool) -> Self {
         self.normalize_coordinates = normalize_coordinates;
         self

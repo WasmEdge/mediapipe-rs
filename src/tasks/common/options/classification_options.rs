@@ -38,7 +38,7 @@ macro_rules! classification_options_impl {
     () => {
         /// Set the locale to use for display names specified through the TFLite Model Metadata, if any.
         /// Defaults to English.
-        #[inline(always)]
+        #[inline]
         pub fn display_names_locale(mut self, display_names_locale: String) -> Self {
             self.classification_options.display_names_locale = display_names_locale;
             self
@@ -46,7 +46,7 @@ macro_rules! classification_options_impl {
 
         /// Set the maximum number of top-scored classification results to return.
         /// By default all available results are returned. `0` is an invalid argument.
-        #[inline(always)]
+        #[inline]
         pub fn max_results(mut self, max_results: usize) -> Self {
             self.classification_options.max_results = Some(max_results);
             self
@@ -54,7 +54,7 @@ macro_rules! classification_options_impl {
 
         /// Set score threshold to override the one provided in the model metadata (if any).
         /// Results below this value are rejected.
-        #[inline(always)]
+        #[inline]
         pub fn score_threshold(mut self, score_threshold: f32) -> Self {
             self.classification_options.score_threshold = score_threshold;
             self
@@ -64,7 +64,7 @@ macro_rules! classification_options_impl {
         /// If non-empty, detection results whose category name is not in this set will be filtered out.
         /// Duplicate or unknown category names are ignored.
         /// Mutually exclusive with category_deny_list.
-        #[inline(always)]
+        #[inline]
         pub fn category_allow_list(mut self, category_allow_list: Vec<String>) -> Self {
             self.classification_options.category_allow_list = category_allow_list;
             self
@@ -74,7 +74,7 @@ macro_rules! classification_options_impl {
         /// If non-empty, detection results whose category name is in this set will be filtered out.
         /// Duplicate or unknown category names are ignored.
         /// Mutually exclusive with category_allow_list.
-        #[inline(always)]
+        #[inline]
         pub fn category_deny_list(mut self, category_deny_list: Vec<String>) -> Self {
             self.classification_options.category_deny_list = category_deny_list;
             self
@@ -102,19 +102,18 @@ macro_rules! classification_options_get_impl {
     () => {
         /// Get the maximum number of top-scored classification results to return.
         /// `None` returns all available results.
-        #[inline(always)]
+        #[inline]
         pub fn max_results(&self) -> Option<usize> {
             self.build_options.classification_options.max_results
         }
 
         /// Get score threshold.
-        #[inline(always)]
+        #[inline]
         pub fn score_threshold(&self) -> f32 {
             self.build_options.classification_options.score_threshold
         }
 
         /// Set the locale to use for display names.
-        #[inline(always)]
         pub fn display_names_locale(&self) -> &String {
             &self
                 .build_options
@@ -123,7 +122,6 @@ macro_rules! classification_options_get_impl {
         }
 
         /// Get the allow list of category names.
-        #[inline(always)]
         pub fn category_allow_list(&self) -> &Vec<String> {
             &self
                 .build_options
@@ -132,7 +130,7 @@ macro_rules! classification_options_get_impl {
         }
 
         /// Get the deny list of category names.
-        #[inline(always)]
+        #[inline]
         pub fn category_deny_list(&self) -> &Vec<String> {
             &self.build_options.classification_options.category_deny_list
         }

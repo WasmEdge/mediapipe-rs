@@ -21,7 +21,6 @@ impl ImageEmbedder {
     embedding_options_get_impl!();
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<ImageEmbedderSession<'_>, Error> {
         let input_to_tensor_info = self
             .model_resource
@@ -57,13 +56,13 @@ impl ImageEmbedder {
     }
 
     /// Embed one image using a new session.
-    #[inline(always)]
+    #[inline]
     pub fn embed(&self, input: &impl ImageToTensor) -> Result<EmbeddingResult, Error> {
         self.new_session()?.embed(input)
     }
 
     /// Embed one image using a new session with options to specify the region of interest.
-    #[inline(always)]
+    #[inline]
     pub fn embed_with_options(
         &self,
         input: &impl ImageToTensor,
@@ -74,7 +73,7 @@ impl ImageEmbedder {
     }
 
     /// Embed audio stream using a new task session, and collect all results to [`Vec`].
-    #[inline(always)]
+    #[inline]
     pub fn embed_for_video(
         &self,
         video_data: impl VideoData,
@@ -96,7 +95,6 @@ pub struct ImageEmbedderSession<'model> {
 }
 
 impl<'model> ImageEmbedderSession<'model> {
-    #[inline(always)]
     fn compute(&mut self, timestamp_ms: Option<u64>) -> Result<EmbeddingResult, Error> {
         self.execution_ctx.set_input(
             0,
@@ -114,7 +112,6 @@ impl<'model> ImageEmbedderSession<'model> {
     }
 
     /// Embed one image, reuse this session data to speedup.
-    #[inline(always)]
     pub fn embed(&mut self, input: &impl ImageToTensor) -> Result<EmbeddingResult, Error> {
         input.to_tensor(
             self.input_to_tensor_info,
@@ -125,7 +122,6 @@ impl<'model> ImageEmbedderSession<'model> {
     }
 
     /// Embed one image, reuse this session data to speedup.
-    #[inline(always)]
     pub fn embed_with_options(
         &mut self,
         input: &impl ImageToTensor,
@@ -141,7 +137,7 @@ impl<'model> ImageEmbedderSession<'model> {
 
     /// Embed input video stream use this session.
     /// Return a iterator for results, process input stream when poll next result.
-    #[inline(always)]
+    #[inline]
     pub fn embed_for_video<InputVideoData: VideoData>(
         &mut self,
         video_data: InputVideoData,
@@ -153,7 +149,6 @@ impl<'model> ImageEmbedderSession<'model> {
 impl<'model> super::TaskSession for ImageEmbedderSession<'model> {
     type Result = EmbeddingResult;
 
-    #[inline]
     fn process_next(
         &mut self,
         process_options: &super::ImageProcessingOptions,

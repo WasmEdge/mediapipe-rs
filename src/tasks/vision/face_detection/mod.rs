@@ -30,27 +30,26 @@ impl FaceDetector {
     detector_impl!(FaceDetectorSession, DetectionResult);
 
     /// Get the maximum number of faces can be detected by the FaceDetector. `None` means no limit.
-    #[inline(always)]
+    #[inline]
     pub fn num_faces(&self) -> Option<usize> {
         self.build_options.num_faces
     }
 
     /// Get the minimum confidence score for the face detection to be considered successful.
     /// Default is 0.5
-    #[inline(always)]
+    #[inline]
     pub fn min_detection_confidence(&self) -> f32 {
         self.build_options.min_detection_confidence
     }
 
     /// Get the minimum non-maximum-suppression threshold for face detection to be considered overlapped.
     /// Default is 0.3
-    #[inline(always)]
+    #[inline]
     pub fn min_suppression_threshold(&self) -> f32 {
         self.build_options.min_suppression_threshold
     }
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<FaceDetectorSession<'_>, Error> {
         let image_to_tensor_info = self
             .model_resource
@@ -116,7 +115,6 @@ pub struct FaceDetectorSession<'model> {
 
 impl<'model> FaceDetectorSession<'model> {
     #[allow(unused_variables)]
-    #[inline(always)]
     fn compute(&mut self, timestamp_ms: Option<u64>) -> Result<DetectionResult, Error> {
         self.execution_ctx.set_input(
             0,

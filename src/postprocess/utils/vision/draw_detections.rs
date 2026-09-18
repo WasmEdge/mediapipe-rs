@@ -20,7 +20,6 @@ pub struct DrawDetectionsOptions<'font, P: Pixel> {
 }
 
 impl<P: Pixel + DefaultPixel> Default for DrawDetectionsOptions<'static, P> {
-    #[inline(always)]
     fn default() -> Self {
         Self {
             rect_colors: vec![P::default()],
@@ -38,7 +37,7 @@ impl<P: Pixel + DefaultPixel> Default for DrawDetectionsOptions<'static, P> {
 }
 
 /// draw detection results to image with default options
-#[inline(always)]
+#[inline]
 pub fn draw_detection<I>(img: &mut I, detection_result: &DetectionResult)
 where
     I: GenericImage,

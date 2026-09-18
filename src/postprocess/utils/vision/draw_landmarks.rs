@@ -16,7 +16,6 @@ pub struct DrawLandmarksOptions<'a, P: Pixel> {
 }
 
 impl<'a, P: Pixel> DrawLandmarksOptions<'a, P> {
-    #[inline(always)]
     pub fn new(line_colors: Vec<P>, landmark_colors: Vec<P>) -> Self {
         Self {
             line_colors,
@@ -28,7 +27,6 @@ impl<'a, P: Pixel> DrawLandmarksOptions<'a, P> {
         }
     }
 
-    #[inline(always)]
     pub fn connections(self, connections: &[(usize, usize)]) -> DrawLandmarksOptions<'_, P> {
         DrawLandmarksOptions {
             line_colors: self.line_colors,
@@ -40,19 +38,19 @@ impl<'a, P: Pixel> DrawLandmarksOptions<'a, P> {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn presence_threshold(mut self, presence_threshold: f32) -> Self {
         self.presence_threshold = presence_threshold;
         self
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn visibility_threshold(mut self, visibility_threshold: f32) -> Self {
         self.visibility_threshold = visibility_threshold;
         self
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn landmark_radius_percent(mut self, landmark_radius_percent: f32) -> Self {
         self.landmark_radius_percent = landmark_radius_percent;
         self
@@ -60,7 +58,6 @@ impl<'a, P: Pixel> DrawLandmarksOptions<'a, P> {
 }
 
 impl<'a, P: Pixel + DefaultPixel> Default for DrawLandmarksOptions<'a, P> {
-    #[inline(always)]
     fn default() -> Self {
         Self {
             line_colors: vec![DefaultPixel::default()],
@@ -74,7 +71,7 @@ impl<'a, P: Pixel + DefaultPixel> Default for DrawLandmarksOptions<'a, P> {
 }
 
 /// draw landmarks to image with default options
-#[inline(always)]
+#[inline]
 pub fn draw_landmarks<I>(img: &mut I, normalized_landmarks: &NormalizedLandmarks)
 where
     I: GenericImage,

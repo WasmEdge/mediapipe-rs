@@ -13,7 +13,7 @@ pub struct GestureRecognizerBuilder {
 }
 
 impl Default for GestureRecognizerBuilder {
-    #[inline(always)]
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -30,7 +30,7 @@ impl GestureRecognizerBuilder {
     ///
     /// Set the locale to use for display names specified through the TFLite Model Metadata, if any.
     /// Defaults to English.
-    #[inline(always)]
+    #[inline]
     pub fn custom_classifier_display_names_locale(mut self, display_names_locale: String) -> Self {
         self.custom_classification_options.display_names_locale = display_names_locale;
         self
@@ -40,7 +40,7 @@ impl GestureRecognizerBuilder {
     ///
     /// Set the maximum number of top-scored classification results to return.
     /// By default all available results are returned. `0` is an invalid argument.
-    #[inline(always)]
+    #[inline]
     pub fn custom_classifier_max_results(mut self, max_results: usize) -> Self {
         self.custom_classification_options.max_results = Some(max_results);
         self
@@ -50,7 +50,7 @@ impl GestureRecognizerBuilder {
     ///
     /// Set score threshold to override the one provided in the model metadata (if any).
     /// Results below this value are rejected.
-    #[inline(always)]
+    #[inline]
     pub fn custom_classifier_score_threshold(mut self, score_threshold: f32) -> Self {
         self.custom_classification_options.score_threshold = score_threshold;
         self
@@ -62,7 +62,7 @@ impl GestureRecognizerBuilder {
     /// If non-empty, detection results whose category name is not in this set will be filtered out.
     /// Duplicate or unknown category names are ignored.
     /// Mutually exclusive with category_deny_list.
-    #[inline(always)]
+    #[inline]
     pub fn custom_classifier_category_allow_list(
         mut self,
         category_allow_list: Vec<String>,
@@ -77,7 +77,7 @@ impl GestureRecognizerBuilder {
     /// If non-empty, detection results whose category name is in this set will be filtered out.
     /// Duplicate or unknown category names are ignored.
     /// Mutually exclusive with category_allow_list.
-    #[inline(always)]
+    #[inline]
     pub fn custom_classifier_category_deny_list(mut self, category_deny_list: Vec<String>) -> Self {
         self.custom_classification_options.category_deny_list = category_deny_list;
         self
@@ -96,7 +96,6 @@ impl GestureRecognizerBuilder {
     const TASK_NAME: &'static str = "GestureRecognizer";
 
     /// Create a new builder with default options.
-    #[inline(always)]
     pub fn new() -> Self {
         Self {
             base_task_options: Default::default(),
@@ -107,7 +106,6 @@ impl GestureRecognizerBuilder {
     }
 
     /// Use the current build options and use the buffer as model data to create a new task instance.
-    #[inline]
     pub fn build_from_buffer(self, buffer: impl AsRef<[u8]>) -> Result<GestureRecognizer, Error> {
         self.classification_options.check()?;
         self.custom_classification_options.check()?;

@@ -60,7 +60,6 @@ impl Rect<u32> {
 }
 
 impl Rect<f32> {
-    #[inline(always)]
     pub fn to_rect(&self, image_height: u32, image_width: u32) -> Rect<u32> {
         Rect {
             left: (self.left * image_width as f32) as u32,
@@ -70,7 +69,6 @@ impl Rect<f32> {
         }
     }
 
-    #[inline(always)]
     pub fn intersect(&self, other: &Rect<f32>) -> Option<Rect<f32>> {
         if !(other.left > self.right
             || other.right < self.left
@@ -88,7 +86,6 @@ impl Rect<f32> {
         }
     }
 
-    #[inline(always)]
     pub fn union(&self, other: &Rect<f32>) -> Rect<f32> {
         Rect {
             left: self.left.min(other.left),
@@ -98,17 +95,17 @@ impl Rect<f32> {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn width(&self) -> f32 {
         self.right - self.left
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn height(&self) -> f32 {
         self.bottom - self.top
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn area(&self) -> f32 {
         self.width() * self.height()
     }

@@ -16,7 +16,7 @@ pub struct FaceDetectorBuilder {
 }
 
 impl Default for FaceDetectorBuilder {
-    #[inline(always)]
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -24,7 +24,6 @@ impl Default for FaceDetectorBuilder {
 
 impl FaceDetectorBuilder {
     /// Create a new builder with default options.
-    #[inline(always)]
     pub fn new() -> Self {
         Self {
             base_task_options: Default::default(),
@@ -38,7 +37,7 @@ impl FaceDetectorBuilder {
 
     /// Set the maximum number of faces can be detected by the FaceDetector.
     /// By default there is no limit.
-    #[inline(always)]
+    #[inline]
     pub fn num_faces(mut self, num_faces: usize) -> Self {
         self.num_faces = Some(num_faces);
         self
@@ -46,7 +45,7 @@ impl FaceDetectorBuilder {
 
     /// Set the minimum confidence score for the face detection to be considered successful.
     /// Default is 0.5
-    #[inline(always)]
+    #[inline]
     pub fn min_detection_confidence(mut self, min_detection_confidence: f32) -> Self {
         self.min_detection_confidence = min_detection_confidence;
         self
@@ -54,14 +53,13 @@ impl FaceDetectorBuilder {
 
     /// Set the minimum non-maximum-suppression threshold for face detection to be considered overlapped.
     /// Default is 0.3
-    #[inline(always)]
+    #[inline]
     pub fn min_suppression_threshold(mut self, min_suppression_threshold: f32) -> Self {
         self.min_suppression_threshold = min_suppression_threshold;
         self
     }
 
     /// Use the current build options and use the buffer as model data to create a new task instance.
-    #[inline]
     pub fn build_from_buffer(self, buffer: impl AsRef<[u8]>) -> Result<FaceDetector, crate::Error> {
         if self.num_faces == Some(0) {
             return Err(crate::Error::ArgumentError(

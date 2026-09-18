@@ -15,7 +15,7 @@ pub struct HandDetectorBuilder {
 }
 
 impl Default for HandDetectorBuilder {
-    #[inline(always)]
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -23,7 +23,6 @@ impl Default for HandDetectorBuilder {
 
 impl HandDetectorBuilder {
     /// Create a new builder with default options.
-    #[inline(always)]
     pub fn new() -> Self {
         Self {
             base_task_options: Default::default(),
@@ -36,7 +35,7 @@ impl HandDetectorBuilder {
 
     /// Set the maximum number of hands can be detected by the HandDetector.
     /// By default there is no limit.
-    #[inline(always)]
+    #[inline]
     pub fn num_hands(mut self, num_hands: usize) -> Self {
         self.num_hands = Some(num_hands);
         self
@@ -44,14 +43,13 @@ impl HandDetectorBuilder {
 
     /// Set the minimum confidence score for the hand detection to be considered successful.
     /// Default is 0.5
-    #[inline(always)]
+    #[inline]
     pub fn min_detection_confidence(mut self, min_detection_confidence: f32) -> Self {
         self.min_detection_confidence = min_detection_confidence;
         self
     }
 
     /// Use the current build options and use the buffer as model data to create a new task instance.
-    #[inline]
     pub fn build_from_buffer(self, buffer: impl AsRef<[u8]>) -> Result<HandDetector, crate::Error> {
         if self.num_hands == Some(0) {
             return Err(crate::Error::ArgumentError(
