@@ -6,15 +6,13 @@ use crate::postprocess::{Detection, DetectionResult, Rect};
 #[derive(Debug, Copy, Clone)]
 pub enum NonMaxSuppressionOverlapType {
     Jaccard,
-    ModifiedJaccard,
     IntersectionOverUnion,
 }
 
-#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Copy, Clone)]
 pub enum NonMaxSuppressionAlgorithm {
-    DEFAULT,
-    WEIGHTED,
+    Default,
+    Weighted,
 }
 
 pub struct NonMaxSuppression {
@@ -25,59 +23,31 @@ pub struct NonMaxSuppression {
 }
 
 impl NonMaxSuppression {
-    #[inline(always)]
-    pub fn new(max_results: i32) -> Self {
-        let max_results = if max_results < 0 {
-            usize::MAX
-        } else {
-            max_results as usize
-        };
+    pub fn new(max_results: Option<usize>) -> Self {
+        let max_results = max_results.unwrap_or(usize::MAX);
         Self {
             overlap_type: NonMaxSuppressionOverlapType::Jaccard,
-            algorithm: NonMaxSuppressionAlgorithm::DEFAULT,
+            algorithm: NonMaxSuppressionAlgorithm::Default,
             max_results,
             min_suppression_threshold: 1.0, // default
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn set_overlap_type(&mut self, overlap_type: NonMaxSuppressionOverlapType) {
         self.overlap_type = overlap_type;
     }
 
-    #[inline(always)]
-    pub fn overlap_type(mut self, overlap_type: NonMaxSuppressionOverlapType) -> Self {
-        self.overlap_type = overlap_type;
-        self
-    }
-
-    #[inline(always)]
+    #[inline]
     pub fn set_algorithm(&mut self, algorithm: NonMaxSuppressionAlgorithm) {
         self.algorithm = algorithm;
     }
 
-    #[inline(always)]
-    pub fn algorithm(mut self, algorithm: NonMaxSuppressionAlgorithm) -> Self {
-        self.algorithm = algorithm;
-        self
-    }
-
-    #[inline(always)]
+    #[inline]
     pub fn set_min_suppression_threshold(&mut self, min_suppression_threshold: f32) {
         self.min_suppression_threshold = min_suppression_threshold;
     }
 
-    #[inline(always)]
-    pub fn max_results(mut self, max_results: i32) -> Self {
-        self.max_results = if max_results < 0 {
-            usize::MAX
-        } else {
-            max_results as usize
-        };
-        self
-    }
-
-    #[inline]
     pub fn do_nms(&self, detection_result: &mut DetectionResult) {
         // remove all but the maximum scoring label from each input detection.
         detection_result
@@ -96,10 +66,10 @@ impl NonMaxSuppression {
         }
         indexed_scores.sort_by(|a, b| b.1.total_cmp(&a.1));
         match self.algorithm {
-            NonMaxSuppressionAlgorithm::DEFAULT => {
+            NonMaxSuppressionAlgorithm::Default => {
                 self.non_max_suppression(&mut detection_result.detections, indexed_scores);
             }
-            NonMaxSuppressionAlgorithm::WEIGHTED => {
+            NonMaxSuppressionAlgorithm::Weighted => {
                 self.non_max_suppression_weighted(&mut detection_result.detections, indexed_scores);
             }
         }
@@ -112,7 +82,7 @@ impl NonMaxSuppression {
     ) {
         let mut retains = vec![false; detections.len()];
         let mut retained_locations: Vec<&Rect<f32>> = Vec::new();
-        for (index, score) in indexed_scores {
+        for (index, _) in indexed_scores {
             let location = &detections[index].bounding_box;
             let mut suppressed = false;
 
@@ -216,13 +186,11 @@ impl NonMaxSuppression {
         }
     }
 
-    #[inline]
     fn overlap_similarity(&self, rect_1: &Rect<f32>, rect_2: &Rect<f32>) -> f32 {
         if let Some(intersection) = rect_1.intersect(rect_2) {
             let intersection_area = intersection.area();
             let normalization = match self.overlap_type {
                 NonMaxSuppressionOverlapType::Jaccard => rect_1.union(rect_2).area(),
-                NonMaxSuppressionOverlapType::ModifiedJaccard => rect_2.area(),
                 NonMaxSuppressionOverlapType::IntersectionOverUnion => {
                     rect_1.area() + rect_2.area() - intersection_area
                 }

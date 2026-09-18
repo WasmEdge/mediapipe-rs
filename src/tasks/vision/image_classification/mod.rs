@@ -22,15 +22,13 @@ impl ImageClassifier {
     classification_options_get_impl!();
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<ImageClassifierSession<'_>, Error> {
-        let input_to_tensor_info =
-            model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
-                .try_to_image()?;
-        let input_tensor_shape =
-            model_resource_check_and_get_impl!(self.model_resource, input_tensor_shape, 0);
-        let output_tensor_shape =
-            model_resource_check_and_get_impl!(self.model_resource, output_tensor_shape, 0);
+        let input_to_tensor_info = self
+            .model_resource
+            .expect_to_tensor_info(0)?
+            .try_to_image()?;
+        let input_tensor_shape = self.model_resource.expect_input_tensor_shape(0)?;
+        let output_tensor_shape = self.model_resource.expect_output_tensor_shape(0)?;
 
         let labels = self.model_resource.output_tensor_labels_locale(
             0,
@@ -49,7 +47,7 @@ impl ImageClassifier {
         tensors_to_classification.add_classification_options(
             categories_filter,
             self.build_options.classification_options.max_results,
-            get_type_and_quantization!(self.model_resource, 0),
+            self.model_resource.output_type_and_quantization(0)?,
             output_tensor_shape,
         )?;
 
@@ -59,19 +57,25 @@ impl ImageClassifier {
             tensors_to_classification,
             input_to_tensor_info,
             input_tensor_shape,
-            input_tensor_buf: vec![0; tensor_bytes!(self.input_tensor_type, input_tensor_shape)],
+            input_tensor_buf: vec![
+                0;
+                crate::model::tensor_bytes(
+                    self.input_tensor_type,
+                    input_tensor_shape
+                )
+            ],
             input_tensor_type: self.input_tensor_type,
         })
     }
 
     /// Classify one image using a new session.
-    #[inline(always)]
+    #[inline]
     pub fn classify(&self, input: &impl ImageToTensor) -> Result<ClassificationResult, Error> {
         self.new_session()?.classify(input)
     }
 
     /// Classify one image using a new session with options to specify the region of interest.
-    #[inline(always)]
+    #[inline]
     pub fn classify_with_options(
         &self,
         input: &impl ImageToTensor,
@@ -82,7 +86,7 @@ impl ImageClassifier {
     }
 
     /// Classify video stream using a new task session, and collect all results to [`Vec`].
-    #[inline(always)]
+    #[inline]
     pub fn classify_for_video(
         &self,
         video_data: impl VideoData,
@@ -94,14 +98,18 @@ impl ImageClassifier {
 /// Session to run inference.
 /// If process multiple images or videos, reuse it can get better performance.
 ///
-/// ```rust
-/// use mediapipe_rs::tasks::vision::ImageClassifier;
+/// ```no_run
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let images: Vec<image::DynamicImage> = vec![];
+/// use mediapipe_rs::tasks::vision::ImageClassifierBuilder;
 ///
-/// let image_classifier: ImageClassifier;
+/// let image_classifier = ImageClassifierBuilder::new().build_from_file("model.tflite")?;
 /// let mut session = image_classifier.new_session()?;
-/// for image in images {
+/// for image in &images {
 ///     session.classify(image)?;
 /// }
+/// # Ok(())
+/// # }
 /// ```
 pub struct ImageClassifierSession<'model> {
     execution_ctx: GraphExecutionContext<'model>,
@@ -115,7 +123,6 @@ pub struct ImageClassifierSession<'model> {
 }
 
 impl<'model> ImageClassifierSession<'model> {
-    #[inline(always)]
     fn compute(&mut self, timestamp_ms: Option<u64>) -> Result<ClassificationResult, Error> {
         self.execution_ctx.set_input(
             0,
@@ -134,7 +141,6 @@ impl<'model> ImageClassifierSession<'model> {
     }
 
     /// Classify one image, reuse this session data to speedup.
-    #[inline(always)]
     pub fn classify(&mut self, input: &impl ImageToTensor) -> Result<ClassificationResult, Error> {
         input.to_tensor(
             self.input_to_tensor_info,
@@ -145,7 +151,6 @@ impl<'model> ImageClassifierSession<'model> {
     }
 
     /// Classify one image with region-of-interest options, reuse this session data to speedup.
-    #[inline(always)]
     pub fn classify_with_options(
         &mut self,
         input: &impl ImageToTensor,
@@ -161,11 +166,11 @@ impl<'model> ImageClassifierSession<'model> {
 
     /// Classify input video stream use this session.
     /// Return a iterator for results, process input stream when poll next result.
-    #[inline(always)]
+    #[inline]
     pub fn classify_for_video<InputVideoData: VideoData>(
         &mut self,
         video_data: InputVideoData,
-    ) -> Result<VideoResultsIter<'_, '_, Self, InputVideoData>, Error> {
+    ) -> Result<VideoResultsIter<'_, Self, InputVideoData>, Error> {
         Ok(VideoResultsIter::new(self, video_data))
     }
 }
@@ -173,7 +178,6 @@ impl<'model> ImageClassifierSession<'model> {
 impl<'model> super::TaskSession for ImageClassifierSession<'model> {
     type Result = ClassificationResult;
 
-    #[inline]
     fn process_next(
         &mut self,
         process_options: &super::ImageProcessingOptions,

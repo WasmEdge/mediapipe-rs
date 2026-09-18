@@ -8,22 +8,9 @@ pub struct FFMpegAudioData(FFMpegAudioDataInner);
 
 impl FFMpegAudioData {
     /// Create a new instance from FFMpeg input.
-    #[inline(always)]
+    #[inline]
     pub fn new(input: ffmpeg_next::format::context::Input) -> Result<Self, Error> {
         FFMpegAudioDataInner::new(input).map(Self)
-    }
-}
-
-impl std::ops::Deref for FFMpegAudioData {
-    type Target = FFMpegAudioDataInner;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl std::ops::DerefMut for FFMpegAudioData {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }
 
@@ -37,7 +24,7 @@ macro_rules! output_to_buffer {
             if output.len() < $num_samples {
                 output.resize($num_samples, 0.);
             }
-            let samples = $self.frame.plane::<$tp>(c);
+            let samples = $self.0.frame.plane::<$tp>(c);
             for i in 0..$num_samples {
                 output[i] = $conv(samples[i]);
             }
@@ -75,25 +62,25 @@ macro_rules! process_samples {
                     );
                 }
                 2 => {
-                    let samples = $self.frame.plane::<($tp, $tp)>(0);
+                    let samples = $self.0.frame.plane::<($tp, $tp)>(0);
                     output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, $conv);
                     output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, $conv);
                 }
                 3 => {
-                    let samples = $self.frame.plane::<($tp, $tp, $tp)>(0);
+                    let samples = $self.0.frame.plane::<($tp, $tp, $tp)>(0);
                     output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, $conv);
                     output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, $conv);
                     output_tuple_to_buffer!(samples, 2, $num_samples, $sample_buffer, $conv);
                 }
                 4 => {
-                    let samples = $self.frame.plane::<($tp, $tp, $tp, $tp)>(0);
+                    let samples = $self.0.frame.plane::<($tp, $tp, $tp, $tp)>(0);
                     output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, $conv);
                     output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, $conv);
                     output_tuple_to_buffer!(samples, 2, $num_samples, $sample_buffer, $conv);
                     output_tuple_to_buffer!(samples, 3, $num_samples, $sample_buffer, $conv);
                 }
                 5 => {
-                    let samples = $self.frame.plane::<($tp, $tp, $tp, $tp, $tp)>(0);
+                    let samples = $self.0.frame.plane::<($tp, $tp, $tp, $tp, $tp)>(0);
                     output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, $conv);
                     output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, $conv);
                     output_tuple_to_buffer!(samples, 2, $num_samples, $sample_buffer, $conv);
@@ -101,7 +88,7 @@ macro_rules! process_samples {
                     output_tuple_to_buffer!(samples, 4, $num_samples, $sample_buffer, $conv);
                 }
                 6 => {
-                    let samples = $self.frame.plane::<($tp, $tp, $tp, $tp, $tp, $tp)>(0);
+                    let samples = $self.0.frame.plane::<($tp, $tp, $tp, $tp, $tp, $tp)>(0);
                     output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, $conv);
                     output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, $conv);
                     output_tuple_to_buffer!(samples, 2, $num_samples, $sample_buffer, $conv);
@@ -110,7 +97,10 @@ macro_rules! process_samples {
                     output_tuple_to_buffer!(samples, 5, $num_samples, $sample_buffer, $conv);
                 }
                 7 => {
-                    let samples = $self.frame.plane::<($tp, $tp, $tp, $tp, $tp, $tp, $tp)>(0);
+                    let samples = $self
+                        .0
+                        .frame
+                        .plane::<($tp, $tp, $tp, $tp, $tp, $tp, $tp)>(0);
                     output_tuple_to_buffer!(samples, 0, $num_samples, $sample_buffer, $conv);
                     output_tuple_to_buffer!(samples, 1, $num_samples, $sample_buffer, $conv);
                     output_tuple_to_buffer!(samples, 2, $num_samples, $sample_buffer, $conv);
@@ -147,16 +137,17 @@ impl AudioData for FFMpegAudioData {
         &mut self,
         sample_buffer: &mut Vec<Vec<f32>>,
     ) -> Result<Option<(usize, usize)>, Error> {
-        if !self.receive_frame()? {
+        if !self.0.receive_frame()? {
             return Ok(None);
         }
 
-        let sample_rate = self.frame.rate() as usize;
-        let num_channels = self.frame.channels() as usize;
-        let num_samples = self.frame.samples();
+        let frame = &self.0.frame;
+        let sample_rate = frame.rate() as usize;
+        let num_channels = frame.channels() as usize;
+        let num_samples = frame.samples();
         sample_buffer.truncate(num_channels);
 
-        match self.frame.format() {
+        match frame.format() {
             ffmpeg_next::format::Sample::U8(tp) => {
                 process_samples!(
                     tp,

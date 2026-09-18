@@ -12,21 +12,8 @@ pub struct GestureRecognizerBuilder {
     pub(super) hand_landmark_options: HandLandmarkOptions,
 }
 
-macro_rules! build_graph_and_extra_model_resource {
-    ( $file_buf:ident, $self:ident ) => {{
-        // parse model and get model resources.
-        let model_resource = crate::model::parse_model($file_buf.as_ref())?;
-        let graph = crate::GraphBuilder::new(
-            model_resource.model_backend(),
-            $self.base_task_options.device,
-        )
-        .build_from_bytes([$file_buf])?;
-        (model_resource, graph)
-    }};
-}
-
 impl Default for GestureRecognizerBuilder {
-    #[inline(always)]
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -43,7 +30,7 @@ impl GestureRecognizerBuilder {
     ///
     /// Set the locale to use for display names specified through the TFLite Model Metadata, if any.
     /// Defaults to English.
-    #[inline(always)]
+    #[inline]
     pub fn custom_classifier_display_names_locale(mut self, display_names_locale: String) -> Self {
         self.custom_classification_options.display_names_locale = display_names_locale;
         self
@@ -52,11 +39,10 @@ impl GestureRecognizerBuilder {
     /// **Set options for custom classification model! (if custom model exists)**
     ///
     /// Set the maximum number of top-scored classification results to return.
-    /// If < 0, all available results will be returned.
-    /// If 0, an invalid argument error is returned.
-    #[inline(always)]
-    pub fn custom_classifier_max_results(mut self, max_results: i32) -> Self {
-        self.custom_classification_options.max_results = max_results;
+    /// By default all available results are returned. `0` is an invalid argument.
+    #[inline]
+    pub fn custom_classifier_max_results(mut self, max_results: usize) -> Self {
+        self.custom_classification_options.max_results = Some(max_results);
         self
     }
 
@@ -64,7 +50,7 @@ impl GestureRecognizerBuilder {
     ///
     /// Set score threshold to override the one provided in the model metadata (if any).
     /// Results below this value are rejected.
-    #[inline(always)]
+    #[inline]
     pub fn custom_classifier_score_threshold(mut self, score_threshold: f32) -> Self {
         self.custom_classification_options.score_threshold = score_threshold;
         self
@@ -76,7 +62,7 @@ impl GestureRecognizerBuilder {
     /// If non-empty, detection results whose category name is not in this set will be filtered out.
     /// Duplicate or unknown category names are ignored.
     /// Mutually exclusive with category_deny_list.
-    #[inline(always)]
+    #[inline]
     pub fn custom_classifier_category_allow_list(
         mut self,
         category_allow_list: Vec<String>,
@@ -91,28 +77,25 @@ impl GestureRecognizerBuilder {
     /// If non-empty, detection results whose category name is in this set will be filtered out.
     /// Duplicate or unknown category names are ignored.
     /// Mutually exclusive with category_allow_list.
-    #[inline(always)]
+    #[inline]
     pub fn custom_classifier_category_deny_list(mut self, category_deny_list: Vec<String>) -> Self {
         self.custom_classification_options.category_deny_list = category_deny_list;
         self
     }
 
-    pub const HAND_LANDMARK_SUBTASK_CANDIDATE_NAMES: &'static [&'static str] =
+    const HAND_LANDMARK_SUBTASK_CANDIDATE_NAMES: &'static [&'static str] =
         &["hand_landmarker.task"];
-    pub const HAND_GESTURE_CANDIDATE_NAMES: &'static [&'static str] =
-        &["hand_gesture_recognizer.task"];
+    const HAND_GESTURE_CANDIDATE_NAMES: &'static [&'static str] = &["hand_gesture_recognizer.task"];
 
-    pub const GESTURE_EMBEDDER_CANDIDATE_NAMES: &'static [&'static str] =
-        &["gesture_embedder.tflite"];
-    pub const GESTURE_CANNED_GESTURE_CLASSIFIER_CANDIDATE_NAMES: &'static [&'static str] =
+    const GESTURE_EMBEDDER_CANDIDATE_NAMES: &'static [&'static str] = &["gesture_embedder.tflite"];
+    const GESTURE_CANNED_GESTURE_CLASSIFIER_CANDIDATE_NAMES: &'static [&'static str] =
         &["canned_gesture_classifier.tflite"];
-    pub const GESTURE_CUSTOM_GESTURE_CLASSIFIER_CANDIDATE_NAMES: &'static [&'static str] =
+    const GESTURE_CUSTOM_GESTURE_CLASSIFIER_CANDIDATE_NAMES: &'static [&'static str] =
         &["custom_gesture_classifier.tflite"];
 
-    pub const TASK_NAME: &'static str = "GestureRecognizer";
+    const TASK_NAME: &'static str = "GestureRecognizer";
 
     /// Create a new builder with default options.
-    #[inline(always)]
     pub fn new() -> Self {
         Self {
             base_task_options: Default::default(),
@@ -123,28 +106,25 @@ impl GestureRecognizerBuilder {
     }
 
     /// Use the current build options and use the buffer as model data to create a new task instance.
-    #[inline]
     pub fn build_from_buffer(self, buffer: impl AsRef<[u8]>) -> Result<GestureRecognizer, Error> {
-        classification_options_check!(self, classification_options);
-        classification_options_check!(self, custom_classification_options);
-        hand_landmark_options_check!(self);
+        self.classification_options.check()?;
+        self.custom_classification_options.check()?;
+        self.hand_landmark_options.check()?;
         let buf = buffer.as_ref();
 
         let zip_file = ZipFiles::new(buf)?;
-        let hand_gesture_bundle_file = search_file_in_zip!(
-            zip_file,
-            buf,
+        let hand_gesture_bundle_file = crate::model::search_file_in_zip(
+            &zip_file,
             Self::HAND_GESTURE_CANDIDATE_NAMES,
-            Self::TASK_NAME
-        );
+            Self::TASK_NAME,
+        )?;
 
         // subtask: landmark
-        let landmark_task_file = search_file_in_zip!(
-            zip_file,
-            buf,
+        let landmark_task_file = crate::model::search_file_in_zip(
+            &zip_file,
             Self::HAND_LANDMARK_SUBTASK_CANDIDATE_NAMES,
-            Self::TASK_NAME
-        );
+            Self::TASK_NAME,
+        )?;
         let hand_landmarker = HandLandmarkerBuilder {
             base_task_options: BaseTaskOptions {
                 device: self.base_task_options.device,
@@ -156,105 +136,59 @@ impl GestureRecognizerBuilder {
         let zip_file = ZipFiles::new(hand_gesture_bundle_file)?;
         // search files, build graph and check model
 
-        let gesture_embed_file = search_file_in_zip!(
-            zip_file,
-            hand_gesture_bundle_file,
+        let gesture_embed_file = crate::model::search_file_in_zip(
+            &zip_file,
             Self::GESTURE_EMBEDDER_CANDIDATE_NAMES,
-            Self::TASK_NAME
-        );
-        let (gesture_embed_model_resources, gesture_embed_graph) =
-            build_graph_and_extra_model_resource!(gesture_embed_file, self);
-        model_base_check_impl!(gesture_embed_model_resources, 3, 1);
+            Self::TASK_NAME,
+        )?;
+        let gesture_embed_model_resources = crate::model::parse_model(gesture_embed_file)?;
+        gesture_embed_model_resources.check_tensor_counts(Some(3), 1)?;
         // now only support fp32 type for embed model
         for i in 0..3 {
-            check_tensor_type!(
-                gesture_embed_model_resources,
-                i,
-                input_tensor_type,
-                TensorType::F32
-            );
+            gesture_embed_model_resources.check_input_tensor_type(i, TensorType::F32)?;
         }
-        check_tensor_type!(
-            gesture_embed_model_resources,
-            0,
-            output_tensor_type,
-            TensorType::F32
-        );
-        let shape = model_resource_check_and_get_impl!(
-            gesture_embed_model_resources,
-            output_tensor_shape,
-            0
-        );
-        let gesture_embed_handedness_out_size = shape.iter().product::<usize>();
+        gesture_embed_model_resources.check_output_tensor_type(0, TensorType::F32)?;
+        let gesture_embed_out_size = gesture_embed_model_resources
+            .expect_output_tensor_shape(0)?
+            .iter()
+            .product::<usize>();
+        let gesture_embed_graph = crate::tasks::common::build_graph(
+            gesture_embed_model_resources.as_ref(),
+            self.base_task_options.device,
+            gesture_embed_file,
+        )?;
 
-        let canned_file = search_file_in_zip!(
-            zip_file,
-            hand_gesture_bundle_file,
+        let canned_file = crate::model::search_file_in_zip(
+            &zip_file,
             Self::GESTURE_CANNED_GESTURE_CLASSIFIER_CANDIDATE_NAMES,
-            Self::TASK_NAME
-        );
-        let (canned_classify_model_resources, canned_classify_graph) =
-            build_graph_and_extra_model_resource!(canned_file, self);
-        model_base_check_impl!(canned_classify_model_resources, 1, 1);
-        check_tensor_type!(
-            canned_classify_model_resources,
-            0,
-            input_tensor_type,
-            TensorType::F32
-        );
-        let shape = model_resource_check_and_get_impl!(
-            canned_classify_model_resources,
-            input_tensor_shape,
-            0
-        );
-        let size = shape.iter().product::<usize>();
-        if size != gesture_embed_handedness_out_size {
-            return Err(Error::ModelInconsistentError(format!(
-                "Expect output tensor elements is `{}`, but got `{}`",
-                gesture_embed_handedness_out_size, size
-            )));
-        }
+            Self::TASK_NAME,
+        )?;
+        let canned_classifier = GestureClassifier::build(
+            canned_file,
+            self.base_task_options.device,
+            gesture_embed_out_size,
+        )?;
 
-        let (custom_classify_resources, custom_classify_graph) = {
-            let mut search_result = None;
-            for name in Self::GESTURE_CUSTOM_GESTURE_CLASSIFIER_CANDIDATE_NAMES {
-                if let Some(r) = zip_file.get_file_offset(name) {
-                    search_result = Some(r);
-                    break;
-                }
-            }
-            if let Some(r) = search_result {
-                let custom_file = &hand_gesture_bundle_file[r];
-                let (r, g) = build_graph_and_extra_model_resource!(custom_file, self);
-                model_base_check_impl!(r, 1, 1);
-                check_tensor_type!(r, 0, input_tensor_type, TensorType::F32);
-                let shape = model_resource_check_and_get_impl!(r, input_tensor_shape, 0);
-                let size = shape.iter().product::<usize>();
-                if size != gesture_embed_handedness_out_size {
-                    return Err(Error::ModelInconsistentError(format!(
-                        "Expect output tensor elements is `{}`, but got `{}`",
-                        gesture_embed_handedness_out_size, size
-                    )));
-                }
-                (Some(r), Some(g))
-            } else {
-                (None, None)
-            }
-        };
+        let custom_classifier = Self::GESTURE_CUSTOM_GESTURE_CLASSIFIER_CANDIDATE_NAMES
+            .iter()
+            .find_map(|name| zip_file.get_file(name))
+            .map(|file| {
+                GestureClassifier::build(
+                    file,
+                    self.base_task_options.device,
+                    gesture_embed_out_size,
+                )
+            })
+            .transpose()?;
 
         Ok(GestureRecognizer {
             build_options: self,
             gesture_embed_model_resources,
             gesture_embed_graph,
-            canned_classify_model_resources,
-            canned_classify_graph,
-            custom_classify_resources,
-            custom_classify_graph,
+            canned_classifier,
+            custom_classifier,
             hand_landmarker,
-            gesture_embed_hand_landmarks_input_index: 0,
-            gesture_embed_handedness_input_index: 1,
-            gesture_embed_hand_world_landmarks_input_index: 2,
-            gesture_embed_out_size: gesture_embed_handedness_out_size,
+            gesture_embed_out_size,
         })
     }
 }

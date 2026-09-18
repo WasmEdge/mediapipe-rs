@@ -70,10 +70,9 @@ mod ffmpeg {
             .unwrap();
         let mut session = classifier.new_session().unwrap();
 
-        let mut results_iter = session.classify_for_video(input_1).unwrap();
         let mut num_frame = 0;
-        while let Some(result) = results_iter.next().unwrap() {
-            eprintln!("Frame {}: {}", num_frame, result);
+        for result in session.classify_for_video(input_1).unwrap() {
+            eprintln!("Frame {}: {}", num_frame, result.unwrap());
             num_frame += 1;
         }
 

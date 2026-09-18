@@ -1,7 +1,8 @@
+use crate::postprocess::impl_result_list;
+#[cfg(feature = "draw")]
 use crate::postprocess::utils::{draw_landmarks_with_options, DefaultPixel, DrawLandmarksOptions};
 use crate::postprocess::NormalizedLandmarks;
 use std::fmt::{Display, Formatter};
-use std::ops::{Deref, DerefMut};
 
 /// A single face landmark detection result.
 #[derive(Debug)]
@@ -10,9 +11,10 @@ pub struct FaceLandmarkResult {
     pub face_landmarks: NormalizedLandmarks,
 }
 
+#[cfg(feature = "draw")]
 impl FaceLandmarkResult {
     /// Draw this detection result to image with default options
-    #[inline(always)]
+    #[inline]
     pub fn draw<I>(&self, img: &mut I)
     where
         I: image::GenericImage,
@@ -24,7 +26,7 @@ impl FaceLandmarkResult {
     }
 
     /// Draw this detection result to image with options
-    #[inline(always)]
+    #[inline]
     pub fn draw_with_options<I>(&self, img: &mut I, options: &DrawLandmarksOptions<I::Pixel>)
     where
         I: image::GenericImage,
@@ -39,31 +41,7 @@ impl FaceLandmarkResult {
 #[derive(Debug)]
 pub struct FaceLandmarkResults(pub Vec<FaceLandmarkResult>);
 
-impl Deref for FaceLandmarkResults {
-    type Target = Vec<FaceLandmarkResult>;
-
-    #[inline(always)]
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for FaceLandmarkResults {
-    #[inline(always)]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl IntoIterator for FaceLandmarkResults {
-    type Item = FaceLandmarkResult;
-    type IntoIter = std::vec::IntoIter<FaceLandmarkResult>;
-
-    #[inline(always)]
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
+impl_result_list!(FaceLandmarkResults, FaceLandmarkResult);
 
 impl Display for FaceLandmarkResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

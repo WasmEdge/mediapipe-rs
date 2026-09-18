@@ -1,6 +1,6 @@
 use super::NormalizedRect;
+use crate::postprocess::impl_result_list;
 use std::fmt::{Display, Formatter};
-use std::ops::{Deref, DerefMut};
 
 /// Landmark represents a point in 3D space with x, y, z coordinates. The
 /// landmark coordinates are in meters. z represents the landmark depth, and the
@@ -29,31 +29,7 @@ pub struct Landmark {
 #[derive(Debug)]
 pub struct Landmarks(pub Vec<Landmark>);
 
-impl Deref for Landmarks {
-    type Target = Vec<Landmark>;
-
-    #[inline(always)]
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Landmarks {
-    #[inline(always)]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl IntoIterator for Landmarks {
-    type Item = Landmark;
-    type IntoIter = std::vec::IntoIter<Landmark>;
-
-    #[inline(always)]
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
+impl_result_list!(Landmarks, Landmark);
 
 /// A normalized version of above Landmark struct. All coordinates should be within [0, 1].
 pub type NormalizedLandmark = Landmark;

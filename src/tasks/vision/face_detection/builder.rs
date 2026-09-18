@@ -8,7 +8,7 @@ use crate::tasks::common::BaseTaskOptions;
 pub struct FaceDetectorBuilder {
     pub(super) base_task_options: BaseTaskOptions,
     /// The maximum number of faces output by the detector.
-    pub(super) num_faces: i32,
+    pub(super) num_faces: Option<usize>,
     /// The minimum confidence score for the face detection to be considered successful.
     pub(super) min_detection_confidence: f32,
     /// The minimum non-maximum-suppression threshold for face detection to be considered overlapped.
@@ -16,7 +16,7 @@ pub struct FaceDetectorBuilder {
 }
 
 impl Default for FaceDetectorBuilder {
-    #[inline(always)]
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -24,11 +24,10 @@ impl Default for FaceDetectorBuilder {
 
 impl FaceDetectorBuilder {
     /// Create a new builder with default options.
-    #[inline(always)]
     pub fn new() -> Self {
         Self {
             base_task_options: Default::default(),
-            num_faces: -1,
+            num_faces: None,
             min_detection_confidence: 0.5,
             min_suppression_threshold: 0.3,
         }
@@ -36,17 +35,17 @@ impl FaceDetectorBuilder {
 
     base_task_options_impl!(FaceDetector);
 
-    /// Set the maximum number of faces can be detected by the HandDetector.
-    /// Default is -1, (no limits)
-    #[inline(always)]
-    pub fn num_faces(mut self, num_faces: i32) -> Self {
-        self.num_faces = num_faces;
+    /// Set the maximum number of faces can be detected by the FaceDetector.
+    /// By default there is no limit.
+    #[inline]
+    pub fn num_faces(mut self, num_faces: usize) -> Self {
+        self.num_faces = Some(num_faces);
         self
     }
 
     /// Set the minimum confidence score for the face detection to be considered successful.
     /// Default is 0.5
-    #[inline(always)]
+    #[inline]
     pub fn min_detection_confidence(mut self, min_detection_confidence: f32) -> Self {
         self.min_detection_confidence = min_detection_confidence;
         self
@@ -54,16 +53,15 @@ impl FaceDetectorBuilder {
 
     /// Set the minimum non-maximum-suppression threshold for face detection to be considered overlapped.
     /// Default is 0.3
-    #[inline(always)]
+    #[inline]
     pub fn min_suppression_threshold(mut self, min_suppression_threshold: f32) -> Self {
         self.min_suppression_threshold = min_suppression_threshold;
         self
     }
 
     /// Use the current build options and use the buffer as model data to create a new task instance.
-    #[inline]
     pub fn build_from_buffer(self, buffer: impl AsRef<[u8]>) -> Result<FaceDetector, crate::Error> {
-        if self.num_faces == 0 {
+        if self.num_faces == Some(0) {
             return Err(crate::Error::ArgumentError(
                 "The number of max faces cannot be zero".into(),
             ));
@@ -74,9 +72,8 @@ impl FaceDetectorBuilder {
         let model_resource = crate::model::parse_model(buf)?;
 
         // check model
-        model_base_check_impl!(model_resource, 1, 2);
-        let img_info =
-            model_resource_check_and_get_impl!(model_resource, to_tensor_info, 0).try_to_image()?;
+        model_resource.check_tensor_counts(Some(1), 2)?;
+        let img_info = model_resource.expect_to_tensor_info(0)?.try_to_image()?;
 
         // generate anchors
         // todo: read info from metadata
@@ -101,14 +98,13 @@ impl FaceDetectorBuilder {
             )));
         }
 
-        let graph = crate::GraphBuilder::new(
-            model_resource.model_backend(),
+        let graph = crate::tasks::common::build_graph(
+            model_resource.as_ref(),
             self.base_task_options.device,
-        )
-        .build_from_bytes([buf])?;
+            buf,
+        )?;
 
-        let input_tensor_type =
-            model_resource_check_and_get_impl!(model_resource, input_tensor_type, 0);
+        let input_tensor_type = model_resource.expect_input_tensor_type(0)?;
 
         Ok(FaceDetector {
             build_options: self,

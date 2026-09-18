@@ -25,49 +25,47 @@ impl ImageSegmenter {
     base_task_options_get_impl!();
 
     /// Get display names locale.
-    #[inline(always)]
+    #[inline]
     pub fn display_names_locale(&self) -> &String {
         &self.build_options.display_names_locale
     }
 
     /// Get whether output the category mask.
-    #[inline(always)]
+    #[inline]
     pub fn output_category_mask(&self) -> bool {
         self.build_options.output_category_mask
     }
 
     /// Get whether output the confidence masks.
-    #[inline(always)]
+    #[inline]
     pub fn output_confidence_masks(&self) -> bool {
         self.build_options.output_confidence_masks
     }
 
     /// Get labels for the task model.
-    #[inline(always)]
+    #[inline]
     pub fn labels(&self) -> &Vec<String> {
         &self.labels
     }
 
     /// Get locale labels for the task model.
-    #[inline(always)]
+    #[inline]
     pub fn labels_locale(&self) -> &Option<Vec<String>> {
         &self.labels_locale
     }
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<ImageSegmenterSession<'_>, Error> {
-        let input_to_tensor_info =
-            model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
-                .try_to_image()?;
-        let input_tensor_shape =
-            model_resource_check_and_get_impl!(self.model_resource, input_tensor_shape, 0);
-        let output_tensor_shape =
-            model_resource_check_and_get_impl!(self.model_resource, output_tensor_shape, 0);
+        let input_to_tensor_info = self
+            .model_resource
+            .expect_to_tensor_info(0)?
+            .try_to_image()?;
+        let input_tensor_shape = self.model_resource.expect_input_tensor_shape(0)?;
+        let output_tensor_shape = self.model_resource.expect_output_tensor_shape(0)?;
 
         let tensors_to_segmentation = TensorsToSegmentation::new(
             self.output_activation,
-            get_type_and_quantization!(self.model_resource, 0),
+            self.model_resource.output_type_and_quantization(0)?,
             output_tensor_shape,
         )?;
         let execution_ctx = self.graph.init_execution_context()?;
@@ -76,7 +74,13 @@ impl ImageSegmenter {
             tensors_to_segmentation,
             input_to_tensor_info,
             input_tensor_shape,
-            input_tensor_buf: vec![0; tensor_bytes!(self.input_tensor_type, input_tensor_shape)],
+            input_tensor_buf: vec![
+                0;
+                crate::model::tensor_bytes(
+                    self.input_tensor_type,
+                    input_tensor_shape
+                )
+            ],
             input_tensor_type: self.input_tensor_type,
             output_confidence: self.build_options.output_confidence_masks,
             output_category: self.build_options.output_category_mask,
@@ -84,13 +88,13 @@ impl ImageSegmenter {
     }
 
     /// Segment one image using this session.
-    #[inline(always)]
+    #[inline]
     pub fn segment(&self, input: &impl ImageToTensor) -> Result<ImageSegmentationResult, Error> {
         self.new_session()?.segment(input)
     }
 
     /// Segment video stream using this session, and collect all results to [`Vec`]
-    #[inline(always)]
+    #[inline]
     pub fn segment_for_video(
         &self,
         video_data: impl VideoData,
@@ -116,7 +120,6 @@ pub struct ImageSegmenterSession<'model> {
 }
 
 impl<'model> ImageSegmenterSession<'model> {
-    #[inline(always)]
     fn compute(&mut self, img_size: (u32, u32)) -> Result<ImageSegmentationResult, Error> {
         self.execution_ctx.set_input(
             0,
@@ -175,7 +178,6 @@ impl<'model> ImageSegmenterSession<'model> {
     }
 
     /// Segment one image, reuse this session data to speedup.
-    #[inline(always)]
     pub fn segment(
         &mut self,
         input: &impl ImageToTensor,
@@ -190,11 +192,11 @@ impl<'model> ImageSegmenterSession<'model> {
 
     /// Segment input video stream use this session.
     /// Return a iterator for results, process input stream when poll next result.
-    #[inline(always)]
+    #[inline]
     pub fn segment_for_video<InputVideoData: VideoData>(
         &mut self,
         video_data: InputVideoData,
-    ) -> Result<VideoResultsIter<'_, '_, Self, InputVideoData>, Error> {
+    ) -> Result<VideoResultsIter<'_, Self, InputVideoData>, Error> {
         Ok(VideoResultsIter::new(self, video_data))
     }
 }
@@ -202,7 +204,6 @@ impl<'model> ImageSegmenterSession<'model> {
 impl<'model> super::TaskSession for ImageSegmenterSession<'model> {
     type Result = ImageSegmentationResult;
 
-    #[inline]
     fn process_next(
         &mut self,
         process_options: &super::ImageProcessingOptions,

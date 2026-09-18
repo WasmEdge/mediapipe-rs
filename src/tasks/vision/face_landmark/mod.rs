@@ -37,27 +37,25 @@ impl FaceLandmarker {
     face_landmark_options_get_impl!();
 
     /// Get the subtask: face detector.
-    #[inline(always)]
+    #[inline]
     pub fn subtask_face_detector(&self) -> &FaceDetector {
         &self.face_detector
     }
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<FaceLandmarkerSession<'_>, Error> {
-        let image_to_tensor_info =
-            model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
-                .try_to_image()?;
-        let input_tensor_shape =
-            model_resource_check_and_get_impl!(self.model_resource, input_tensor_shape, 0);
+        let image_to_tensor_info = self
+            .model_resource
+            .expect_to_tensor_info(0)?
+            .try_to_image()?;
+        let input_tensor_shape = self.model_resource.expect_input_tensor_shape(0)?;
 
-        let landmarks_out =
-            get_type_and_quantization!(self.model_resource, self.landmarks_buf_index);
-        let landmarks_shape = model_resource_check_and_get_impl!(
-            self.model_resource,
-            output_tensor_shape,
-            self.landmarks_buf_index
-        );
+        let landmarks_out = self
+            .model_resource
+            .output_type_and_quantization(self.landmarks_buf_index)?;
+        let landmarks_shape = self
+            .model_resource
+            .expect_output_tensor_shape(self.landmarks_buf_index)?;
 
         // 468 is the standard number of facial landmarks used in MediaPipe's Face Mesh model (kMeshLandmarksNum).
         // For models including the iris, this number increases to 478.
@@ -77,7 +75,13 @@ impl FaceLandmarker {
             face_detector_session,
             image_to_tensor_info,
             input_tensor_shape,
-            input_buffer: vec![0; tensor_bytes!(self.input_tensor_type, input_tensor_shape)],
+            input_buffer: vec![
+                0;
+                crate::model::tensor_bytes(
+                    self.input_tensor_type,
+                    input_tensor_shape
+                )
+            ],
             score_of_face_presence: [0.],
             tensors_to_landmarks,
         })
@@ -103,7 +107,6 @@ impl<'model> FaceLandmarkerSession<'model> {
     const DETECTION_TO_RECT_ROTATION_OPTION: Option<(f32, usize, usize)> = Some((0.0, 0, 1));
 
     /// Detect one image using this task session.
-    #[inline(always)]
     pub fn detect(&mut self, input: &impl ImageToTensor) -> Result<FaceLandmarkResults, Error> {
         let (img_w, img_h) = input.image_size();
         let face_detection_result = self.face_detector_session.detect(input)?;
@@ -169,11 +172,11 @@ impl<'model> FaceLandmarkerSession<'model> {
 
     /// Detect input video stream use this session.
     /// Return a iterator for results, process input stream when poll next result.
-    #[inline(always)]
+    #[inline]
     pub fn detect_for_video<InputVideoData: VideoData>(
         &mut self,
         video_data: InputVideoData,
-    ) -> Result<VideoResultsIter<'_, '_, Self, InputVideoData>, Error> {
+    ) -> Result<VideoResultsIter<'_, Self, InputVideoData>, Error> {
         Ok(VideoResultsIter::new(self, video_data))
     }
 }
@@ -181,7 +184,6 @@ impl<'model> FaceLandmarkerSession<'model> {
 impl<'model> super::TaskSession for FaceLandmarkerSession<'model> {
     type Result = FaceLandmarkResults;
 
-    #[inline]
     fn process_next(
         &mut self,
         _process_options: &super::ImageProcessingOptions,

@@ -77,7 +77,7 @@ impl HandLandmark {
         (19, 20),
     ];
 
-    #[inline(always)]
+    #[inline]
     pub fn name(&self) -> &'static str {
         Self::NAMES[(*self) as u32 as usize]
     }

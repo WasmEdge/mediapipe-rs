@@ -105,7 +105,6 @@ const DEFAULT_SUFFIX_INDICATOR: &str = "##";
 const DEFAULT_UNKNOWN_TOKEN: &str = "[UNK]";
 // const DEFAULT_SPLIT_UNKNOWN_CHARS: bool = false;
 
-#[inline(always)]
 fn do_word_piece_tokenize(
     input_ids: &mut [i32],
     index: &mut usize,

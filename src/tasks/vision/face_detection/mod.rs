@@ -29,34 +29,33 @@ impl FaceDetector {
 
     detector_impl!(FaceDetectorSession, DetectionResult);
 
-    /// Get the maximum number of faces can be detected by the HandDetector.
-    #[inline(always)]
-    pub fn num_faces(&self) -> i32 {
+    /// Get the maximum number of faces can be detected by the FaceDetector. `None` means no limit.
+    #[inline]
+    pub fn num_faces(&self) -> Option<usize> {
         self.build_options.num_faces
     }
 
     /// Get the minimum confidence score for the face detection to be considered successful.
     /// Default is 0.5
-    #[inline(always)]
+    #[inline]
     pub fn min_detection_confidence(&self) -> f32 {
         self.build_options.min_detection_confidence
     }
 
     /// Get the minimum non-maximum-suppression threshold for face detection to be considered overlapped.
     /// Default is 0.3
-    #[inline(always)]
+    #[inline]
     pub fn min_suppression_threshold(&self) -> f32 {
         self.build_options.min_suppression_threshold
     }
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<FaceDetectorSession<'_>, Error> {
-        let image_to_tensor_info =
-            model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
-                .try_to_image()?;
-        let input_tensor_shape =
-            model_resource_check_and_get_impl!(self.model_resource, input_tensor_shape, 0);
+        let image_to_tensor_info = self
+            .model_resource
+            .expect_to_tensor_info(0)?
+            .try_to_image()?;
+        let input_tensor_shape = self.model_resource.expect_input_tensor_shape(0)?;
         let min_detection_confidence = self.min_detection_confidence();
         let categories_filter =
             CategoriesFilter::new_full(min_detection_confidence, Self::FACE_LABELS, None);
@@ -65,8 +64,10 @@ impl FaceDetector {
             &self.anchors,
             min_detection_confidence,
             self.num_faces(),
-            get_type_and_quantization!(self.model_resource, self.location_buf_index),
-            get_type_and_quantization!(self.model_resource, self.score_buf_index),
+            self.model_resource
+                .output_type_and_quantization(self.location_buf_index)?,
+            self.model_resource
+                .output_type_and_quantization(self.score_buf_index)?,
         )?;
 
         // config options
@@ -75,11 +76,11 @@ impl FaceDetector {
         tensors_to_detection.set_key_points(6, 2, 4);
         tensors_to_detection.set_sigmoid_score(true);
         tensors_to_detection.set_score_clipping_thresh(100.);
-        tensors_to_detection.set_box_format(DetectionBoxFormat::XYWH);
+        tensors_to_detection.set_box_format(DetectionBoxFormat::Xywh);
         tensors_to_detection.set_nms_min_suppression_threshold(self.min_suppression_threshold());
         tensors_to_detection
             .set_nms_overlap_type(NonMaxSuppressionOverlapType::IntersectionOverUnion);
-        tensors_to_detection.set_nms_algorithm(NonMaxSuppressionAlgorithm::WEIGHTED);
+        tensors_to_detection.set_nms_algorithm(NonMaxSuppressionAlgorithm::Weighted);
         tensors_to_detection.realloc(self.num_box);
 
         let execution_ctx = self.graph.init_execution_context()?;
@@ -89,7 +90,13 @@ impl FaceDetector {
             tensors_to_detection,
             image_to_tensor_info,
             input_tensor_shape,
-            input_buffer: vec![0; tensor_bytes!(self.input_tensor_type, input_tensor_shape)],
+            input_buffer: vec![
+                0;
+                crate::model::tensor_bytes(
+                    self.input_tensor_type,
+                    input_tensor_shape
+                )
+            ],
         })
     }
 }
@@ -108,7 +115,6 @@ pub struct FaceDetectorSession<'model> {
 
 impl<'model> FaceDetectorSession<'model> {
     #[allow(unused_variables)]
-    #[inline(always)]
     fn compute(&mut self, timestamp_ms: Option<u64>) -> Result<DetectionResult, Error> {
         self.execution_ctx.set_input(
             0,

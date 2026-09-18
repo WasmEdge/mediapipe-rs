@@ -21,7 +21,6 @@ pub struct FFMpegVideoData {
 
 impl FFMpegVideoData {
     /// Create a new instance from a FFMpeg input.
-    #[inline(always)]
     pub fn new(input: ffmpeg_next::format::context::Input) -> Result<Self, Error> {
         let source = FFMpegVideoInput::new(input)?;
         let convert_to_ms = source.decoder.time_base().numerator() as f64
@@ -56,7 +55,6 @@ impl FFMpegVideoData {
 impl VideoData for FFMpegVideoData {
     type Frame<'frame> = FFMpegFrame<'frame>;
 
-    #[inline(always)]
     fn next_frame(&mut self) -> Result<Option<Self::Frame<'_>>, Error> {
         if !self.source.receive_frame()? {
             return Ok(None);
@@ -104,7 +102,7 @@ impl<'a> ImageToTensor for FFMpegFrame<'a> {
                 desc.extend(format!("[r_in];[r_in]rotate={}", process_options.rotation).chars());
             }
             let out_format = match to_tensor_info.color_space {
-                ImageColorSpaceType::GRAYSCALE => {
+                ImageColorSpaceType::Grayscale => {
                     ffmpeg_next::ffi::AVPixelFormat::AV_PIX_FMT_GRAY8 as u32
                 }
                 _ => ffmpeg_next::ffi::AVPixelFormat::AV_PIX_FMT_RGB24 as u32,
@@ -154,7 +152,7 @@ impl<'a> ImageToTensor for FFMpegFrame<'a> {
         };
 
         match to_tensor_info.color_space {
-            ImageColorSpaceType::RGB | ImageColorSpaceType::UNKNOWN => {
+            ImageColorSpaceType::Rgb | ImageColorSpaceType::Unknown => {
                 let img = image::ImageBuffer::<image::Rgb<u8>, &[u8]>::from_raw(
                     to_tensor_info.width(),
                     to_tensor_info.height(),
@@ -170,7 +168,7 @@ impl<'a> ImageToTensor for FFMpegFrame<'a> {
                 })?;
                 image::rgb8_image_buffer_to_tensor(&img, to_tensor_info, output_buffer)?;
             }
-            ImageColorSpaceType::GRAYSCALE => return Err(image::grayscale_unsupported()),
+            ImageColorSpaceType::Grayscale => return Err(image::grayscale_unsupported()),
         }
 
         Ok(())
@@ -213,10 +211,10 @@ fn cached_scale_ctx(
     if key.src_w == key.dst_w
         && key.src_h == key.dst_h
         && match key.dst_format {
-            ImageColorSpaceType::RGB | ImageColorSpaceType::UNKNOWN => {
+            ImageColorSpaceType::Rgb | ImageColorSpaceType::Unknown => {
                 src_format == ffmpeg_next::format::Pixel::RGB24
             }
-            ImageColorSpaceType::GRAYSCALE => src_format == ffmpeg_next::format::Pixel::GRAY8,
+            ImageColorSpaceType::Grayscale => src_format == ffmpeg_next::format::Pixel::GRAY8,
         }
     {
         return Ok(None);
@@ -228,10 +226,10 @@ fn cached_scale_ctx(
             // new scale context
             let key = v.key();
             let dst_format = match key.dst_format {
-                ImageColorSpaceType::RGB | ImageColorSpaceType::UNKNOWN => {
+                ImageColorSpaceType::Rgb | ImageColorSpaceType::Unknown => {
                     ffmpeg_next::format::Pixel::RGB24
                 }
-                ImageColorSpaceType::GRAYSCALE => ffmpeg_next::format::Pixel::GRAY8,
+                ImageColorSpaceType::Grayscale => ffmpeg_next::format::Pixel::GRAY8,
             };
             let scale = ffmpeg_next::software::scaling::Context::get(
                 src_format,

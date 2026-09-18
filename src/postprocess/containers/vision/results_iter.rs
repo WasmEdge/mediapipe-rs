@@ -1,46 +1,62 @@
-/// Used for stream data results, such video, audio.
-pub struct VideoResultsIter<'session, 'tensor, TaskSession, VideoData>
+use crate::tasks::vision::{ImageProcessingOptions, TaskSession};
+use crate::Error;
+
+/// Iterator over the results of a video stream. Each frame is processed when the next item
+/// is polled, so the iterator yields `Result` items.
+pub struct VideoResultsIter<'session, Session, VideoData>
 where
-    TaskSession: crate::tasks::vision::TaskSession + 'session,
+    Session: TaskSession + 'session,
     VideoData: crate::preprocess::vision::VideoData,
 {
     video_data: VideoData,
-    session: &'session mut TaskSession,
-    _marker: std::marker::PhantomData<&'tensor ()>,
+    session: &'session mut Session,
+    process_options: ImageProcessingOptions,
 }
 
-impl<'session, 'tensor, TaskSession, VideoData>
-    VideoResultsIter<'session, 'tensor, TaskSession, VideoData>
+impl<'session, Session, VideoData> VideoResultsIter<'session, Session, VideoData>
 where
-    TaskSession: crate::tasks::vision::TaskSession + 'session,
+    Session: TaskSession + 'session,
     VideoData: crate::preprocess::vision::VideoData,
 {
-    #[inline(always)]
-    pub(crate) fn new(session: &'session mut TaskSession, video_data: VideoData) -> Self {
+    pub(crate) fn new(session: &'session mut Session, video_data: VideoData) -> Self {
         Self {
             video_data,
             session,
-            _marker: Default::default(),
+            process_options: ImageProcessingOptions::default(),
         }
     }
 
-    /// poll next result
-    #[allow(clippy::should_implement_trait)]
-    #[inline(always)]
-    pub fn next(&mut self) -> Result<Option<TaskSession::Result>, crate::Error> {
-        self.session
-            .process_next(&Default::default(), &mut self.video_data)
+    /// Set the image processing options used for every following frame.
+    pub fn with_options(mut self, process_options: ImageProcessingOptions) -> Self {
+        self.process_options = process_options;
+        self
     }
 
-    /// poll next result
-    #[inline(always)]
+    /// Process the next frame with the given options.
     pub fn next_with_options(
         &mut self,
-        process_options: &crate::tasks::vision::ImageProcessingOptions,
-    ) -> Result<Option<TaskSession::Result>, crate::Error> {
+        process_options: &ImageProcessingOptions,
+    ) -> Result<Option<Session::Result>, Error> {
         self.session
             .process_next(process_options, &mut self.video_data)
     }
 
-    results_iter_impl!();
+    /// Process all remaining frames and collect the results.
+    pub fn to_vec(self) -> Result<Vec<Session::Result>, Error> {
+        self.collect()
+    }
+}
+
+impl<'session, Session, VideoData> Iterator for VideoResultsIter<'session, Session, VideoData>
+where
+    Session: TaskSession + 'session,
+    VideoData: crate::preprocess::vision::VideoData,
+{
+    type Item = Result<Session::Result, Error>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.session
+            .process_next(&self.process_options, &mut self.video_data)
+            .transpose()
+    }
 }

@@ -3,7 +3,7 @@ macro_rules! detector_impl {
         base_task_options_get_impl!();
 
         /// Detect one image using a new session.
-        #[inline(always)]
+        #[inline]
         pub fn detect(
             &self,
             input: &impl crate::preprocess::vision::ImageToTensor,
@@ -12,7 +12,7 @@ macro_rules! detector_impl {
         }
 
         /// Detect input video stream in a new session, and collect all results to [`Vec`].
-        #[inline(always)]
+        #[inline]
         pub fn detect_for_video(
             &self,
             video_data: impl crate::preprocess::vision::VideoData,
@@ -25,7 +25,6 @@ macro_rules! detector_impl {
 macro_rules! detector_session_impl {
     ( $Result:ident ) => {
         /// Detect one image using this session.
-        #[inline(always)]
         pub fn detect(
             &mut self,
             input: &impl crate::preprocess::vision::ImageToTensor,
@@ -40,11 +39,11 @@ macro_rules! detector_session_impl {
 
         /// Detect input video stream use this session.
         /// Return a iterator for results, process input stream when poll next result.
-        #[inline(always)]
+        #[inline]
         pub fn detect_for_video<InputVideoData: crate::preprocess::vision::VideoData>(
             &mut self,
             video_data: InputVideoData,
-        ) -> Result<crate::postprocess::VideoResultsIter<'_, '_, Self, InputVideoData>, crate::Error> {
+        ) -> Result<crate::postprocess::VideoResultsIter<'_, Self, InputVideoData>, crate::Error> {
             Ok(crate::postprocess::VideoResultsIter::new(self, video_data))
         }
     };
@@ -57,7 +56,6 @@ macro_rules! detection_task_session_impl {
         impl<'model> super::TaskSession for $SessionName<'model> {
             type Result = $Result;
 
-            #[inline]
             fn process_next(
                 &mut self,
                 process_options: &super::ImageProcessingOptions,

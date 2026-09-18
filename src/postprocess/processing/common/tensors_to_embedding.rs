@@ -13,7 +13,6 @@ pub struct TensorsToEmbedding {
 }
 
 impl TensorsToEmbedding {
-    #[inline(always)]
     pub(crate) fn new(quantize: bool, l2_normalize: bool) -> Self {
         Self {
             quantize,
@@ -23,7 +22,6 @@ impl TensorsToEmbedding {
         }
     }
 
-    #[inline(always)]
     pub(crate) fn add_output_cfg(
         &mut self,
         tensor_buf: (TensorType, Option<QuantizationParameters>),
@@ -36,7 +34,7 @@ impl TensorsToEmbedding {
         Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
     pub(crate) fn output_buffer(&mut self, index: usize) -> &mut OutputBuffer {
         &mut self.outputs[index]
     }
@@ -89,7 +87,7 @@ impl TensorsToEmbedding {
     }
 
     /// Scales by 128 and saturates to the i8 range before narrowing.
-    #[inline(always)]
+    #[inline]
     fn quantize_value(value: f32) -> i8 {
         ((value * 128.).round() as i32).clamp(-128, 127) as i8
     }
@@ -98,7 +96,6 @@ impl TensorsToEmbedding {
     fn get_inverse_l2_norm(values: &[f32]) -> f32 {
         let mut squared_l2_norm = 0.0;
         for v in values {
-            let value = *v;
             squared_l2_norm += v * v;
         }
 

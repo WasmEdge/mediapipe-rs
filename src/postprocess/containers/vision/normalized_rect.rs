@@ -21,7 +21,6 @@ pub struct NormalizedRect {
 }
 
 impl NormalizedRect {
-    #[inline(always)]
     fn init_from_rect(rect: &Rect<f32>) -> Self {
         let width = rect.right - rect.left;
         let height = rect.bottom - rect.top;
@@ -138,7 +137,7 @@ impl NormalizedRect {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     fn normalize_radians(angle: f32) -> f32 {
         angle
             - 2. * std::f32::consts::PI

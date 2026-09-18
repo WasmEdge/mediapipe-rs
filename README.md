@@ -241,7 +241,7 @@ $ cargo run --release --example text_classification -- ./assets/models/text_clas
 
 ```
 
-### Gesture Recognition
+#### Gesture Recognition
 
 ```rust
 use mediapipe_rs::tasks::vision::GestureRecognizerBuilder;
@@ -430,7 +430,7 @@ use mediapipe_rs::Error;
 
 fn inference(
     text_classifier: &TextClassifier,
-    inputs: &Vec<String>
+    inputs: &[String]
 ) -> Result<Vec<ClassificationResult>, Error> {
     let mut res = Vec::with_capacity(inputs.len());
     for input in inputs {
@@ -450,7 +450,7 @@ use mediapipe_rs::Error;
 
 fn inference(
     text_classifier: &TextClassifier,
-    inputs: &Vec<String>
+    inputs: &[String]
 ) -> Result<Vec<ClassificationResult>, Error> {
     let mut res = Vec::with_capacity(inputs.len());
     // only create one session and reuse the resources in session.
@@ -461,6 +461,13 @@ fn inference(
     Ok(res)
 }
 ```
+
+## Cargo features
+
+* `vision`, `audio`, `text`: the task groups. All three are enabled by default.
+* `draw`: drawing utils for task results (`draw_detection`, `draw_landmarks`, the `draw()` methods)
+  and the bundled font. Enabled by default; disable it to leave `imageproc` and the font out of the wasm binary.
+* `ffmpeg`: video and audio input through FFmpeg, see below.
 
 ## Use the FFMPEG feature to process video and audio.
 

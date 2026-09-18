@@ -1,6 +1,6 @@
 use super::{HandDetectorBuilder, HandLandmarker};
 
-use crate::model::{check_scalar_f32_output, ZipFiles};
+use crate::model::ZipFiles;
 use crate::tasks::common::{BaseTaskOptions, HandLandmarkOptions};
 
 /// Configure the build options of a new **Hand Landmark** task instance.
@@ -14,7 +14,7 @@ pub struct HandLandmarkerBuilder {
 
 impl HandLandmarkerBuilder {
     /// Create a new builder with default options.
-    #[inline(always)]
+    #[inline]
     pub fn new() -> Self {
         Self::default()
     }
@@ -28,27 +28,24 @@ impl HandLandmarkerBuilder {
         &["hand_landmarks_detector.tflite"];
 
     /// Use the current build options and use the buffer as model data to create a new task instance.
-    #[inline]
     pub fn build_from_buffer(
         self,
         buffer: impl AsRef<[u8]>,
     ) -> Result<HandLandmarker, crate::Error> {
-        hand_landmark_options_check!(self);
+        self.hand_landmark_options.check()?;
         let buf = buffer.as_ref();
 
         let zip_file = ZipFiles::new(buf)?;
-        let landmark_file = search_file_in_zip!(
-            zip_file,
-            buf,
+        let landmark_file = crate::model::search_file_in_zip(
+            &zip_file,
             Self::HAND_LANDMARKS_CANDIDATE_NAMES,
-            "HandLandmark"
-        );
-        let hand_detection_file = search_file_in_zip!(
-            zip_file,
-            buf,
+            "HandLandmark",
+        )?;
+        let hand_detection_file = crate::model::search_file_in_zip(
+            &zip_file,
             Self::HAND_DETECTOR_CANDIDATE_NAMES,
-            "HandDetection"
-        );
+            "HandDetection",
+        )?;
 
         let subtask = HandDetectorBuilder::new()
             .device(self.base_task_options.device)
@@ -60,10 +57,9 @@ impl HandLandmarkerBuilder {
         let model_resource = crate::model::parse_model(landmark_file)?;
 
         // check model
-        model_base_check_impl!(model_resource, 1, 4);
-        model_resource_check_and_get_impl!(model_resource, to_tensor_info, 0).try_to_image()?;
-        let input_tensor_type =
-            model_resource_check_and_get_impl!(model_resource, input_tensor_type, 0);
+        model_resource.check_tensor_counts(Some(1), 4)?;
+        model_resource.expect_to_tensor_info(0)?.try_to_image()?;
+        let input_tensor_type = model_resource.expect_input_tensor_type(0)?;
 
         // todo: get these from metadata
         let handedness_buf_index = 2;
@@ -71,14 +67,14 @@ impl HandLandmarkerBuilder {
         let landmarks_buf_index = 0;
         let world_landmarks_buf_index = 3;
         // now only fp32 model
-        check_scalar_f32_output(model_resource.as_ref(), handedness_buf_index)?;
-        check_scalar_f32_output(model_resource.as_ref(), score_buf_index)?;
+        model_resource.check_scalar_f32_output(handedness_buf_index)?;
+        model_resource.check_scalar_f32_output(score_buf_index)?;
 
-        let graph = crate::GraphBuilder::new(
-            model_resource.model_backend(),
+        let graph = crate::tasks::common::build_graph(
+            model_resource.as_ref(),
             self.base_task_options.device,
-        )
-        .build_from_bytes([landmark_file])?;
+            landmark_file,
+        )?;
 
         Ok(HandLandmarker {
             build_options: self,
@@ -91,5 +87,24 @@ impl HandLandmarkerBuilder {
             world_landmarks_buf_index,
             input_tensor_type,
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::tasks::vision::HandLandmarkerBuilder;
+    use crate::Error;
+
+    #[test]
+    fn test_nan_confidence_is_rejected() {
+        for builder in [
+            HandLandmarkerBuilder::new().min_hand_detection_confidence(f32::NAN),
+            HandLandmarkerBuilder::new().min_hand_presence_confidence(f32::NAN),
+        ] {
+            assert!(matches!(
+                builder.build_from_buffer(Vec::<u8>::new()),
+                Err(Error::ArgumentError(_))
+            ));
+        }
     }
 }

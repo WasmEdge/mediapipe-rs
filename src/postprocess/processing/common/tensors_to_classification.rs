@@ -8,7 +8,6 @@ pub(crate) struct TensorsToClassification<'a> {
 }
 
 impl<'a> TensorsToClassification<'a> {
-    #[inline(always)]
     pub(crate) fn new() -> Self {
         Self {
             categories_filters: Vec::new(),
@@ -20,17 +19,12 @@ impl<'a> TensorsToClassification<'a> {
     pub(crate) fn add_classification_options(
         &mut self,
         categories_filter: CategoriesFilter<'a>,
-        max_results: i32,
+        max_results: Option<usize>,
         buffer_config: (TensorType, Option<QuantizationParameters>),
         buffer_shape: &[usize],
     ) -> Result<(), crate::Error> {
-        let max_results = if max_results < 0 {
-            usize::MAX
-        } else {
-            max_results as usize
-        };
         self.categories_filters.push(categories_filter);
-        self.max_results.push(max_results);
+        self.max_results.push(max_results.unwrap_or(usize::MAX));
 
         let elem_size = buffer_shape.iter().product::<usize>();
         self.outputs
@@ -39,12 +33,11 @@ impl<'a> TensorsToClassification<'a> {
     }
 
     /// index must be valid. or panic!
-    #[inline(always)]
+    #[inline]
     pub(crate) fn output_buffer(&mut self, index: usize) -> &mut OutputBuffer {
         &mut self.outputs[index]
     }
 
-    #[inline]
     pub(crate) fn result(&mut self, timestamp_ms: Option<u64>) -> ClassificationResult {
         let classifications_count = self.outputs.len();
         let mut res = ClassificationResult {
@@ -65,9 +58,7 @@ impl<'a> TensorsToClassification<'a> {
             }
 
             categories.sort();
-            if max_results < categories.len() {
-                categories.drain(max_results..);
-            }
+            categories.truncate(max_results);
             res.classifications.push(Classifications {
                 head_index: id,
                 head_name: None,

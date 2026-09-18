@@ -30,13 +30,12 @@ impl ObjectDetector {
     detector_impl!(ObjectDetectorSession, DetectionResult);
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<ObjectDetectorSession<'_>, Error> {
-        let image_to_tensor_info =
-            model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
-                .try_to_image()?;
-        let input_tensor_shape =
-            model_resource_check_and_get_impl!(self.model_resource, input_tensor_shape, 0);
+        let image_to_tensor_info = self
+            .model_resource
+            .expect_to_tensor_info(0)?
+            .try_to_image()?;
+        let input_tensor_shape = self.model_resource.expect_input_tensor_shape(0)?;
         let labels = self.model_resource.output_tensor_labels_locale(
             self.categories_buf_index,
             self.build_options
@@ -53,16 +52,17 @@ impl ObjectDetector {
         let mut tensors_to_detection = TensorsToDetection::new(
             categories_filter,
             self.build_options.classification_options.max_results,
-            get_type_and_quantization!(self.model_resource, self.location_buf_index),
-            get_type_and_quantization!(self.model_resource, self.categories_buf_index),
-            get_type_and_quantization!(self.model_resource, self.score_buf_index),
+            self.model_resource
+                .output_type_and_quantization(self.location_buf_index)?,
+            self.model_resource
+                .output_type_and_quantization(self.categories_buf_index)?,
+            self.model_resource
+                .output_type_and_quantization(self.score_buf_index)?,
         )?;
         tensors_to_detection.set_box_indices(&self.bound_box_properties)?;
-        let location_shape = model_resource_check_and_get_impl!(
-            self.model_resource,
-            output_tensor_shape,
-            self.location_buf_index
-        );
+        let location_shape = self
+            .model_resource
+            .expect_output_tensor_shape(self.location_buf_index)?;
         // TFLite_Detection_PostProcess declares dynamic (empty) output shapes.
         let max_num_box = if location_shape.is_empty() {
             Self::MAX_DYNAMIC_DETECTIONS
@@ -79,7 +79,13 @@ impl ObjectDetector {
             max_num_box,
             image_to_tensor_info,
             input_tensor_shape,
-            input_buffer: vec![0; tensor_bytes!(self.input_tensor_type, input_tensor_shape)],
+            input_buffer: vec![
+                0;
+                crate::model::tensor_bytes(
+                    self.input_tensor_type,
+                    input_tensor_shape
+                )
+            ],
         })
     }
 }
@@ -87,14 +93,18 @@ impl ObjectDetector {
 /// Session to run inference.
 /// If process multiple images or videos, reuse it can get better performance.
 ///
-/// ```rust
-/// use mediapipe_rs::tasks::vision::ObjectDetector;
+/// ```no_run
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let images: Vec<image::DynamicImage> = vec![];
+/// use mediapipe_rs::tasks::vision::ObjectDetectorBuilder;
 ///
-/// let object_detector: ObjectDetector;
+/// let object_detector = ObjectDetectorBuilder::new().build_from_file("model.tflite")?;
 /// let mut session = object_detector.new_session()?;
-/// for image in images {
+/// for image in &images {
 ///     session.detect(image)?;
 /// }
+/// # Ok(())
+/// # }
 /// ```
 pub struct ObjectDetectorSession<'model> {
     detector: &'model ObjectDetector,
@@ -111,7 +121,6 @@ pub struct ObjectDetectorSession<'model> {
 impl<'model> ObjectDetectorSession<'model> {
     // todo: usage the timestamp
     #[allow(unused)]
-    #[inline(always)]
     fn compute(&mut self, timestamp_ms: Option<u64>) -> Result<DetectionResult, Error> {
         self.execution_ctx.set_input(
             0,

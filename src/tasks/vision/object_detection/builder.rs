@@ -1,5 +1,4 @@
 use super::ObjectDetector;
-use crate::model::check_scalar_f32_output;
 use crate::postprocess::TensorsToDetection;
 use crate::tasks::common::{BaseTaskOptions, ClassificationOptions};
 
@@ -14,7 +13,7 @@ pub struct ObjectDetectorBuilder {
 
 impl ObjectDetectorBuilder {
     /// Create a new builder with default options.
-    #[inline(always)]
+    #[inline]
     pub fn new() -> Self {
         Self::default()
     }
@@ -24,34 +23,28 @@ impl ObjectDetectorBuilder {
     classification_options_impl!();
 
     /// Use the current build options and use the buffer as model data to create a new task instance.
-    #[inline]
     pub fn build_from_buffer(
         self,
         buffer: impl AsRef<[u8]>,
     ) -> Result<ObjectDetector, crate::Error> {
-        classification_options_check!(self, classification_options);
+        self.classification_options.check()?;
 
         let buf = buffer.as_ref();
         // parse model and get model resources.
         let model_resource = crate::model::parse_model(buf)?;
 
         // check model
-        model_base_check_impl!(model_resource, 1, 4);
-        model_resource_check_and_get_impl!(model_resource, to_tensor_info, 0).try_to_image()?;
+        model_resource.check_tensor_counts(Some(1), 4)?;
+        model_resource.expect_to_tensor_info(0)?.try_to_image()?;
 
-        let graph = crate::GraphBuilder::new(
-            model_resource.model_backend(),
+        let graph = crate::tasks::common::build_graph(
+            model_resource.as_ref(),
             self.base_task_options.device,
-        )
-        .build_from_bytes([buf])?;
+            buf,
+        )?;
 
-        let input_tensor_type =
-            model_resource_check_and_get_impl!(model_resource, input_tensor_type, 0);
-        let location_buf_index = model_resource_check_and_get_impl!(
-            model_resource,
-            output_tensor_name_to_index,
-            "location"
-        );
+        let input_tensor_type = model_resource.expect_input_tensor_type(0)?;
+        let location_buf_index = model_resource.expect_output_tensor_index("location")?;
         let mut bound_box_properties = [0, 1, 2, 3];
         if model_resource
             .output_bounding_box_properties(location_buf_index, &mut bound_box_properties)
@@ -59,16 +52,8 @@ impl ObjectDetectorBuilder {
             TensorsToDetection::check_box_indices(&bound_box_properties)?;
         }
 
-        let categories_buf_index = model_resource_check_and_get_impl!(
-            model_resource,
-            output_tensor_name_to_index,
-            "category"
-        );
-        let score_buf_index = model_resource_check_and_get_impl!(
-            model_resource,
-            output_tensor_name_to_index,
-            "score"
-        );
+        let categories_buf_index = model_resource.expect_output_tensor_index("category")?;
+        let score_buf_index = model_resource.expect_output_tensor_index("score")?;
         let named = [location_buf_index, categories_buf_index, score_buf_index];
         let used = named
             .iter()
@@ -83,7 +68,7 @@ impl ObjectDetectorBuilder {
                     named
                 ))
             })?;
-        check_scalar_f32_output(model_resource.as_ref(), num_box_buf_index)?;
+        model_resource.check_scalar_f32_output(num_box_buf_index)?;
         Ok(ObjectDetector {
             build_options: self,
             model_resource,

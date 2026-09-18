@@ -1,3 +1,4 @@
+#[cfg(feature = "draw")]
 use crate::postprocess::utils::{draw_detection_with_options, DefaultPixel, DrawDetectionsOptions};
 use crate::postprocess::{Category, NormalizedKeypoint, Rect};
 use std::fmt::{Display, Formatter};
@@ -24,9 +25,10 @@ pub struct DetectionResult {
     pub detections: Vec<Detection>,
 }
 
+#[cfg(feature = "draw")]
 impl DetectionResult {
     /// Draw this detection result to image with default options
-    #[inline(always)]
+    #[inline]
     pub fn draw<I>(&self, img: &mut I)
     where
         I: image::GenericImage,
@@ -37,7 +39,7 @@ impl DetectionResult {
     }
 
     /// Draw this detection result to image with options
-    #[inline(always)]
+    #[inline]
     pub fn draw_with_options<I>(&self, img: &mut I, options: &DrawDetectionsOptions<I::Pixel>)
     where
         I: image::GenericImage,

@@ -16,7 +16,7 @@ pub(crate) struct CategoriesFilter<'a> {
 
 impl<'a> CategoriesFilter<'a> {
     /// no allow or deny list
-    #[inline(always)]
+    #[cfg(feature = "vision")]
     pub(crate) fn new_full(
         score_threshold: f32,
         labels: &'a [u8],
@@ -79,7 +79,6 @@ impl<'a> CategoriesFilter<'a> {
         }
     }
 
-    #[inline(always)]
     fn add_labels_locale(labels: &mut Vec<Label<'a>>, labels_locale: &'a [u8]) {
         let mut iter = labels.iter_mut();
         let mut labels_locale_file = MemoryTextFile::new(labels_locale);
@@ -90,7 +89,6 @@ impl<'a> CategoriesFilter<'a> {
         }
     }
 
-    #[inline(always)]
     pub fn create_category(&self, index: usize, score: f32) -> Option<Category> {
         if score >= self.score_threshold {
             if let Some(Label::Allowed((l, l_locale))) = self.labels.get(index) {

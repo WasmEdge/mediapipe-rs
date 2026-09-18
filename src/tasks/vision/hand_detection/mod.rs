@@ -27,26 +27,25 @@ pub struct HandDetector {
 impl HandDetector {
     detector_impl!(HandDetectorSession, DetectionResult);
 
-    /// Get the maximum number of hands can be detected by the HandDetector.
-    #[inline(always)]
-    pub fn num_hands(&self) -> i32 {
+    /// Get the maximum number of hands can be detected by the HandDetector. `None` means no limit.
+    #[inline]
+    pub fn num_hands(&self) -> Option<usize> {
         self.build_options.num_hands
     }
 
     /// Get the minimum confidence score for the hand detection to be considered successful.
-    #[inline(always)]
+    #[inline]
     pub fn min_detection_confidence(&self) -> f32 {
         self.build_options.min_detection_confidence
     }
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<HandDetectorSession<'_>, Error> {
-        let image_to_tensor_info =
-            model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
-                .try_to_image()?;
-        let input_tensor_shape =
-            model_resource_check_and_get_impl!(self.model_resource, input_tensor_shape, 0);
+        let image_to_tensor_info = self
+            .model_resource
+            .expect_to_tensor_info(0)?
+            .try_to_image()?;
+        let input_tensor_shape = self.model_resource.expect_input_tensor_shape(0)?;
         let labels = self
             .model_resource
             .output_tensor_labels_locale(self.score_buf_index, "")?;
@@ -58,8 +57,10 @@ impl HandDetector {
             &self.anchors,
             min_detection_confidence,
             self.num_hands(),
-            get_type_and_quantization!(self.model_resource, self.location_buf_index),
-            get_type_and_quantization!(self.model_resource, self.score_buf_index),
+            self.model_resource
+                .output_type_and_quantization(self.location_buf_index)?,
+            self.model_resource
+                .output_type_and_quantization(self.score_buf_index)?,
         )?;
 
         // config options
@@ -68,11 +69,11 @@ impl HandDetector {
         tensors_to_detection.set_key_points(7, 2, 4);
         tensors_to_detection.set_sigmoid_score(true);
         tensors_to_detection.set_score_clipping_thresh(100.);
-        tensors_to_detection.set_box_format(DetectionBoxFormat::XYWH);
+        tensors_to_detection.set_box_format(DetectionBoxFormat::Xywh);
         tensors_to_detection.set_nms_min_suppression_threshold(0.3);
         tensors_to_detection
             .set_nms_overlap_type(NonMaxSuppressionOverlapType::IntersectionOverUnion);
-        tensors_to_detection.set_nms_algorithm(NonMaxSuppressionAlgorithm::WEIGHTED);
+        tensors_to_detection.set_nms_algorithm(NonMaxSuppressionAlgorithm::Weighted);
         tensors_to_detection.realloc(self.num_box);
 
         let execution_ctx = self.graph.init_execution_context()?;
@@ -82,7 +83,13 @@ impl HandDetector {
             tensors_to_detection,
             image_to_tensor_info,
             input_tensor_shape,
-            input_buffer: vec![0; tensor_bytes!(self.input_tensor_type, input_tensor_shape)],
+            input_buffer: vec![
+                0;
+                crate::model::tensor_bytes(
+                    self.input_tensor_type,
+                    input_tensor_shape
+                )
+            ],
         })
     }
 }
@@ -102,7 +109,6 @@ pub struct HandDetectorSession<'model> {
 impl<'model> HandDetectorSession<'model> {
     // todo: usage the timestamp
     #[allow(unused)]
-    #[inline(always)]
     fn compute(&mut self, timestamp_ms: Option<u64>) -> Result<DetectionResult, Error> {
         self.execution_ctx.set_input(
             0,

@@ -29,7 +29,6 @@ pub struct ImageSegmenterBuilder {
 }
 
 impl Default for ImageSegmenterBuilder {
-    #[inline(always)]
     fn default() -> Self {
         Self {
             base_task_options: Default::default(),
@@ -42,7 +41,7 @@ impl Default for ImageSegmenterBuilder {
 
 impl ImageSegmenterBuilder {
     /// Create a new builder with default options.
-    #[inline(always)]
+    #[inline]
     pub fn new() -> Self {
         Default::default()
     }
@@ -51,7 +50,7 @@ impl ImageSegmenterBuilder {
 
     /// The locale to use for display names specified through the TFLite Model
     /// Metadata, if any. Defaults to English.
-    #[inline(always)]
+    #[inline]
     pub fn display_names_locale(mut self, locale: String) -> Self {
         self.display_names_locale = locale;
         self
@@ -59,7 +58,7 @@ impl ImageSegmenterBuilder {
 
     /// Set whether output the category mask.
     /// Segmentation mask will contain a uint8 image, where each pixel value indicates the winning category index.
-    #[inline(always)]
+    #[inline]
     pub fn output_category_mask(mut self, output_category_mask: bool) -> Self {
         self.output_category_mask = output_category_mask;
         self
@@ -67,14 +66,13 @@ impl ImageSegmenterBuilder {
 
     /// Set whether output the confidence masks.
     /// The segmentation masks are float images, where each float image represents the confidence score map of the category.
-    #[inline(always)]
+    #[inline]
     pub fn output_confidence_masks(mut self, output_confidence_masks: bool) -> Self {
         self.output_confidence_masks = output_confidence_masks;
         self
     }
 
     /// Use the current build options and use the buffer as model data to create a new task instance.
-    #[inline]
     pub fn build_from_buffer(
         self,
         buffer: impl AsRef<[u8]>,
@@ -91,16 +89,15 @@ impl ImageSegmenterBuilder {
         let model_resource = crate::model::parse_model(buf)?;
 
         // check model
-        model_base_check_impl!(model_resource, 1, 1);
-        model_resource_check_and_get_impl!(model_resource, to_tensor_info, 0).try_to_image()?;
-        let input_tensor_type =
-            model_resource_check_and_get_impl!(model_resource, input_tensor_type, 0);
+        model_resource.check_tensor_counts(Some(1), 1)?;
+        model_resource.expect_to_tensor_info(0)?.try_to_image()?;
+        let input_tensor_type = model_resource.expect_input_tensor_type(0)?;
 
-        let graph = crate::GraphBuilder::new(
-            model_resource.model_backend(),
+        let graph = crate::tasks::common::build_graph(
+            model_resource.as_ref(),
             self.base_task_options.device,
-        )
-        .build_from_bytes([buf])?;
+            buf,
+        )?;
 
         let (label, label_locale) =
             model_resource.output_tensor_labels_locale(0, self.display_names_locale.as_str())?;

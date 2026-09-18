@@ -1,8 +1,9 @@
 use super::HandLandmark;
+use crate::postprocess::impl_result_list;
+#[cfg(feature = "draw")]
 use crate::postprocess::utils::{draw_landmarks_with_options, DefaultPixel, DrawLandmarksOptions};
 use crate::postprocess::{Category, Landmarks, NormalizedLandmarks};
 use std::fmt::{Display, Formatter};
-use std::ops::{Deref, DerefMut};
 
 /// A single hand landmark detection result.
 #[derive(Debug)]
@@ -15,9 +16,9 @@ pub struct HandLandmarkResult {
     pub hand_world_landmarks: Landmarks,
 }
 
+#[cfg(feature = "draw")]
 impl HandLandmarkResult {
     /// Draw this detection result to image with default options
-    #[inline(always)]
     pub fn draw<I>(&self, img: &mut I)
     where
         I: image::GenericImage,
@@ -32,7 +33,7 @@ impl HandLandmarkResult {
     }
 
     /// Draw this detection result to image with options
-    #[inline(always)]
+    #[inline]
     pub fn draw_with_options<I>(&self, img: &mut I, options: &DrawLandmarksOptions<I::Pixel>)
     where
         I: image::GenericImage,
@@ -47,31 +48,7 @@ impl HandLandmarkResult {
 #[derive(Debug)]
 pub struct HandLandmarkResults(pub Vec<HandLandmarkResult>);
 
-impl Deref for HandLandmarkResults {
-    type Target = Vec<HandLandmarkResult>;
-
-    #[inline(always)]
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for HandLandmarkResults {
-    #[inline(always)]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl IntoIterator for HandLandmarkResults {
-    type Item = HandLandmarkResult;
-    type IntoIter = std::vec::IntoIter<HandLandmarkResult>;
-
-    #[inline(always)]
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
+impl_result_list!(HandLandmarkResults, HandLandmarkResult);
 
 impl Display for HandLandmarkResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

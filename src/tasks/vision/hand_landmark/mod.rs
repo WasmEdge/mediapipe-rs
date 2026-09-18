@@ -39,45 +39,42 @@ impl HandLandmarker {
     hand_landmark_options_get_impl!();
 
     /// Get the subtask: hand detector.
-    #[inline(always)]
+    #[inline]
     pub fn subtask_hand_detector(&self) -> &HandDetector {
         &self.hand_detector
     }
 
     /// Create a new task session that contains processing buffers and can do inference.
-    #[inline(always)]
     pub fn new_session(&self) -> Result<HandLandmarkerSession<'_>, Error> {
-        let image_to_tensor_info =
-            model_resource_check_and_get_impl!(self.model_resource, to_tensor_info, 0)
-                .try_to_image()?;
-        let input_tensor_shape =
-            model_resource_check_and_get_impl!(self.model_resource, input_tensor_shape, 0);
+        let image_to_tensor_info = self
+            .model_resource
+            .expect_to_tensor_info(0)?
+            .try_to_image()?;
+        let input_tensor_shape = self.model_resource.expect_input_tensor_shape(0)?;
 
         // todo: parse index from metadata
         let hand_labels = self.model_resource.output_tensor_labels_locale(0, "")?.0;
         let categories_filter =
             CategoriesFilter::new_full(f32::MIN, hand_labels, Some(hand_labels));
 
-        let landmarks_out =
-            get_type_and_quantization!(self.model_resource, self.landmarks_buf_index);
-        let landmarks_shape = model_resource_check_and_get_impl!(
-            self.model_resource,
-            output_tensor_shape,
-            self.landmarks_buf_index
-        );
+        let landmarks_out = self
+            .model_resource
+            .output_type_and_quantization(self.landmarks_buf_index)?;
+        let landmarks_shape = self
+            .model_resource
+            .expect_output_tensor_shape(self.landmarks_buf_index)?;
         let mut tensors_to_landmarks =
             TensorsToLandmarks::new(HandLandmark::NAMES.len(), landmarks_out, landmarks_shape)?;
         tensors_to_landmarks
             .set_image_size(image_to_tensor_info.width(), image_to_tensor_info.height());
         tensors_to_landmarks.set_normalize_z(Self::LANDMARKS_NORMALIZE_Z);
 
-        let world_landmarks_out =
-            get_type_and_quantization!(self.model_resource, self.world_landmarks_buf_index);
-        let world_landmarks_shape = model_resource_check_and_get_impl!(
-            self.model_resource,
-            output_tensor_shape,
-            self.world_landmarks_buf_index
-        );
+        let world_landmarks_out = self
+            .model_resource
+            .output_type_and_quantization(self.world_landmarks_buf_index)?;
+        let world_landmarks_shape = self
+            .model_resource
+            .expect_output_tensor_shape(self.world_landmarks_buf_index)?;
         let tensors_to_world_landmarks = TensorsToLandmarks::new(
             HandLandmark::NAMES.len(),
             world_landmarks_out,
@@ -93,7 +90,13 @@ impl HandLandmarker {
             hand_detector_session,
             image_to_tensor_info,
             input_tensor_shape,
-            input_buffer: vec![0; tensor_bytes!(self.input_tensor_type, input_tensor_shape)],
+            input_buffer: vec![
+                0;
+                crate::model::tensor_bytes(
+                    self.input_tensor_type,
+                    input_tensor_shape
+                )
+            ],
             score_of_hand_presence: [0.],
             score_of_handedness: [0.],
             categories_filter,
@@ -126,7 +129,6 @@ impl<'model> HandLandmarkerSession<'model> {
         Some((90. * std::f32::consts::PI / 180.0, 0, 2));
 
     /// Detect one image using this task session.
-    #[inline(always)]
     pub fn detect(&mut self, input: &impl ImageToTensor) -> Result<HandLandmarkResults, Error> {
         let (img_w, img_h) = input.image_size();
         let hand_detection_result = self.hand_detector_session.detect(input)?;
@@ -218,11 +220,11 @@ impl<'model> HandLandmarkerSession<'model> {
 
     /// Detect input video stream use this session.
     /// Return a iterator for results, process input stream when poll next result.
-    #[inline(always)]
+    #[inline]
     pub fn detect_for_video<InputVideoData: VideoData>(
         &mut self,
         video_data: InputVideoData,
-    ) -> Result<VideoResultsIter<'_, '_, Self, InputVideoData>, Error> {
+    ) -> Result<VideoResultsIter<'_, Self, InputVideoData>, Error> {
         Ok(VideoResultsIter::new(self, video_data))
     }
 }
@@ -230,7 +232,6 @@ impl<'model> HandLandmarkerSession<'model> {
 impl<'model> super::TaskSession for HandLandmarkerSession<'model> {
     type Result = HandLandmarkResults;
 
-    #[inline]
     fn process_next(
         &mut self,
         _process_options: &super::ImageProcessingOptions,

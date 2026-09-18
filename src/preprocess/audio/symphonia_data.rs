@@ -13,7 +13,6 @@ pub struct SymphoniaAudioData {
 
 impl SymphoniaAudioData {
     /// Create a new Symphonia Audio Data.
-    #[inline(always)]
     pub fn new(format_reader: Box<dyn FormatReader>, decoder: Box<dyn Decoder>) -> Self {
         Self {
             format_reader,
@@ -38,7 +37,6 @@ where
 }
 
 impl AudioData for SymphoniaAudioData {
-    #[inline]
     fn next_frame(
         &mut self,
         sample_buffer: &mut Vec<Vec<f32>>,

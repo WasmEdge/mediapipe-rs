@@ -1,6 +1,6 @@
 use super::{FaceDetectorBuilder, FaceLandmarker};
 
-use crate::model::{check_scalar_f32_output, ZipFiles};
+use crate::model::ZipFiles;
 use crate::tasks::common::{BaseTaskOptions, FaceLandmarkOptions};
 
 /// Configure the build options of a new **Face Landmark** task instance.
@@ -14,7 +14,7 @@ pub struct FaceLandmarkerBuilder {
 
 impl FaceLandmarkerBuilder {
     /// Create a new builder with default options.
-    #[inline(always)]
+    #[inline]
     pub fn new() -> Self {
         Self::default()
     }
@@ -28,27 +28,24 @@ impl FaceLandmarkerBuilder {
         &["face_landmarks_detector.tflite"];
 
     /// Use the current build options and use the buffer as model data to create a new task instance.
-    #[inline]
     pub fn build_from_buffer(
         self,
         buffer: impl AsRef<[u8]>,
     ) -> Result<FaceLandmarker, crate::Error> {
-        face_landmark_options_check!(self);
+        self.face_landmark_options.check()?;
         let buf = buffer.as_ref();
 
         let zip_file = ZipFiles::new(buf)?;
-        let face_detection_file = search_file_in_zip!(
-            zip_file,
-            buf,
+        let face_detection_file = crate::model::search_file_in_zip(
+            &zip_file,
             Self::FACE_DETECTOR_CANDIDATE_NAMES,
-            "FaceDetection"
-        );
-        let landmark_file = search_file_in_zip!(
-            zip_file,
-            buf,
+            "FaceDetection",
+        )?;
+        let landmark_file = crate::model::search_file_in_zip(
+            &zip_file,
             Self::FACE_LANDMARKS_CANDIDATE_NAMES,
-            "FaceLandmark"
-        );
+            "FaceLandmark",
+        )?;
 
         let subtask_face_detector = FaceDetectorBuilder::new()
             .device(self.base_task_options.device)
@@ -60,22 +57,21 @@ impl FaceLandmarkerBuilder {
         let model_resource = crate::model::parse_model(landmark_file)?;
 
         // check model
-        model_base_check_impl!(model_resource, 1, 2);
-        model_resource_check_and_get_impl!(model_resource, to_tensor_info, 0).try_to_image()?;
-        let input_tensor_type =
-            model_resource_check_and_get_impl!(model_resource, input_tensor_type, 0);
+        model_resource.check_tensor_counts(Some(1), 2)?;
+        model_resource.expect_to_tensor_info(0)?.try_to_image()?;
+        let input_tensor_type = model_resource.expect_input_tensor_type(0)?;
 
         // todo: get these from metadata
         let score_buf_index = 1;
         let landmarks_buf_index = 0;
         // now only fp32 model
-        check_scalar_f32_output(model_resource.as_ref(), score_buf_index)?;
+        model_resource.check_scalar_f32_output(score_buf_index)?;
 
-        let graph = crate::GraphBuilder::new(
-            model_resource.model_backend(),
+        let graph = crate::tasks::common::build_graph(
+            model_resource.as_ref(),
             self.base_task_options.device,
-        )
-        .build_from_bytes([landmark_file])?;
+            landmark_file,
+        )?;
 
         Ok(FaceLandmarker {
             build_options: self,
@@ -86,5 +82,24 @@ impl FaceLandmarkerBuilder {
             landmarks_buf_index,
             input_tensor_type,
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::tasks::vision::FaceLandmarkerBuilder;
+    use crate::Error;
+
+    #[test]
+    fn test_nan_confidence_is_rejected() {
+        for builder in [
+            FaceLandmarkerBuilder::new().min_face_detection_confidence(f32::NAN),
+            FaceLandmarkerBuilder::new().min_face_presence_confidence(f32::NAN),
+        ] {
+            assert!(matches!(
+                builder.build_from_buffer(Vec::<u8>::new()),
+                Err(Error::ArgumentError(_))
+            ));
+        }
     }
 }

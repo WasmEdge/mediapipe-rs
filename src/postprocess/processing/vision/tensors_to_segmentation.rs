@@ -15,13 +15,12 @@ pub(crate) struct TensorsToSegmentation {
 }
 
 impl TensorsToSegmentation {
-    #[inline(always)]
     pub(crate) fn new(
         activation: Activation,
         tensor_buf_info: (TensorType, Option<QuantizationParameters>),
         tensor_shape: &[usize],
     ) -> Result<Self, crate::Error> {
-        let tensor_shape = ImageLikeTensorShape::parse(ImageDataLayout::NHWC, tensor_shape)?;
+        let tensor_shape = ImageLikeTensorShape::parse(ImageDataLayout::Nhwc, tensor_shape)?;
         if tensor_shape.batch != 1 {
             return Err(crate::Error::ModelInconsistentError(format!(
                 "Unsupported batch size `{}`, now only support batch size = 1",
@@ -37,7 +36,7 @@ impl TensorsToSegmentation {
         })
     }
 
-    #[inline(always)]
+    #[inline]
     pub(crate) fn tensor_buffer(&mut self) -> &mut OutputBuffer {
         &mut self.tensor_buffer
     }
@@ -74,8 +73,8 @@ impl TensorsToSegmentation {
         // apply activation
         match self.activation {
             Activation::None => { /* do nothing */ }
-            Activation::SIGMOID => tensor.sigmoid_inplace(),
-            Activation::SOFTMAX => {
+            Activation::Sigmoid => tensor.sigmoid_inplace(),
+            Activation::Softmax => {
                 if channels > 1 {
                     for scores in tensor.chunks_exact_mut(channels) {
                         scores.softmax_inplace();
@@ -85,7 +84,7 @@ impl TensorsToSegmentation {
         };
 
         let mut res = Vec::with_capacity(channels);
-        for c in 0..channels {
+        for _ in 0..channels {
             res.push(ImageConfidenceMask::new(
                 self.tensor_shape.width as u32,
                 self.tensor_shape.height as u32,
@@ -137,7 +136,7 @@ mod test {
 
     #[test]
     fn test_confidence_masks_softmax_per_pixel() {
-        let mut s = segmentation(Activation::SOFTMAX, 2);
+        let mut s = segmentation(Activation::Softmax, 2);
         s.tensor_buffer
             .as_f32_mut()
             .copy_from_slice(&[0., 0., 1., 1.]);

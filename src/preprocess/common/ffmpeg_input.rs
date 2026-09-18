@@ -19,7 +19,6 @@ where
 macro_rules! impl_new_func {
     ( $decoder:ident, $frame:ident, $decode_func:ident, $stream_type:ident ) => {
         impl FFMpegInput<ffmpeg_next::decoder::$decoder, ffmpeg_next::frame::$frame> {
-            #[inline(always)]
             pub fn new(input: Input) -> Result<Self, Error> {
                 let input_stream = input
                     .streams()
@@ -60,7 +59,6 @@ where
         errno: ffmpeg_next::util::error::EAGAIN,
     };
 
-    #[inline(always)]
     pub fn receive_frame(&mut self) -> Result<bool, Error> {
         while let Err(err) = self.decoder.receive_frame(&mut self.frame) {
             if err == Self::RESOURCE_TEMPORARILY_UNAVAILABLE {

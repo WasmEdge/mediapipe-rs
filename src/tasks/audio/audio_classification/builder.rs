@@ -13,7 +13,7 @@ pub struct AudioClassifierBuilder {
 
 impl AudioClassifierBuilder {
     /// Create a new builder with default options.
-    #[inline(always)]
+    #[inline]
     pub fn new() -> Self {
         Self::default()
     }
@@ -23,25 +23,23 @@ impl AudioClassifierBuilder {
     classification_options_impl!();
 
     /// Use the current build options and use the buffer as model data to create a new task instance.
-    #[inline]
     pub fn build_from_buffer(self, buffer: impl AsRef<[u8]>) -> Result<AudioClassifier, Error> {
-        classification_options_check!(self, classification_options);
+        self.classification_options.check()?;
 
         let buf = buffer.as_ref();
         // parse model and get model resources.
         let model_resource = crate::model::parse_model(buf)?;
 
         // check model
-        model_base_check_impl!(model_resource, 1, 1);
-        model_resource_check_and_get_impl!(model_resource, to_tensor_info, 0).try_to_audio()?;
-        let input_tensor_type =
-            model_resource_check_and_get_impl!(model_resource, input_tensor_type, 0);
+        model_resource.check_tensor_counts(Some(1), 1)?;
+        model_resource.expect_to_tensor_info(0)?.try_to_audio()?;
+        let input_tensor_type = model_resource.expect_input_tensor_type(0)?;
 
-        let graph = crate::GraphBuilder::new(
-            model_resource.model_backend(),
+        let graph = crate::tasks::common::build_graph(
+            model_resource.as_ref(),
             self.base_task_options.device,
-        )
-        .build_from_bytes([buf])?;
+            buf,
+        )?;
 
         Ok(AudioClassifier {
             build_options: self,

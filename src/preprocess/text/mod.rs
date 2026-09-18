@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 /// Text model input interface. Every Text data implement the [`TextToTensors`] trait can be used as text tasks input.
-/// Now the builtin impl: [`str`], [`String`], [`Cow<'a, str>`].
+/// Now the builtin impl: [`str`], [`String`], [`Cow<'a, str>`] and references to them.
 pub trait TextToTensors {
     fn to_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
         &self,
@@ -60,18 +60,10 @@ fn token_ids_bytes(max_seq_len: u32) -> Result<usize, Error> {
         })
 }
 
-macro_rules! check_map {
-    ( $token_index_map:ident, $val:expr ) => {
-        match $token_index_map.get($val) {
-            Some(v) => v.clone(),
-            None => {
-                return Err(Error::ModelInconsistentError(format!(
-                    "Vocabulary file doesn't have `{}` token.",
-                    $val
-                )));
-            }
-        }
-    };
+fn token_id(token_index_map: &HashMap<String, i32>, token: &str) -> Result<i32, Error> {
+    token_index_map.get(token).copied().ok_or_else(|| {
+        Error::ModelInconsistentError(format!("Vocabulary file doesn't have `{}` token.", token))
+    })
 }
 
 impl TextToTensorInfo {
@@ -95,8 +87,8 @@ impl TextToTensorInfo {
                     e
                 ))
             })?;
-        let pad_id = check_map!(token_index_map, Self::REGEX_PAD_TOKEN);
-        let unknown_id = check_map!(token_index_map, Self::REGEX_UNKNOWN_TOKEN);
+        let pad_id = token_id(&token_index_map, Self::REGEX_PAD_TOKEN)?;
+        let unknown_id = token_id(&token_index_map, Self::REGEX_UNKNOWN_TOKEN)?;
         Ok(Self::RegexModel {
             delim_regex,
             token_index_map,
@@ -115,8 +107,8 @@ impl TextToTensorInfo {
                 "Bert model max seq length must be at least `2`".into(),
             ));
         }
-        let classifier_token_id = check_map!(token_index_map, Self::BERT_CLASSIFIER_TOKEN);
-        let separator_token_id = check_map!(token_index_map, Self::BERT_SEPARATOR_TOKEN);
+        let classifier_token_id = token_id(&token_index_map, Self::BERT_CLASSIFIER_TOKEN)?;
+        let separator_token_id = token_id(&token_index_map, Self::BERT_SEPARATOR_TOKEN)?;
         Ok(Self::BertModel {
             max_seq_len,
             token_index_map,
@@ -126,7 +118,7 @@ impl TextToTensorInfo {
     }
 }
 
-impl TextToTensors for &str {
+impl TextToTensors for str {
     fn to_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
         &self,
         to_tensor_info: &TextToTensorInfo,
@@ -179,8 +171,19 @@ impl TextToTensors for &str {
     }
 }
 
+impl<S: TextToTensors + ?Sized> TextToTensors for &S {
+    #[inline]
+    fn to_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
+        &self,
+        to_tensor_info: &TextToTensorInfo,
+        output_buffers: &mut T,
+    ) -> Result<(), Error> {
+        (**self).to_tensors(to_tensor_info, output_buffers)
+    }
+}
+
 impl TextToTensors for String {
-    #[inline(always)]
+    #[inline]
     fn to_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
         &self,
         to_tensor_info: &TextToTensorInfo,
@@ -190,17 +193,14 @@ impl TextToTensors for String {
     }
 }
 
-impl<'a> TextToTensors for Cow<'a, str> {
-    #[inline(always)]
+impl TextToTensors for Cow<'_, str> {
+    #[inline]
     fn to_tensors<T: AsMut<[E]>, E: AsMut<[u8]>>(
         &self,
         to_tensor_info: &TextToTensorInfo,
         output_buffers: &mut T,
     ) -> Result<(), Error> {
-        match self {
-            Cow::Borrowed(s) => (*s).to_tensors(to_tensor_info, output_buffers),
-            Cow::Owned(s) => s.to_tensors(to_tensor_info, output_buffers),
-        }
+        self.as_ref().to_tensors(to_tensor_info, output_buffers)
     }
 }
 

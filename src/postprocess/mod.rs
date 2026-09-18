@@ -4,7 +4,9 @@ pub use containers::*;
 
 /// stateless operators for tensor
 mod ops;
-pub(crate) use ops::{Activation, QuantizationParameters};
+#[cfg(feature = "vision")]
+pub(crate) use ops::Activation;
+pub(crate) use ops::QuantizationParameters;
 
 /// stateful objects, convert tensor to results
 mod processing;

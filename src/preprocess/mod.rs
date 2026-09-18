@@ -28,32 +28,31 @@ pub enum ToTensorInfo {
 
 impl ToTensorInfo {
     #[cfg(any(feature = "audio", feature = "vision"))]
-    #[inline(always)]
+    #[inline]
     pub(crate) fn new_none() -> Self {
         Self::None
     }
 
     #[cfg(feature = "audio")]
-    #[inline(always)]
+    #[inline]
     pub(crate) fn new_audio(audio_to_tensor_info: audio::AudioToTensorInfo) -> Self {
         Self::Audio(audio_to_tensor_info)
     }
 
     #[cfg(feature = "vision")]
-    #[inline(always)]
+    #[inline]
     pub(crate) fn new_image(image_to_tensor_info: vision::ImageToTensorInfo) -> Self {
         Self::Image(image_to_tensor_info)
     }
 
     #[cfg(feature = "text")]
-    #[inline(always)]
+    #[inline]
     pub(crate) fn new_text(text_to_tensor_info: text::TextToTensorInfo) -> Self {
         Self::Text(text_to_tensor_info)
     }
 
     /// Try convert to [`audio::AudioToTensorInfo`], if the model has no audio preprocess information, will return an error.
     #[cfg(feature = "audio")]
-    #[inline(always)]
     pub fn try_to_audio(&self) -> Result<&audio::AudioToTensorInfo, Error> {
         match &self {
             Self::Audio(a) => Ok(a),
@@ -66,7 +65,6 @@ impl ToTensorInfo {
 
     /// Try convert to [`vision::ImageToTensorInfo`], if the model has no image preprocess information, will return an error.
     #[cfg(feature = "vision")]
-    #[inline(always)]
     pub fn try_to_image(&self) -> Result<&vision::ImageToTensorInfo, Error> {
         match &self {
             Self::Image(i) => Ok(i),
@@ -79,7 +77,6 @@ impl ToTensorInfo {
 
     /// Try convert to [`text::TextToTensorInfo`], if the model has no text preprocess information, will return an error.
     #[cfg(feature = "text")]
-    #[inline(always)]
     pub fn try_to_text(&self) -> Result<&text::TextToTensorInfo, Error> {
         match &self {
             Self::Text(t) => Ok(t),

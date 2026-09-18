@@ -1,23 +1,26 @@
-/// Used for audio task results
-pub struct AudioResultsIter<'session, 'tensor, TaskSession, AudioDataSource>
+use crate::preprocess::audio::{AudioData, AudioDataToTensorIter};
+use crate::tasks::audio::TaskSession;
+use crate::Error;
+
+/// Iterator over the results of an audio stream. Each chunk is processed when the next item
+/// is polled, so the iterator yields `Result` items.
+pub struct AudioResultsIter<'session, 'tensor, Session, Source>
 where
-    TaskSession: crate::tasks::audio::TaskSession + 'session,
-    AudioDataSource: crate::preprocess::audio::AudioData + 'tensor,
+    Session: TaskSession + 'session,
+    Source: AudioData + 'tensor,
 {
-    audio_data: crate::preprocess::audio::AudioDataToTensorIter<'tensor, AudioDataSource>,
-    session: &'session mut TaskSession,
+    audio_data: AudioDataToTensorIter<'tensor, Source>,
+    session: &'session mut Session,
 }
 
-impl<'session, 'tensor, TaskSession, AudioDataSource>
-    AudioResultsIter<'session, 'tensor, TaskSession, AudioDataSource>
+impl<'session, 'tensor, Session, Source> AudioResultsIter<'session, 'tensor, Session, Source>
 where
-    TaskSession: crate::tasks::audio::TaskSession + 'session,
-    AudioDataSource: crate::preprocess::audio::AudioData + 'tensor,
+    Session: TaskSession + 'session,
+    Source: AudioData + 'tensor,
 {
-    #[inline(always)]
     pub(crate) fn new(
-        session: &'session mut TaskSession,
-        audio_data: crate::preprocess::audio::AudioDataToTensorIter<'tensor, AudioDataSource>,
+        session: &'session mut Session,
+        audio_data: AudioDataToTensorIter<'tensor, Source>,
     ) -> Self {
         Self {
             audio_data,
@@ -25,12 +28,21 @@ where
         }
     }
 
-    /// poll next result
-    #[allow(clippy::should_implement_trait)]
-    #[inline(always)]
-    pub fn next(&mut self) -> Result<Option<TaskSession::Result>, crate::Error> {
-        self.session.process_next(&mut self.audio_data)
+    /// Process all remaining audio and collect the results.
+    pub fn to_vec(self) -> Result<Vec<Session::Result>, Error> {
+        self.collect()
     }
+}
 
-    results_iter_impl!();
+impl<'session, 'tensor, Session, Source> Iterator
+    for AudioResultsIter<'session, 'tensor, Session, Source>
+where
+    Session: TaskSession + 'session,
+    Source: AudioData + 'tensor,
+{
+    type Item = Result<Session::Result, Error>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.session.process_next(&mut self.audio_data).transpose()
+    }
 }

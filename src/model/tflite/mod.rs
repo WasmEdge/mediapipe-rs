@@ -14,7 +14,7 @@ pub(crate) struct TfLiteModelResource {
     output_label_files: Vec<Option<(String, HashMap<String, String>)>>,
     output_name_map: HashMap<String, usize>,
     associated_files: HashMap<String, Vec<u8>>,
-    // now it only used for image segmentation
+    #[cfg(feature = "vision")]
     output_activation: Activation,
 
     #[cfg(feature = "vision")]
@@ -47,6 +47,7 @@ impl TfLiteModelResource {
             output_label_files: Vec::new(),
             output_name_map: Default::default(),
             associated_files,
+            #[cfg(feature = "vision")]
             output_activation: Default::default(),
             #[cfg(feature = "vision")]
             output_bound_box_indices: Vec::new(),
@@ -58,7 +59,6 @@ impl TfLiteModelResource {
         Ok(resource)
     }
 
-    #[inline]
     fn parse_subgraph(&mut self, model: &tflite_model::Model) -> Result<(), Error> {
         let subgraph = match model.subgraphs() {
             Some(s) => {
@@ -179,7 +179,6 @@ impl TfLiteModelResource {
         Ok(shape)
     }
 
-    #[inline]
     fn parse_model_metadata<'buf>(
         model: &tflite_model::Model<'buf>,
     ) -> Result<Option<tflite_metadata::ModelMetadata<'buf>>, Error> {
@@ -210,7 +209,6 @@ impl TfLiteModelResource {
         Ok(tflite_metadata::root_as_model_metadata(bytes)?)
     }
 
-    #[inline]
     fn parse_model_metadata_content(
         &mut self,
         metadata: &tflite_metadata::ModelMetadata,
@@ -226,6 +224,7 @@ impl TfLiteModelResource {
                 return Ok(());
             }
         };
+        #[cfg(any(feature = "vision", feature = "audio"))]
         if let Some(input_tensors) = subgraph.input_tensor_metadata() {
             let len = input_tensors.len();
             for i in 0..len {
@@ -319,18 +318,13 @@ impl TfLiteModelResource {
                             let meta = generated::custom_img_segmentation::root_as_image_segmenter_options(data.bytes())?;
                             let activation = meta.activation();
 
-                            self.output_activation = if activation
-                                == generated::custom_img_segmentation::Activation::NONE
-                            {
+                            use generated::custom_img_segmentation::Activation as MetaActivation;
+                            self.output_activation = if activation == MetaActivation::NONE {
                                 Activation::None
-                            } else if activation
-                                == generated::custom_img_segmentation::Activation::SIGMOID
-                            {
-                                Activation::SIGMOID
-                            } else if activation
-                                == generated::custom_img_segmentation::Activation::SOFTMAX
-                            {
-                                Activation::SOFTMAX
+                            } else if activation == MetaActivation::SIGMOID {
+                                Activation::Sigmoid
+                            } else if activation == MetaActivation::SOFTMAX {
+                                Activation::Softmax
                             } else {
                                 return Err(crate::Error::ModelParseError(
                                     format!(
@@ -348,7 +342,6 @@ impl TfLiteModelResource {
     }
 
     #[cfg(feature = "vision")]
-    #[inline]
     fn parse_vision_model_input_info(
         &mut self,
         i: usize,
@@ -357,7 +350,7 @@ impl TfLiteModelResource {
     ) -> Result<(), Error> {
         let tensor_shape = if let Some(shape) = self.input_shape.get(i) {
             if let Ok(s) = crate::preprocess::vision::ImageLikeTensorShape::parse(
-                ImageDataLayout::NHWC,
+                ImageDataLayout::Nhwc,
                 shape.as_slice(),
             ) {
                 s
@@ -403,12 +396,12 @@ impl TfLiteModelResource {
         }
 
         let color_space = match props.color_space() {
-            tflite_metadata::ColorSpaceType::RGB => ImageColorSpaceType::RGB,
-            tflite_metadata::ColorSpaceType::GRAYSCALE => ImageColorSpaceType::GRAYSCALE,
-            _ => ImageColorSpaceType::UNKNOWN,
+            tflite_metadata::ColorSpaceType::RGB => ImageColorSpaceType::Rgb,
+            tflite_metadata::ColorSpaceType::GRAYSCALE => ImageColorSpaceType::Grayscale,
+            _ => ImageColorSpaceType::Unknown,
         };
         let img_info = ImageToTensorInfo {
-            image_data_layout: ImageDataLayout::NHWC,
+            image_data_layout: ImageDataLayout::Nhwc,
             color_space,
             tensor_type: self.input_tensor_type_for_metadata(i)?,
             tensor_shape,
@@ -424,7 +417,6 @@ impl TfLiteModelResource {
     }
 
     #[cfg(feature = "audio")]
-    #[inline]
     fn parse_audio_model_input_info(
         &mut self,
         i: usize,
@@ -567,7 +559,6 @@ impl TfLiteModelResource {
 
     /// Return the filename and MemoryTextFile.
     #[cfg(feature = "text")]
-    #[inline]
     fn process_vocab_files<'buf>(
         &mut self,
         files: Option<
@@ -605,7 +596,6 @@ impl TfLiteModelResource {
 
     // for bert and regex model.
     #[cfg(feature = "text")]
-    #[inline(always)]
     fn get_max_seq_len(input_shape: &[Vec<usize>]) -> Result<u32, Error> {
         if input_shape.is_empty() {
             return Err(Error::ModelParseError(
@@ -637,6 +627,7 @@ impl TfLiteModelResource {
         Ok(res as u32)
     }
 
+    #[cfg(any(feature = "vision", feature = "audio"))]
     fn input_tensor_type_for_metadata(&self, i: usize) -> Result<TensorType, Error> {
         self.input_types.get(i).copied().ok_or_else(|| {
             Error::ModelParseError(format!(
@@ -646,7 +637,6 @@ impl TfLiteModelResource {
         })
     }
 
-    #[inline(always)]
     fn get_file_content(&self, filename: &str) -> Result<&[u8], Error> {
         match self.associated_files.get(filename) {
             Some(c) => Ok(c.as_slice()),
@@ -657,7 +647,6 @@ impl TfLiteModelResource {
         }
     }
 
-    #[inline(always)]
     fn tflite_type_parse(tflite_type: tflite_model::TensorType) -> Result<TensorType, Error> {
         match tflite_type {
             tflite_model::TensorType::FLOAT32 => Ok(TensorType::F32),
@@ -701,6 +690,7 @@ impl ModelResourceTrait for TfLiteModelResource {
         self.output_shape.get(index).map(|v| v.as_slice())
     }
 
+    #[cfg(feature = "vision")]
     fn output_tensor_name_to_index(&self, name: &str) -> Option<usize> {
         self.output_name_map.get(name).cloned()
     }
@@ -747,6 +737,7 @@ impl ModelResourceTrait for TfLiteModelResource {
         self.to_tensor_info.get(input_index)
     }
 
+    #[cfg(feature = "vision")]
     fn output_activation(&self) -> Activation {
         self.output_activation
     }
@@ -865,6 +856,7 @@ mod test {
             output_label_files: Vec::new(),
             output_name_map: Default::default(),
             associated_files: Default::default(),
+            #[cfg(feature = "vision")]
             output_activation: Default::default(),
             #[cfg(feature = "vision")]
             output_bound_box_indices: Vec::new(),
